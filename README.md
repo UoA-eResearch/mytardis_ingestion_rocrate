@@ -1,2 +1,4 @@
-# ro-crate-hackday
-Hackday project 2021:  The Art of Remebering
+# The Art of Remembering
+CeR Hackday project 2021: The Art of Remembering
+
+
