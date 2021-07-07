@@ -1,0 +1,10 @@
+
+*.py~
+
+*.py#
+
+ProjectDB/.#get_ro_metadata.py
+
+ProjectDB/.#projectdb_api.py
+
+*.pyc
