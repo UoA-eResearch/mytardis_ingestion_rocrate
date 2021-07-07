@@ -2,15 +2,21 @@ from rocrate import rocrate_api
 from rocrate.model.person import Person
 from rocrate.rocrate import ROCrate
 from ProjectDB import MetadataFactory
-import json, datetime
+from progress.bar import Bar
+import json, time
+
+with Bar('Processing', max=10) as bar:
+    for i in range(10):
+        time.sleep(0.1)
+        bar.next()
 
 factory = MetadataFactory()
 research_drive ='rescer201900004-data-transfer-tests'
 factory.get_min_metadata_from_research_drive(research_drive)
 
 crate = ROCrate() 
-print(factory.metadata['title'])
-print(factory.metadata['created_date'])
+# print(factory.metadata)
+# print(factory.metadata['created_date'])
 
 crate.name = factory.metadata['title']
 crate.description = factory.metadata['description']
@@ -43,9 +49,9 @@ authors = []
 
 for person in factory.metadata['people']:
     crate.add(Person(crate, '#'+str(person['id']), {'name': person['full_name'], 'email': person['email'] }))
-    print( person['full_name'] )
-    print( person['id'] )
-    print( person['email'] )
+    # print( person['full_name'] )
+    # print( person['id'] )
+    # print( person['email'] )
 
 # crate.license = 'MIT'
 # crate.isBasedOn = "https://climate.usegalaxy.eu/u/annefou/w/workflow-constructed-from-history-climate-101"
