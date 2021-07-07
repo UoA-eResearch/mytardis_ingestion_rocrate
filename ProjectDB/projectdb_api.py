@@ -53,7 +53,7 @@ class ProjectDBFactory():
 
     def __init__(self):
         self.project_db_url = os.environ.get('PROJECT_DB_URL')
-        self.api_key = os.enviyron.get('PROJECT_DB_API')
+        self.api_key = os.environ.get('PROJECT_DB_API')
         self.auth = ProjectDBAuth(self.api_key)
         self.proxies = None
         self.verify_certificate = True
