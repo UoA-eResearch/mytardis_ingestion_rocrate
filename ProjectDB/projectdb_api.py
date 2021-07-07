@@ -52,25 +52,8 @@ class ProjectDBAuth(AuthBase):
 class ProjectDBFactory():
 
     def __init__(self):
-        # global_config holds environment variables that don't change often such as LDAP parameters and project_db stuff
-        #global_config = Config(RepositoryEnv(global_config_file_path))
-        self.gpg_passphrase = os.environ.get('GPG_PASSPHRASE')
-        self.gpg_home_dir = os.environ.get('GPG_HOME_DIR')
-        self.passphrase_file = os.environ.get('PASSPHRASE_FILE')
-        gpg = gnupg.GPG(gnupghome=self.gpg_home_dir)
-        stream = open(self.passphrase_file, 'rb')
-        self.api_key = None
-        self.project_db_url = None
-        decrypted = gpg.decrypt_file(stream,
-                                     passphrase=self.gpg_passphrase)
-        stream.close()
-        if decrypted.ok:
-            payload = decrypted.data.decode().split('\n')
-            for line in payload:
-                if line.lower().startswith('apikey'):
-                    self.api_key = line.split('=')[1].strip()
-                elif line.lower().startswith('project_db_url'):
-                    self.project_db_url = line.split('=')[1].strip()
+        self.project_db_url = os.environ.get('PROJECT_DB_URL')
+        self.api_key = os.enviyron.get('PROJECT_DB_API')
         self.auth = ProjectDBAuth(self.api_key)
         self.proxies = None
         self.verify_certificate = True
@@ -175,7 +158,9 @@ class ProjectDBFactory():
             response = self.get_project_from_code(code)
         except Exception as error:
             logger.error(error.message)
-            raise            
+            raise
+        if repsonse.status >= 300:
+            raise FileNotFoundError
         return response.json()['id']
 
     def __get_person_id_from_uri(self,
