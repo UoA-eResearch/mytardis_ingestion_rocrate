@@ -30,4 +30,13 @@ class MetadataFactory():
         self.metadata['title'] = title
         self.metadata['description'] = description
         self.metadata['created_date'] = created_date
-        
+        print("Getting people associated with project")
+        try:
+            project_owner = self.factory.get_people_ids_from_project(proj_id)
+        except Exception as error:
+            raise
+        people = []
+        for person in project_owner:
+            people.append(self.factory.get_person_from_id(person))
+        self.metadata['people'] = people
+

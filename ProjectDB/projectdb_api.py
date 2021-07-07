@@ -308,3 +308,9 @@ class ProjectDBFactory():
             logger.error(error)
             raise
         return response
+
+    def get_person_from_id(self,
+                           person_id):
+        response = self.__rest_api_call('GET',
+                                        f'{self.project_db_url}/person/{person_id}')
+        return response.json()
