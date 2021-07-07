@@ -159,8 +159,6 @@ class ProjectDBFactory():
         except Exception as error:
             logger.error(error.message)
             raise
-        if repsonse.status >= 300:
-            raise FileNotFoundError
         return response.json()['id']
 
     def __get_person_id_from_uri(self,
