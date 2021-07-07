@@ -27,3 +27,7 @@ class MetadataFactory():
         print("Project Name: {0}\nProject Description: {1}\nProject Creation Date: {2}".format(title,
                                                                                                description,
                                                                                                created_date))
+        self.metadata['title'] = title
+        self.metadata['description'] = description
+        self.metadata['created_date'] = created_date
+        
