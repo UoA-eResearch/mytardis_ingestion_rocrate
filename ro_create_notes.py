@@ -5,10 +5,7 @@ from ProjectDB import MetadataFactory
 from progress.bar import Bar
 import json, time
 
-with Bar('Processing', max=10) as bar:
-    for i in range(10):
-        time.sleep(0.1)
-        bar.next()
+
 
 factory = MetadataFactory()
 research_drive ='rescer201900004-data-transfer-tests'
@@ -37,16 +34,24 @@ crate.datePublished = factory.metadata['created_date']
 # remote_file = crate.add_file('https://github.com/ResearchObject/ro-crate-py/blob/master/test/test-data/test_galaxy_wf.ga', fetch_remote = False)
 
 # adding a Dataset
-sample_dir = '/Volumes/rescer201900004-data-transfer-tests/hackday/archive/rcar004/'
-# dataset_entity = crate.add_directory(sample_dir)
-
+with Bar('Adding dataset', max=10) as bar:
+    for i in range(10):
+        time.sleep(0.1)
+        bar.next()
+sample_dir = '/Users/rcar004/wip/hack\ day/code/ro-crate-hackday/files'
+dataset_entity = crate.add_directory(sample_dir)
 # dataset_entity = crate.add_directory(sample_dir, 'files/')
+
 # Add authors info
 # crate.add(Person(crate, '#joe', {'name': 'Joe Bloggs'}))
 
 # wf_crate example
 authors = []
 
+with Bar('Adding people', max=10) as bar:
+    for i in range(10):
+        time.sleep(0.1)
+        bar.next()
 for person in factory.metadata['people']:
     crate.add(Person(crate, '#'+str(person['id']), {'name': person['full_name'], 'email': person['email'] }))
     # print( person['full_name'] )
@@ -59,6 +64,10 @@ for person in factory.metadata['people']:
 # crate.image = "climate_101_workflow.svg"
 # crate.CreativeWorkStatus = "Stable"
 
+with Bar('Writing crate to storage', max=10) as bar:
+    for i in range(10):
+        time.sleep(0.1)
+        bar.next()
 # write crate to disk
-out_path = "./out-crate"
+out_path = '/Users/rcar004/wip/hack day/code/ro-crate-hackday/out-crate/rcar004'
 crate.write_crate(out_path)
