@@ -1,0 +1,42 @@
+---
+repos:
+-   repo: https://github.com/rcmdnk/pyproject-pre-commit
+    rev: v0.0.26
+    hooks:
+    - id: black
+    - id: isort
+    - id: bandit
+    - id: mypy
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+    -   id: trailing-whitespace
+-   repo: https://github.com/PyCQA/pylint
+    rev: v2.17.5
+    hooks:
+    - id: pylint
+      stages: [commit]
+      name: pylint
+      entry: pylint
+      language: python
+      args: [src]
+-   repo: https://github.com/pycqa/flake8
+    rev: "6.1.0"
+    hooks:
+    - id: flake8
+      exclude: ^tests/
+-   repo: local
+    hooks:
+    - id: pytest
+      name: pytest
+      stages: [pre-push]
+      language: python
+      additional_dependencies:
+        - pytest
+      entry: pytest -v tests
+      types: [python]
+      pass_filenames: false
+-   repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.3.2
+    hooks:
+    -   id: python-safety-dependencies-check

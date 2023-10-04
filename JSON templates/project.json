@@ -1,0 +1,6 @@
+{
+  "project_name": "Test Project",
+  "project_description": "A sample project for test purposes",
+  "principal_investigator": "upis001 <- I can use our Active Directory to get contact details",
+  "project_ids": ["a list of strings that are used to identify the project"]
+}

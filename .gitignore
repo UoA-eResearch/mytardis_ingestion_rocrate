@@ -6,5 +6,8 @@
 ProjectDB/.#get_ro_metadata.py
 
 ProjectDB/.#projectdb_api.py
+hackday-ro-crate/*
 
 *.pyc
+.DS_Store
+poetry.lock
