@@ -1,6 +1,6 @@
 """Defines the functions required to build an RO-crate"""
 import re
-from typing import Dict, List
+from typing import List
 
 from rocrate.model.contextentity import ContextEntity
 from rocrate.model.data_entity import DataEntity
@@ -26,7 +26,8 @@ class ROBuilder:
     """
 
     def __init__(
-        self, crate: ROCrate, metadata_dict: Dict[str, str | List[str] | Dict[str, str]]
+        self,
+        crate: ROCrate,
     ) -> None:
         """Initialisation of the ROBuilder
 
@@ -36,7 +37,6 @@ class ROBuilder:
                 relating to the entries to be added.
         """
         self.crate = crate
-        self.metadata_dict = metadata_dict
 
     def __add_organisation(self, organisation: Organisation) -> None:
         """Read in an Organisation object and create a Organization entity in the crate
@@ -64,7 +64,7 @@ class ROBuilder:
                     org.append_to("identifier", identifier)
         self.crate.add(org)
 
-    def __add_person_to_crate(self, person: Person) -> None:
+    def __add_person_to_crate(self, person: Person) -> ROPerson:
         """Read in a Person object and create an entry for them in the crate
 
         Args:
@@ -101,7 +101,7 @@ class ROBuilder:
             properties={
                 "name": person.name,
                 "email": person.email,
-                "affiliation": person.affiliation.name,
+                "affiliation": person.affiliation.identifiers[0],
             },
         )
         if len(person.identifiers) > 1:
@@ -109,24 +109,24 @@ class ROBuilder:
                 if identifier != person_id:
                     person_obj.append_to("identifier", identifier)
         self.crate.add(person_obj)
+        return person_obj
 
-    def _add_principal_investigator(self, principal_investigator: Person) -> None:
+    def add_principal_investigator(self, principal_investigator: Person) -> ROPerson:
         """Read in the principal investigator from the project and create an entry for them
         in the crate
 
         Args:
             principal_investigator (Person): _description_
         """
-        self.__add_person_to_crate(principal_investigator)
+        return self.__add_person_to_crate(principal_investigator)
 
-    def _add_contributors(self, contributors: List[Person]):
+    def add_contributors(self, contributors: List[Person]) -> List[ROPerson]:
         """Add the contributors to a project into the crate
 
         Args:
             contributors (List[Person]): A list of people to add as contributors
         """
-        for contributor in contributors:
-            self.__add_person_to_crate(contributor)
+        return [self.__add_person_to_crate(contributor) for contributor in contributors]
 
     def add_project(self, project: Project) -> ContextEntity:
         """Add a project to the RO crate
@@ -134,8 +134,10 @@ class ROBuilder:
         Args:
             project (Project): The project to be added to the crate
         """
-        self._add_principal_investigator(project.principal_investigator)
-        self._add_contributors(project.contributors)
+        principal_investigator = self.add_principal_investigator(
+            project.principal_investigator
+        )
+        contributors = self.add_contributors(project.contributors)
         project_obj = ContextEntity(
             self.crate,
             project.identifiers[0],
@@ -143,6 +145,8 @@ class ROBuilder:
                 "@type": "Project",
                 "name": project.name,
                 "description": project.description,
+                "principal_investigator": principal_investigator.id,
+                "contributors": [contributor.id for contributor in contributors],
             },
         )
         return self._add_identifiers(project, project_obj)
@@ -160,6 +164,7 @@ class ROBuilder:
             self.crate,
             identifier,
             properties={
+                "@type": "DataCatalog",
                 "name": experiment.name,
                 "description": experiment.description,
                 "project": experiment.project,
@@ -175,7 +180,7 @@ class ROBuilder:
         if len(abi_dataclass.identifiers) > 1:
             for index, identifier in enumerate(abi_dataclass.identifiers):
                 if index != 0:
-                    rocrate_obj.append_to("identifier", identifier)
+                    rocrate_obj.append_to("identifiers", identifier)
         self.crate.add(rocrate_obj)
         return rocrate_obj
 
@@ -188,17 +193,23 @@ class ROBuilder:
             dataset (Dataset): The dataset to be added to the crate
         """
         identifier = dataset.identifiers[0]
-        dataset_obj = self.crate.add_dataset(
-            dataset.directory.as_posix(),
-            properties={
-                "identifier": identifier,
-                "name": dataset.name,
-                "description": dataset.description,
-                "includedInDataCatalog": experiment_obj.id,
-            },
-        )
+        properties = {
+            "identifiers": identifier,
+            "name": dataset.name,
+            "description": dataset.description,
+            "includedInDataCatalog": experiment_obj.id,
+        }
         if dataset.metadata:
             for key, value in dataset.metadata.items():
-                dataset_obj.append_to(key, value)
-        self.crate.add(dataset_obj)
+                if key not in properties.keys():  # pylint: disable=C0201
+                    properties[key] = value
+                elif isinstance(properties[key], list):
+                    properties[key].append(value)
+                else:
+                    properties[key] = [properties[key], value]
+        dataset_obj = self.crate.add_dataset(
+            dataset.directory,
+            properties=properties,
+        )
+
         return self._add_identifiers(dataset, dataset_obj)

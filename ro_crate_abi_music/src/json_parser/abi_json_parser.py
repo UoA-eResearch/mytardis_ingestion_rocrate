@@ -85,7 +85,9 @@ def process_experiment(
     )
 
 
-def process_dataset(json_dict: Dict[str, str | List[str] | Dict[str, str]]) -> Dataset:
+def process_dataset(
+    json_dict: Dict[str, str | List[str] | Dict[str, str]], dataset_dir: Path
+) -> Dataset:
     """Extract the dataset specific information out of a JSON dictionary
 
     Args:
@@ -118,5 +120,6 @@ def process_dataset(json_dict: Dict[str, str | List[str] | Dict[str, str]]) -> D
         experiment=slugify(
             f'{json_dict["project_ids"][0]}-{json_dict["experiment_ids"][0]}'
         ),
+        directory=dataset_dir,
         metadata=metadata,
     )

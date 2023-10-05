@@ -41,7 +41,7 @@ class Person:
     name: str
     email: str
     affiliation: Organisation
-    identifiers: [List[str]]
+    identifiers: List[str]
 
 
 @dataclass
