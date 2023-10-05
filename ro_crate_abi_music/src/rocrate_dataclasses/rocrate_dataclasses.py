@@ -3,6 +3,7 @@
 
 from abc import ABC
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
@@ -17,9 +18,11 @@ class Organisation:
         url (str): An optional URL for the organisation - default None
     """
 
-    identifier: List[str]
+    identifiers: List[str]
     name: str
+    location: Optional[str] = None
     url: Optional[str] = None
+    research_org: bool = True
 
 
 @dataclass
@@ -37,8 +40,8 @@ class Person:
 
     name: str
     email: str
-    affliation: Organisation
-    identifier: Optional[List[str]] = None
+    affiliation: Organisation
+    identifiers: [List[str]]
 
 
 @dataclass
@@ -90,4 +93,5 @@ class Dataset(BaseObject):
     """
 
     experiment: str
-    metadata: Optional[Dict[str, Any]]
+    directory: Path
+    metadata: Optional[Dict[str, Any]] = None

@@ -3,14 +3,13 @@
 # pylint: disable=missing-function-docstring,redefined-outer-name
 # pylint: disable=missing-class-docstring
 
-import json
+
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 from unittest import mock
 
 import pytest
 
-import ro_crate_abi_music
 from ro_crate_abi_music.src.constants.organisatons import UOA
 from ro_crate_abi_music.src.json_parser.abi_json_parser import (
     combine_json_files,

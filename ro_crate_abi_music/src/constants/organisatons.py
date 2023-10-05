@@ -5,5 +5,7 @@ from ro_crate_abi_music.src.rocrate_dataclasses.rocrate_dataclasses import Organ
 UOA = Organisation(
     identifier=["https://ror.org/03b94tp07"],
     name="The University of Auckland | Waipapa Taumata Rau",
-    url=["https://auckland.ac.nz"],
+    url="https://auckland.ac.nz",
+    location="Auckland, New Zealand",
+    research_org=True,
 )

@@ -123,4 +123,5 @@ def create_person_object(upi: str) -> Person:
         name=full_name,
         email=email,
         affliation=UOA,
+        identifier=[upi],
     )
