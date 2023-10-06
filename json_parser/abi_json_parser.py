@@ -131,6 +131,7 @@ def process_dataset(
             created_date = __parse_datestring(session["Session"])
         else:
             updated_dates.append(__parse_datestring(session["Session"]))
+
     return Dataset(
         name=json_dict["Basename"]["Sequence"],
         description=json_dict["Description"],
