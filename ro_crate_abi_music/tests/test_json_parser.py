@@ -51,7 +51,7 @@ DATASET_JSON = (
 
 
 class MockOpen:
-    builtin_open = open
+    builtin_open = open  # pylint: disable=used-before-assignment
 
     def open(self, *args, **kwargs):  # type: ignore
         if args[0] == Path("project.json"):
