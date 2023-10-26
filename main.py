@@ -118,7 +118,7 @@ def package_rocrate(
         else Path(f"{crate_name.as_posix()}.tar")
     )
     with tarfile.open(crate_name, mode) as tar:
-        for in_file in filepath.parent.glob("**/*"):
+        for in_file in filepath.glob("**/*"):
             print(in_file.relative_to(filepath))
             tar.add(in_file.relative_to(filepath))
 
