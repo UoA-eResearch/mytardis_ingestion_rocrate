@@ -89,10 +89,14 @@ def create_rocrate(
     experiment_obj = builder.add_experiment(experiment)
     _ = builder.add_dataset(dataset, experiment_obj)
     crate.datePublished = dataset.created_date  # hack to get the RO-Crate date
-    bagit.make_bag(
-        dataset.directory, {"Contact-Name": project.principal_investigator}, processes=4
-    )
+    print(f"Writing crate for {dataset.directory} as {crate_name}")
     crate.write(crate_name)
+    print("Finished writing crate")
+    print(f"Generating bag for {crate_name}")
+    bagit.make_bag(
+        crate_name, {"Contact-Name": project.principal_investigator}, processes=4
+    )
+    print("Finished generating bag")
 
 
 def package_rocrate(
@@ -113,11 +117,6 @@ def package_rocrate(
         if compress
         else Path(f"{crate_name.as_posix()}.tar")
     )
-    print(filepath)
-    print(filepath.parent)
-    print(filepath.glob("**/*"))
-    for in_file in filepath.parent.glob("**/*"):
-        print(in_file)
     with tarfile.open(crate_name, mode) as tar:
         for in_file in filepath.parent.glob("**/*"):
             print(in_file.relative_to(filepath))
@@ -186,10 +185,7 @@ if args.directory:
     file_list = [item for in_file in file_list for item in in_file]
     for json_file in file_list:
         print(json_file)
-        if args.directory:
-            crate_name = args.output_path / json_file.relative_to(args.filepath)
-        else:
-            crate_name = args.output_path
+        crate_name = args.output_path / json_file.relative_to(args.filepath).parent
         (
             ro_project,
             ro_experiment,
@@ -208,7 +204,7 @@ if args.directory:
             ro_crate_name,
         )
         package_rocrate(
-            args.filepath,
+            crate_name,
             ro_crate_name,
             args.compress,
         )
