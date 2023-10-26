@@ -11,9 +11,7 @@ from ldap3.utils.dn import escape_rdn
 from ro_crate_abi_music.src.constants.organisatons import UOA
 from ro_crate_abi_music.src.rocrate_dataclasses.rocrate_dataclasses import Person
 
-GPG_BIN = (
-    "/opt/homebrew/bin/gpg"  # Note this is for my mac and needs to point to GPG binary
-)
+GPG_BIN = "/usr/bin/gpg"  # Note this is for my mac and needs to point to GPG binary
 
 
 logger = logging.getLogger(__name__)
