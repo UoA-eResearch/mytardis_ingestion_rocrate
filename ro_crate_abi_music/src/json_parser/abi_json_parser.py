@@ -44,7 +44,8 @@ def combine_json_files(
     return_dict = {}
     for file_path in files:
         with open(file_path, "r", encoding="utf-8") as json_file:
-            return_dict.update(json.load(json_file))
+            json_dict = json.loads(json_file.read())
+            return_dict.update(json_dict)
     return return_dict
 
 

@@ -14,6 +14,7 @@ python-gnupg = "^0.5.1"
 python-slugify = "^8.0.1"
 pytest-icdiff = "^0.8"
 pytest-deadfixtures = "^2.2.1"
+bagit = "^1.8.1"
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^2.17.6"

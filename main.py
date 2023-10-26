@@ -4,10 +4,12 @@ from the parent and grandparent directories and creata an RO crate in a second l
 
 import argparse
 import os
+import sys
 import tarfile
 from pathlib import Path
 from typing import Optional, Tuple
 
+import bagit
 from rocrate.rocrate import ROCrate
 
 from ro_crate_abi_music.src.json_parser.abi_json_parser import (
@@ -52,6 +54,7 @@ def read_jsons(
     current_directory = (
         filepath.parent if filepath.parent.as_posix() != "." else Path(os.getcwd())
     )
+    print(current_directory)
     sample_directory = current_directory.parent
     project_directory = sample_directory.parent
     file_list = [
@@ -59,6 +62,7 @@ def read_jsons(
         sample_directory / Path(sample_filename),
         project_directory / Path(project_filename),
     ]
+    print(file_list)
     json_dict = combine_json_files(file_list)
     project = process_project(json_dict)
     experiment = process_experiment(json_dict)
@@ -84,6 +88,10 @@ def create_rocrate(
     _ = builder.add_project(project)
     experiment_obj = builder.add_experiment(experiment)
     _ = builder.add_dataset(dataset, experiment_obj)
+    crate.datePublished = dataset.created_date  # hack to get the RO-Crate date
+    bagit.make_bag(
+        dataset.directory, {"Contact-Name": project.principal_investigator}, processes=4
+    )
     crate.write(crate_name)
 
 
@@ -120,7 +128,10 @@ parser = argparse.ArgumentParser(description="Package a dataset into an ROCrate"
 parser.add_argument(
     "filepath",
     type=str,
-    help="The filepath to a JSON file for a dataset",
+    help=(
+        "The filepath to a JSON file for a dataset, or to the sample directory to "
+        "harvest datasets from"
+    ),
 )
 parser.add_argument(
     "-s",
@@ -147,6 +158,13 @@ parser.add_argument(
     default=False,
     help="Compress the tar file generated using GZip",
 )
+parser.add_argument(
+    "-d",
+    "--directory",
+    action="store_true",
+    default=False,
+    help="Read the child directories for dataset JSONs and create ROCrates for each",
+)
 
 args = parser.parse_args()
 
@@ -154,26 +172,66 @@ args.filepath = Path(args.filepath)
 if args.output_path:
     args.output_path = Path(args.output_path)
 
-
-(
-    ro_project,
-    ro_experiment,
-    ro_dataset,
-    ro_crate_name,
-) = read_jsons(
-    args.filepath,
-    sample_filename=args.sample_file,
-    project_filename=args.project_file,
-    crate_name=args.output_path,
-)
-create_rocrate(
-    ro_project,
-    ro_experiment,
-    ro_dataset,
-    ro_crate_name,
-)
-package_rocrate(
-    args.filepath,
-    ro_crate_name,
-    args.compress,
-)
+if args.directory:
+    if args.output_path and Path(args.output_path).is_file():
+        print(
+            "Using the -d option with the -o option requires that the output filepath point"
+            " to a directory not a file."
+        )
+        sys.exit(1)
+    child_dirs = [
+        child_dir for child_dir in args.filepath.iterdir() if child_dir.is_dir()
+    ]
+    file_list = [list(child_dir.glob("*.json")) for child_dir in child_dirs]
+    file_list = [item for in_file in file_list for item in in_file]
+    for json_file in file_list:
+        print(json_file)
+        if args.directory:
+            crate_name = args.output_path / json_file.relative_to(args.filepath)
+        else:
+            crate_name = args.output_path
+        (
+            ro_project,
+            ro_experiment,
+            ro_dataset,
+            ro_crate_name,
+        ) = read_jsons(
+            json_file,
+            sample_filename=args.sample_file,
+            project_filename=args.project_file,
+            crate_name=crate_name,
+        )
+        create_rocrate(
+            ro_project,
+            ro_experiment,
+            ro_dataset,
+            ro_crate_name,
+        )
+        package_rocrate(
+            args.filepath,
+            ro_crate_name,
+            args.compress,
+        )
+else:
+    (
+        ro_project,
+        ro_experiment,
+        ro_dataset,
+        ro_crate_name,
+    ) = read_jsons(
+        args.filepath,
+        sample_filename=args.sample_file,
+        project_filename=args.project_file,
+        crate_name=args.output_path,
+    )
+    create_rocrate(
+        ro_project,
+        ro_experiment,
+        ro_dataset,
+        ro_crate_name,
+    )
+    package_rocrate(
+        args.filepath,
+        ro_crate_name,
+        args.compress,
+    )
