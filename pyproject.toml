@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "ro-crate-abi-music"
+name = "ro-crate-mt_ingestion"
 version = "0.1.0"
 description = "Scripts to pack up MuSiC raw image data files into an RO-crate"
 authors = ["Chris Seal <c.seal@auckland.ac.nz>"]
