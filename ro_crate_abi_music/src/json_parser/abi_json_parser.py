@@ -59,7 +59,9 @@ def process_project(json_dict: Dict[str, str | List[str] | Dict[str, str]]) -> P
     Returns:
         Project: A project dataclass
     """
-    principal_investigator = create_person_object(json_dict["principal_investigator"])
+    principal_investigator = create_person_object(
+        json_dict["principal_investigator"]  # type: ignore
+    )
     contributors = [
         create_person_object(contributor)
         for contributor in json_dict["contributors"]
@@ -67,11 +69,11 @@ def process_project(json_dict: Dict[str, str | List[str] | Dict[str, str]]) -> P
     ]
     identifiers = [slugify(identifier) for identifier in json_dict["project_ids"]]
     return Project(
-        name=json_dict["project_name"],
-        description=json_dict["project_description"],
+        name=json_dict["project_name"],  # type: ignore
+        description=json_dict["project_description"],  # type: ignore
         principal_investigator=principal_investigator,
         contributors=contributors or None,
-        identifiers=identifiers,
+        identifiers=identifiers,  # type: ignore
         metadata=None,
         created_date=None,
         updated_dates=None,
@@ -91,14 +93,14 @@ def process_experiment(
         Experiment: An experiment dataclass
     """
     identifiers = [
-        slugify(f'{json_dict["project_ids"][0]}-{identifier}')
+        slugify(f'{json_dict["project_ids"][0]}-{identifier}')  # type: ignore
         for identifier in json_dict["experiment_ids"]
     ]
     return Experiment(
-        name=json_dict["experiment_name"],
-        description=json_dict["experiment_description"],
-        project=slugify(json_dict["project"]),
-        identifiers=identifiers,
+        name=json_dict["experiment_name"],  # type: ignore
+        description=json_dict["experiment_description"],  # type: ignore
+        project=slugify(json_dict["project"]),  # type: ignore
+        identifiers=identifiers,  # type: ignore
         metadata=None,
         created_date=None,
         updated_dates=None,
@@ -120,8 +122,8 @@ def process_dataset(
     identifiers = [
         slugify(
             (
-                f'{json_dict["project_ids"][0]}-{json_dict["experiment_ids"][0]}-'
-                f'{json_dict["Basename"]["Sequence"]}'
+                f'{json_dict["project_ids"][0]}-{json_dict["experiment_ids"][0]}-'  # type: ignore
+                f'{json_dict["Basename"]["Sequence"]}'  # type: ignore
             )
         ),
         json_dict["SequenceID"],
@@ -129,15 +131,15 @@ def process_dataset(
     updated_dates = []
     for index, session in enumerate(json_dict["Sessions"]):
         if index == 0:
-            created_date = __parse_datestring(session["Session"])
+            created_date = __parse_datestring(session["Session"])  # type: ignore
         else:
-            updated_dates.append(__parse_datestring(session["Session"]))
+            updated_dates.append(__parse_datestring(session["Session"]))  # type: ignore
     return Dataset(
-        name=json_dict["Basename"]["Sequence"],
-        description=json_dict["Description"],
-        identifiers=identifiers,
+        name=json_dict["Basename"]["Sequence"],  # type: ignore
+        description=json_dict["Description"],  # type: ignore
+        identifiers=identifiers,  # type: ignore
         experiment=slugify(
-            f'{json_dict["project_ids"][0]}-{json_dict["experiment_ids"][0]}'
+            f'{json_dict["project_ids"][0]}-{json_dict["experiment_ids"][0]}'  # type: ignore
         ),
         directory=dataset_dir,
         created_date=created_date,

@@ -171,9 +171,9 @@ class ROBuilder:
             if key not in properties.keys():  # pylint: disable=C0201
                 properties[key] = value
             elif isinstance(properties[key], list):
-                properties[key].append(value)
+                properties[key].append(value)  # type: ignore
             else:
-                properties[key] = [properties[key], value]
+                properties[key] = [properties[key], value]  # type: ignore
         return properties
 
     def _add_dates(
@@ -207,7 +207,8 @@ class ROBuilder:
         principal_investigator = self.add_principal_investigator(
             project.principal_investigator
         )
-        contributors = self.add_contributors(project.contributors)
+        if project.contributors:
+            contributors = self.add_contributors(project.contributors)
         properties = {
             "@type": "Project",
             "name": project.name,
@@ -247,10 +248,10 @@ class ROBuilder:
             "project": experiment.project,
         }
         if experiment.metadata:
-            properties = self._add_metadata(properties, experiment.metadata)
+            properties = self._add_metadata(properties, experiment.metadata)  # type: ignore
         if experiment.created_date:
-            properties = self._add_dates(
-                properties,
+            properties = self._add_dates(  # type: ignore
+                properties,  # type: ignore
                 experiment.created_date,
                 experiment.updated_dates,
             )

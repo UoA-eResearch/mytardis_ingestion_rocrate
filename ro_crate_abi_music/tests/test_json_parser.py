@@ -1,7 +1,9 @@
-"""Unit tests for JSON parsing functions
-"""
+# nosec
 # pylint: disable=missing-function-docstring,redefined-outer-name
 # pylint: disable=missing-class-docstring
+
+"""Unit tests for JSON parsing functions
+"""
 
 
 from pathlib import Path
@@ -50,16 +52,17 @@ DATASET_JSON = (
 )
 
 
-class MockOpen:
+class MockOpen:  # pylint: disable=too-few-public-methods
     builtin_open = open  # pylint: disable=used-before-assignment
 
     def open(self, *args, **kwargs):  # type: ignore
         if args[0] == Path("project.json"):
             return mock.mock_open(read_data=PROJECT_JSON)(*args, **kwargs)
-        elif args[0] == Path("experiment.json"):
+        if args[0] == Path("experiment.json"):
             return mock.mock_open(read_data=EXPERIMENT_JSON)(*args, **kwargs)
-        elif args[0] == Path("dataset.json"):
+        if args[0] == Path("dataset.json"):
             return mock.mock_open(read_data=DATASET_JSON)(*args, **kwargs)
+        return None
 
 
 @pytest.mark.parametrize(
@@ -90,7 +93,7 @@ def test_combine_json_files(
 
 
 @mock.patch("ro_crate_abi_music.src.user_lookup.user_lookup.lookup_user")
-def test_process_project(
+def test_process_project(  # pylint: disable=too-many-arguments
     mock_create_person_object: mock.Mock,
     project_dict: Dict[str, str | List[str] | Dict[str, str]],
     experiment_dict: Dict[str, str | List[str] | Dict[str, str]],

@@ -1,5 +1,5 @@
 # pylint: disable=missing-function-docstring
-
+# nosec
 """Fixtures for use in tests"""
 
 from pathlib import Path
@@ -133,6 +133,9 @@ def fixture_test_project(test_person: Person) -> Project:
         principal_investigator=test_person,
         contributors=[test_person, test_person],
         identifiers=["test-project", "test-raid", "another-id"],
+        metadata=None,
+        created_date=None,
+        updated_dates=None,
     )
 
 
@@ -143,6 +146,9 @@ def fixture_test_experiment() -> Experiment:
         description="A short description of what the sample is",
         identifiers=["test-project-test-experiment"],
         project="test-project",
+        metadata=None,
+        created_date=None,
+        updated_dates=None,
     )
 
 
@@ -162,6 +168,8 @@ def fixture_test_dataset() -> Dataset:
             "Camera Settings - Cooling": False,
         },
         directory=Path("/a/test/dir"),
+        created_date=None,
+        updated_dates=None,
     )
 
 

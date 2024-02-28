@@ -1,4 +1,5 @@
 # pylint: disable=missing-function-docstring
+# nosec
 """Tests for the RO Builder classs"""
 
 from rocrate.model.contextentity import ContextEntity
@@ -66,24 +67,24 @@ def test_add_dataset(
     test_rocrate_experiment: ContextEntity,
 ) -> None:
     print(test_dataset)
-    expected_dataset = builder.add_dataset(test_dataset, test_rocrate_experiment)
-    expected_value = DataEntity(
-        builder.crate,
-        identifier=f"{test_dataset.directory.relative_to(test_dataset.directory.parent)}/",
-        properties={
-            "@type": "Dataset",
-            "name": test_dataset.name,
-            "description": test_dataset.description,
-            "identifiers": [
-                "test-project-test-experiment-ganglia561",
-                4126026792660213688,
-            ],
-            "Camera Settings - Fan": False,
-            "Camera Settings - Pixel Correction": False,
-            "Camera Settings - Cooling": False,
-            "includedInDataCatalog": test_rocrate_experiment.id,
-        },
-    )
+    # expected_dataset = builder.add_dataset(test_dataset, test_rocrate_experiment)
+    # expected_value = DataEntity(
+    #     builder.crate,
+    #     identifier=f"{test_dataset.directory.relative_to(test_dataset.directory.parent)}/",
+    #     properties={
+    #         "@type": "Dataset",
+    #         "name": test_dataset.name,
+    #         "description": test_dataset.description,
+    #         "identifiers": [
+    #             "test-project-test-experiment-ganglia561",
+    #             4126026792660213688,
+    #         ],
+    #         "Camera Settings - Fan": False,
+    #         "Camera Settings - Pixel Correction": False,
+    #         "Camera Settings - Cooling": False,
+    #         "includedInDataCatalog": test_rocrate_experiment.id,
+    #     },
+    # )
     assert builder.add_dataset(test_dataset, test_rocrate_experiment) == DataEntity(
         builder.crate,
         identifier=f"{test_dataset.directory.relative_to(test_dataset.directory.parent)}/",

@@ -1,5 +1,8 @@
-"""Scripts to read in a JSON file from a directory, get project and sample information
-from the parent and grandparent directories and creata an RO crate in a second location
+# pylint: disable=redefined-outer-name
+"""Scripts to read in a JSON file from a directory,
+get project and sample information
+from the parent and grandparent directories
+and creata an RO crate in a second location
 """
 
 import argparse
@@ -36,13 +39,18 @@ def read_jsons(
 
     Args:
         filepath (Path): The JSON for the dataset
-        sample_filename (Optional[str], optional): The name of the experiment JSON. Defaults to None.
-        project_filename (Optional[str], optional): The name of the project JSON. Defaults to None.
-        crate_name (Optional[Path], optional): Where the crate should be created. Defaults to None.
+        sample_filename (Optional[str], optional):
+            The name of the experiment JSON. Defaults to None.
+        project_filename (Optional[str], optional):
+            he name of the project JSON. Defaults to None.
+        ro_crate_name (Optional[Path], optional):
+            Where the crate should be created. Defaults to None.
 
     Returns:
-        Tuple[Project,Experiment,Dataset,Path]: The resulting Project, Experiment, Dataset and
-            crate name. The latter is included for cases where there is no crate name given and
+        Tuple[Project,Experiment,Dataset,Path]:
+        The resulting Project, Experiment, Dataset and
+            crate name. The latter is included for cases
+            where there is no crate name given and
             one needs to be constructed
     """
     if not filepath.is_file():
@@ -78,7 +86,8 @@ def create_rocrate(
     dataset: Dataset,
     crate_name: Path,
 ) -> None:
-    """Read in a filepath as a directory and process the data for packaging into an RO crate
+    """Read in a filepath as a directory
+    and process the data for packaging into an RO crate
 
     Args:
         filepath (Path): The JSON file for a dataset
@@ -174,15 +183,16 @@ if args.output_path:
 if args.directory:
     if args.output_path and Path(args.output_path).is_file():
         print(
-            "Using the -d option with the -o option requires that the output filepath point"
+            """Using the -d option with the -o option
+            requires that the output filepath point"""
             " to a directory not a file."
         )
         sys.exit(1)
     child_dirs = [
         child_dir for child_dir in args.filepath.iterdir() if child_dir.is_dir()
     ]
-    file_list = [list(child_dir.glob("*.json")) for child_dir in child_dirs]
-    file_list = [item for in_file in file_list for item in in_file]
+    jsons_list = [list(child_dir.glob("*.json")) for child_dir in child_dirs]
+    file_list = [item for in_file in jsons_list for item in in_file]
     for json_file in file_list:
         print(json_file)
         crate_name = args.output_path / json_file.relative_to(args.filepath).parent

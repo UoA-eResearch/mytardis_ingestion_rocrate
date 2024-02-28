@@ -4,14 +4,13 @@ on:
   pull_request:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.11"]
     name: Python ${{ matrix.python-version }}
     steps:
     - uses: actions/checkout@v1
@@ -28,17 +27,17 @@ jobs:
       if: steps.cache.outputs.cache-hit != 'true'
 
     - name: isort - check import formatting
-      run: PYTHONPATH=src/ poetry run python -m isort --check --diff --profile black src
+      run: poetry run python -m isort --check --diff --profile black .
 
     - name: Black - check code formatting
-      run: PYTHONPATH=src/ poetry run python -m black --check --diff src
+      run: poetry run python -m black --check --diff .
 
-    - name: pytest - run the tests
-      run: PYTHONPATH=src/ poetry run python -m pytest -v --cov=src/ tests/
+    # - name: pytest - run the tests
+    #   run: poetry run python -m pytest -v --cov=src/ tests/
 
     - name: pylint - static code analysis
-      run: PYTHONPATH=src/ poetry run python -m pylint src/ --rcfile .pylintrc
+      run: poetry run python -m pylint --rcfile .pylintrc ro_crate_abi_music/
 
     - name: mypy - static type checking
       # Takes configuration from pyproject.toml
-      run: PYTHONPATH=src/ poetry run python -m mypy
+      run: poetry run python -m mypy

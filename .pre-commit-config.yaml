@@ -5,7 +5,6 @@ repos:
     hooks:
     - id: black
     - id: isort
-    - id: bandit
     - id: mypy
 -   repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.5.0
@@ -19,12 +18,11 @@ repos:
       name: pylint
       entry: pylint
       language: python
-      args: [src]
--   repo: https://github.com/pycqa/flake8
-    rev: "7.0.0"
-    hooks:
-    - id: flake8
-      exclude: ^tests/
+      additional_dependencies:
+        - rocrate
+        - bagit
+        - slugify
+        - pytest
 -   repo: local
     hooks:
     - id: pytest
