@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "ro-crate-mt_ingestions"
+name = "src"
 version = "0.1.0"
 description = "Scripts to pack data files into an RO-crate for MyTardis ingestion"
 authors = ["Chris Seal <c.seal@auckland.ac.nz>"]
@@ -19,6 +19,11 @@ pylint = "^3.1.0"
 mypy = "^1.8.0"
 pytest = "^8.0.2"
 slugify = "^0.0.1"
+typer = "^0.9.0"
+logging = "^0.4.9.6"
+pandas = "^2.2.1"
+openpyxl = "^3.1.2"
+xlrd = "^2.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.1.0"
@@ -86,3 +91,6 @@ omit = [
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[project.scripts]
+ro_crate_builder = "src.cli.main:main"

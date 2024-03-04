@@ -23,6 +23,7 @@ repos:
         - bagit
         - slugify
         - pytest
+        - pandas
 -   repo: local
     hooks:
     - id: pytest
