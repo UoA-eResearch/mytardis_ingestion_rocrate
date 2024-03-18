@@ -24,6 +24,10 @@ repos:
         - slugify
         - pytest
         - pandas
+        - backoff
+        - pydantic
+        - ldap3
+        - passpy
 -   repo: local
     hooks:
     - id: pytest

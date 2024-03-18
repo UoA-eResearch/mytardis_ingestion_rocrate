@@ -10,4 +10,8 @@ hackday-ro-crate/*
 
 *.pyc
 .DS_Store
-poetry.lock
+*.tar
+test_crate*
+*.tar.*
+*.log
+test*

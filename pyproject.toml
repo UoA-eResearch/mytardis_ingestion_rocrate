@@ -24,6 +24,9 @@ logging = "^0.4.9.6"
 pandas = "^2.2.1"
 openpyxl = "^3.1.2"
 xlrd = "^2.0.1"
+pydantic = "^2.6.3"
+backoff = "^2.2.1"
+requests = "^2.31.0"
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.1.0"

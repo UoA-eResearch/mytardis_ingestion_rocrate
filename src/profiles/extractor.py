@@ -1,8 +1,8 @@
-# pylint: disable=missing-module-docstring
+# pylint: disable=missing-module-docstring, too-few-public-methods
 from abc import ABC, abstractmethod
 from typing import Any
 
-import pandas as pd
+from src.rocrate_dataclasses.data_class_utils import CrateManifest
 
 
 class Extractor(ABC):
@@ -11,16 +11,16 @@ class Extractor(ABC):
     """
 
     @abstractmethod
-    def extract_to_dataframe(self, input_data_source: Any) -> pd.DataFrame:
-        """
-        Taking a file path or io stream convert the contents
-         into a pandas dataframe based on the expectations of the profile
-        """
-        raise NotImplementedError("Extraction behaviour must be defined in a subclass.")
+    def extract(self, input_data_source: Any) -> CrateManifest:
+        """Extract data from a directory or metadatafile into RO-Crate dataclass objects
 
-    @abstractmethod
-    def dataframe_to_dataclasses(self, df: pd.DataFrame) -> None:
-        """
-        Taking a dataframe convert the contents into RO-Crate packagable dataclasses
+        Args:
+            input_data_source (Any): a directory or metadatafile path
+
+        Raises:
+            NotImplementedError: error for calling methods from this abstract class
+
+        Returns:
+            CrateManifest: manifest of the contents of an RO-Crate
         """
         raise NotImplementedError("Extraction behaviour must be defined in a subclass.")

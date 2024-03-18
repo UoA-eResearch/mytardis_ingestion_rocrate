@@ -1,3 +1,303 @@
-[DEBUG]: True
-[DEBUG]:   test  nhinumber                                             SECRET
-0  aaa          1  This string is so encrypted you can't even rea...
+[DEBUG]: Popen(['git', 'version'], cwd=/home/jlove/projects/ro_crate_mt_ingestions, stdin=None, shell=False, universal_newlines=False)
+[DEBUG]: Popen(['git', 'version'], cwd=/home/jlove/projects/ro_crate_mt_ingestions, stdin=None, shell=False, universal_newlines=False)
+[DEBUG]: current authentication is username='jlov034' api_key='99c89360-9222-11ee-b9d1-0242ac120002'
+[DEBUG]: Starting new HTTPS connection (1): test-instruments.nectar.auckland.ac.nz:443
+[DEBUG]: https://test-instruments.nectar.auckland.ac.nz:443 "GET /api/v1/schema/?namespace=http://print.lab.mockup/project/v1 HTTP/1.1" 200 2259
+[DEBUG]: current authentication is username='jlov034' api_key='99c89360-9222-11ee-b9d1-0242ac120002'
+[DEBUG]: https://test-instruments.nectar.auckland.ac.nz:443 "GET /api/v1/schema/?namespace=http://print.lab.mockup/experiment/as_sample/v1 HTTP/1.1" 200 9131
+[DEBUG]: current authentication is username='jlov034' api_key='99c89360-9222-11ee-b9d1-0242ac120002'
+[DEBUG]: https://test-instruments.nectar.auckland.ac.nz:443 "GET /api/v1/schema/?namespace=http://print.lab.mockup/dataset/as_sample/v1 HTTP/1.1" 200 2218
+[DEBUG]: current authentication is username='jlov034' api_key='99c89360-9222-11ee-b9d1-0242ac120002'
+[DEBUG]: https://test-instruments.nectar.auckland.ac.nz:443 "GET /api/v1/schema/?namespace=http://print.lab.mockup/datafile/as_sample/v1 HTTP/1.1" 200 1350
+[DEBUG]: 11072: /usr/bin/gpg --status-fd 2 --no-tty --no-verbose --fixed-list-mode --batch --with-colons --quiet --yes --compress-algo=none --no-encrypt-to --batch --use-agent --list-config --with-colons
+[DEBUG]: stderr reader: <Thread(Thread-1 (_read_response), initial daemon)>
+[DEBUG]: stdout reader: <Thread(Thread-2 (_read_data), initial daemon)>
+[DEBUG]: 11075: /usr/bin/gpg --status-fd 2 --no-tty --no-verbose --fixed-list-mode --batch --with-colons --quiet --yes --compress-algo=none --no-encrypt-to --batch --use-agent --decrypt
+[DEBUG]: data copier: <Thread(Thread-3 (_copy_data), initial daemon)>, <_io.BufferedReader name='/home/jlove/.password-store/LDAP/admin_name.gpg'>, <_io.BufferedWriter name=8>
+[DEBUG]: closed output, 0 bytes sent
+[DEBUG]: stderr reader: <Thread(Thread-4 (_read_response), initial daemon)>
+[DEBUG]: stdout reader: <Thread(Thread-5 (_read_data), initial daemon)>
+[DEBUG]: [GNUPG:] NODATA 2
+[DEBUG]: [GNUPG:] FAILURE decrypt 4294967295
+[DEBUG]: gpg: decrypt_message failed: Unknown system error
+[WARNING]: gpg returned a non-zero error code: 2
+[DEBUG]: decrypt result[:100]: b''
+[DEBUG]: 11079: /usr/bin/gpg --status-fd 2 --no-tty --no-verbose --fixed-list-mode --batch --with-colons --quiet --yes --compress-algo=none --no-encrypt-to --batch --use-agent --list-config --with-colons
+[DEBUG]: stderr reader: <Thread(Thread-6 (_read_response), initial daemon)>
+[DEBUG]: stdout reader: <Thread(Thread-7 (_read_data), initial daemon)>
+[DEBUG]: 11082: /usr/bin/gpg --status-fd 2 --no-tty --no-verbose --fixed-list-mode --batch --with-colons --quiet --yes --compress-algo=none --no-encrypt-to --batch --use-agent --decrypt
+[DEBUG]: data copier: <Thread(Thread-8 (_copy_data), initial daemon)>, <_io.BufferedReader name='/home/jlove/.password-store/LDAP/admin_password.gpg'>, <_io.BufferedWriter name=8>
+[DEBUG]: closed output, 0 bytes sent
+[DEBUG]: stderr reader: <Thread(Thread-9 (_read_response), initial daemon)>
+[DEBUG]: stdout reader: <Thread(Thread-10 (_read_data), initial daemon)>
+[DEBUG]: [GNUPG:] NODATA 2
+[DEBUG]: [GNUPG:] FAILURE decrypt 4294967295
+[DEBUG]: gpg: decrypt_message failed: Unknown system error
+[WARNING]: gpg returned a non-zero error code: 2
+[DEBUG]: decrypt result[:100]: b''
+[WARNING]: No one with cn: Jlov034 has been found in the LDAP
+[DEBUG]: 11086: /usr/bin/gpg --status-fd 2 --no-tty --no-verbose --fixed-list-mode --batch --with-colons --quiet --yes --compress-algo=none --no-encrypt-to --batch --use-agent --list-config --with-colons
+[DEBUG]: stderr reader: <Thread(Thread-11 (_read_response), initial daemon)>
+[DEBUG]: stdout reader: <Thread(Thread-12 (_read_data), initial daemon)>
+[DEBUG]: 11089: /usr/bin/gpg --status-fd 2 --no-tty --no-verbose --fixed-list-mode --batch --with-colons --quiet --yes --compress-algo=none --no-encrypt-to --batch --use-agent --decrypt
+[DEBUG]: data copier: <Thread(Thread-13 (_copy_data), initial daemon)>, <_io.BufferedReader name='/home/jlove/.password-store/LDAP/admin_name.gpg'>, <_io.BufferedWriter name=8>
+[DEBUG]: stderr reader: <Thread(Thread-14 (_read_response), initial daemon)>
+[DEBUG]: closed output, 0 bytes sent
+[DEBUG]: stdout reader: <Thread(Thread-15 (_read_data), initial daemon)>
+[DEBUG]: [GNUPG:] NODATA 2
+[DEBUG]: [GNUPG:] FAILURE decrypt 4294967295
+[DEBUG]: gpg: decrypt_message failed: Unknown system error
+[WARNING]: gpg returned a non-zero error code: 2
+[DEBUG]: decrypt result[:100]: b''
+[DEBUG]: 11093: /usr/bin/gpg --status-fd 2 --no-tty --no-verbose --fixed-list-mode --batch --with-colons --quiet --yes --compress-algo=none --no-encrypt-to --batch --use-agent --list-config --with-colons
+[DEBUG]: stderr reader: <Thread(Thread-16 (_read_response), initial daemon)>
+[DEBUG]: stdout reader: <Thread(Thread-17 (_read_data), initial daemon)>
+[DEBUG]: 11096: /usr/bin/gpg --status-fd 2 --no-tty --no-verbose --fixed-list-mode --batch --with-colons --quiet --yes --compress-algo=none --no-encrypt-to --batch --use-agent --decrypt
+[DEBUG]: data copier: <Thread(Thread-18 (_copy_data), initial daemon)>, <_io.BufferedReader name='/home/jlove/.password-store/LDAP/admin_password.gpg'>, <_io.BufferedWriter name=8>
+[DEBUG]: closed output, 0 bytes sent
+[DEBUG]: stderr reader: <Thread(Thread-19 (_read_response), initial daemon)>
+[DEBUG]: stdout reader: <Thread(Thread-20 (_read_data), initial daemon)>
+[DEBUG]: [GNUPG:] NODATA 2
+[DEBUG]: [GNUPG:] FAILURE decrypt 4294967295
+[DEBUG]: gpg: decrypt_message failed: Unknown system error
+[WARNING]: gpg returned a non-zero error code: 2
+[DEBUG]: decrypt result[:100]: b''
+[WARNING]: No one with cn: Jlov034 has been found in the LDAP
+[INFO]: Creating bag for directory /tmp/tmpyqyzq68i/mockup_print_data
+[INFO]: Creating data directory
+[INFO]: Moving ro-crate-metadata.json to /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m/ro-crate-metadata.json
+[INFO]: Moving sampledata.xlsx to /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m/sampledata.xlsx
+[INFO]: Moving Makefile to /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m/Makefile
+[INFO]: Moving Dockerfile to /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m/Dockerfile
+[INFO]: Moving sampledata.xls to /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m/sampledata.xls
+[INFO]: Moving .gitignore to /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m/.gitignore
+[INFO]: Moving sampledata_v2.xlsx to /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m/sampledata_v2.xlsx
+[INFO]: Moving generation_script.sh to /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m/generation_script.sh
+[INFO]: Moving FASTQ to /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m/FASTQ
+[INFO]: Moving BAM to /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m/BAM
+[INFO]: Moving VCF to /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m/VCF
+[INFO]: Moving ref to /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m/ref
+[INFO]: Moving BCF to /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m/BCF
+[INFO]: Moving .git to /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m/.git
+[INFO]: Moving /tmp/tmpyqyzq68i/mockup_print_data/tmpczxi2j4m to data
+[INFO]: Using 4 processes to generate manifests: sha256, sha512
+[INFO]: Generating manifest lines for file data/.gitignore
+[INFO]: Generating manifest lines for file data/sampledata_v2.xlsx
+[INFO]: Generating manifest lines for file data/.git/hooks/applypatch-msg.sample
+[INFO]: Generating manifest lines for file data/.git/hooks/pre-push.sample
+[INFO]: Generating manifest lines for file data/Dockerfile
+[INFO]: Generating manifest lines for file data/Makefile
+[INFO]: Generating manifest lines for file data/.git/COMMIT_EDITMSG
+[INFO]: Generating manifest lines for file data/generation_script.sh
+[INFO]: Generating manifest lines for file data/.git/FETCH_HEAD
+[INFO]: Generating manifest lines for file data/.git/hooks/pre-rebase.sample
+[INFO]: Generating manifest lines for file data/.git/hooks/commit-msg.sample
+[INFO]: Generating manifest lines for file data/ro-crate-metadata.json
+[INFO]: Generating manifest lines for file data/.git/HEAD
+[INFO]: Generating manifest lines for file data/.git/config
+[INFO]: Generating manifest lines for file data/.git/description
+[INFO]: Generating manifest lines for file data/.git/hooks/fsmonitor-watchman.sample
+[INFO]: Generating manifest lines for file data/.git/hooks/pre-receive.sample
+[INFO]: Generating manifest lines for file data/.git/index
+[INFO]: Generating manifest lines for file data/sampledata.xls
+[INFO]: Generating manifest lines for file data/sampledata.xlsx
+[INFO]: Generating manifest lines for file data/.git/hooks/prepare-commit-msg.sample
+[INFO]: Generating manifest lines for file data/.git/hooks/post-update.sample
+[INFO]: Generating manifest lines for file data/.git/hooks/push-to-checkout.sample
+[INFO]: Generating manifest lines for file data/.git/hooks/pre-applypatch.sample
+[INFO]: Generating manifest lines for file data/.git/info/exclude
+[INFO]: Generating manifest lines for file data/.git/logs/HEAD
+[INFO]: Generating manifest lines for file data/.git/hooks/pre-commit.sample
+[INFO]: Generating manifest lines for file data/.git/hooks/sendemail-validate.sample
+[INFO]: Generating manifest lines for file data/.git/logs/refs/heads/main
+[INFO]: Generating manifest lines for file data/.git/objects/35/4d36e16116c23c54d84289524a854c6c94cf18
+[INFO]: Generating manifest lines for file data/.git/logs/refs/remotes/origin/main
+[INFO]: Generating manifest lines for file data/.git/hooks/pre-merge-commit.sample
+[INFO]: Generating manifest lines for file data/.git/hooks/update.sample
+[INFO]: Generating manifest lines for file data/.git/objects/38/3b7d1266d51d1dddfa4d26fdf69f5a4470c090
+[INFO]: Generating manifest lines for file data/.git/objects/09/0d22c684b85d5cd53cb8cb75434a477c6fac55
+[INFO]: Generating manifest lines for file data/.git/objects/0e/87e309b0833709b4c412ab2e780869eea46886
+[INFO]: Generating manifest lines for file data/.git/objects/46/2d39c2ab2f0ea14072caf62b0ab1c170817094
+[INFO]: Generating manifest lines for file data/.git/objects/25/90c597c3d4b765c3bda81f4a07f7b17ad6b799
+[INFO]: Generating manifest lines for file data/.git/objects/56/f2ff939a9dea42f5acf50c6cebdb0c5043eccd
+[INFO]: Generating manifest lines for file data/.git/objects/78/9678c31d8e705f01b1e9e6e63e5564ceb2b395
+[INFO]: Generating manifest lines for file data/.git/objects/7a/b0b7a7087643de75ec700ade1fe95a0e882cdb
+[INFO]: Generating manifest lines for file data/.git/objects/89/fba8682122d4e17f4f740fe8c7652f3644a2a7
+[INFO]: Generating manifest lines for file data/.git/objects/7b/d543afede86033f744d0625944fe3c40753465
+[INFO]: Generating manifest lines for file data/.git/objects/90/cb78cbdbf102587a6c108952e8257673ffab57
+[INFO]: Generating manifest lines for file data/.git/objects/e9/a8e551a6702ab5b1ca996c9afcd5605a8577dd
+[INFO]: Generating manifest lines for file data/BAM/qc/samtools.flagstats.txt
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads2.fastq
+[INFO]: Generating manifest lines for file data/.git/objects/99/027a86245e657cc4eb90ffef54f005ab931044
+[INFO]: Generating manifest lines for file data/.git/objects/ed/c8bc4596ba1aba6c6f01f095255474a79f3e09
+[INFO]: Generating manifest lines for file data/BAM/qc/samtools.stats.txt
+[INFO]: Generating manifest lines for file data/.git/objects/9a/6bf1a6dd7bb59896b4072328e559e33a6d970c
+[INFO]: Generating manifest lines for file data/.git/objects/a2/e065a40bc0db07600a4e3c3300b6f39355faae
+[INFO]: Generating manifest lines for file data/.git/refs/heads/main
+[INFO]: Generating manifest lines for file data/.git/objects/d1/ffaedc97bc33249defd70ae1bdfd4ef4699a90
+[INFO]: Generating manifest lines for file data/.git/refs/remotes/origin/main
+[INFO]: Generating manifest lines for file data/.git/objects/db/67c9cd136c6f9be89a8ff4b043444bd9fd1eb7
+[INFO]: Generating manifest lines for file data/BAM/aligned.bam
+[INFO]: Generating manifest lines for file data/FASTQ/fastqc/sample2_reads2_fastqc.html
+[INFO]: Generating manifest lines for file data/BCF/calls.bcf
+[INFO]: Generating manifest lines for file data/BCF/qc/bcftools.stats.txt
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1.fastq
+[INFO]: Generating manifest lines for file data/FASTQ/fastqc/sample2_reads2_fastqc.zip
+[INFO]: Generating manifest lines for file data/FASTQ/fastqc/multiqc_data/multiqc.log
+[INFO]: Generating manifest lines for file data/FASTQ/fastqc/multiqc_data/multiqc_citations.txt
+[INFO]: Generating manifest lines for file data/FASTQ/fastqc/multiqc_data/multiqc_data.json
+[INFO]: Generating manifest lines for file data/FASTQ/fastqc/multiqc_data/multiqc_fastqc.txt
+[INFO]: Generating manifest lines for file data/FASTQ/fastqc/multiqc_data/multiqc_general_stats.txt
+[INFO]: Generating manifest lines for file data/FASTQ/fastqc/multiqc_data/multiqc_software_versions.txt
+[INFO]: Generating manifest lines for file data/FASTQ/fastqc/multiqc_data/multiqc_sources.txt
+[INFO]: Generating manifest lines for file data/FASTQ/qc/sample1_reads2_fastqc.html
+[INFO]: Generating manifest lines for file data/FASTQ/qc/sample1_reads2_fastqc.zip
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/fastqc.fo
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/fastqc_data.txt
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/fastqc_report.html
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/summary.txt
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Icons/error.png
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Icons/fastqc_icon.png
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Icons/tick.png
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Icons/warning.png
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/adapter_content.png
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/adapter_content.svg
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/duplication_levels.png
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/duplication_levels.svg
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/per_base_n_content.png
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/per_base_n_content.svg
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/per_base_quality.png
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/per_base_quality.svg
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/per_base_sequence_content.png
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/per_base_sequence_content.svg
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/per_sequence_gc_content.png
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/per_sequence_gc_content.svg
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/per_sequence_quality.png
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/per_sequence_quality.svg
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/sequence_length_distribution.png
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc/Images/sequence_length_distribution.svg
+[INFO]: Generating manifest lines for file data/BAM/aligned.sam
+[INFO]: Generating manifest lines for file data/FASTQ/sample2_reads2.fastq
+[INFO]: Generating manifest lines for file data/FASTQ/sample2_reads2_fastqc.html
+[INFO]: Generating manifest lines for file data/FASTQ/sample2_reads2_fastqc.zip
+[INFO]: Generating manifest lines for file data/FASTQ/fastqc/multiqc_report.html
+[INFO]: Generating manifest lines for file data/FASTQ/fastqc/sample1_reads1_fastqc.html
+[INFO]: Generating manifest lines for file data/FASTQ/fastqc/sample1_reads1_fastqc.zip
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc.html
+[INFO]: Generating manifest lines for file data/FASTQ/sample1_reads1_fastqc.zip
+[INFO]: Generating manifest lines for file data/BAM/qc/idx_stats.txt
+[INFO]: Creating bagit.txt
+[INFO]: Creating bag-info.txt
+[INFO]: Creating /tmp/tmpyqyzq68i/mockup_print_data/tagmanifest-sha256.txt
+[INFO]: Creating /tmp/tmpyqyzq68i/mockup_print_data/tagmanifest-sha512.txt
+[INFO]: wirting to archived path mockup_print_data/tagmanifest-sha512.txt
+[INFO]: wirting to archived path mockup_print_data/tagmanifest-sha256.txt
+[INFO]: wirting to archived path mockup_print_data/bag-info.txt
+[INFO]: wirting to archived path mockup_print_data/bagit.txt
+[INFO]: wirting to archived path mockup_print_data/manifest-sha512.txt
+[INFO]: wirting to archived path mockup_print_data/manifest-sha256.txt
+[INFO]: wirting to archived path mockup_print_data/data/generation_script.sh
+[INFO]: wirting to archived path mockup_print_data/data/sampledata_v2.xlsx
+[INFO]: wirting to archived path mockup_print_data/data/.gitignore
+[INFO]: wirting to archived path mockup_print_data/data/sampledata.xls
+[INFO]: wirting to archived path mockup_print_data/data/Dockerfile
+[INFO]: wirting to archived path mockup_print_data/data/Makefile
+[INFO]: wirting to archived path mockup_print_data/data/sampledata.xlsx
+[INFO]: wirting to archived path mockup_print_data/data/ro-crate-metadata.json
+[INFO]: wirting to archived path mockup_print_data/data/.git/COMMIT_EDITMSG
+[INFO]: wirting to archived path mockup_print_data/data/.git/HEAD
+[INFO]: wirting to archived path mockup_print_data/data/.git/index
+[INFO]: wirting to archived path mockup_print_data/data/.git/config
+[INFO]: wirting to archived path mockup_print_data/data/.git/FETCH_HEAD
+[INFO]: wirting to archived path mockup_print_data/data/.git/description
+[INFO]: wirting to archived path mockup_print_data/data/.git/logs/HEAD
+[INFO]: wirting to archived path mockup_print_data/data/.git/logs/refs/heads/main
+[INFO]: wirting to archived path mockup_print_data/data/.git/logs/refs/remotes/origin/main
+[INFO]: wirting to archived path mockup_print_data/data/.git/hooks/pre-receive.sample
+[INFO]: wirting to archived path mockup_print_data/data/.git/hooks/pre-applypatch.sample
+[INFO]: wirting to archived path mockup_print_data/data/.git/hooks/pre-commit.sample
+[INFO]: wirting to archived path mockup_print_data/data/.git/hooks/pre-merge-commit.sample
+[INFO]: wirting to archived path mockup_print_data/data/.git/hooks/fsmonitor-watchman.sample
+[INFO]: wirting to archived path mockup_print_data/data/.git/hooks/commit-msg.sample
+[INFO]: wirting to archived path mockup_print_data/data/.git/hooks/prepare-commit-msg.sample
+[INFO]: wirting to archived path mockup_print_data/data/.git/hooks/post-update.sample
+[INFO]: wirting to archived path mockup_print_data/data/.git/hooks/pre-rebase.sample
+[INFO]: wirting to archived path mockup_print_data/data/.git/hooks/sendemail-validate.sample
+[INFO]: wirting to archived path mockup_print_data/data/.git/hooks/applypatch-msg.sample
+[INFO]: wirting to archived path mockup_print_data/data/.git/hooks/update.sample
+[INFO]: wirting to archived path mockup_print_data/data/.git/hooks/pre-push.sample
+[INFO]: wirting to archived path mockup_print_data/data/.git/hooks/push-to-checkout.sample
+[INFO]: wirting to archived path mockup_print_data/data/.git/info/exclude
+[INFO]: wirting to archived path mockup_print_data/data/.git/refs/heads/main
+[INFO]: wirting to archived path mockup_print_data/data/.git/refs/remotes/origin/main
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/0e/87e309b0833709b4c412ab2e780869eea46886
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/db/67c9cd136c6f9be89a8ff4b043444bd9fd1eb7
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/7a/b0b7a7087643de75ec700ade1fe95a0e882cdb
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/56/f2ff939a9dea42f5acf50c6cebdb0c5043eccd
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/89/fba8682122d4e17f4f740fe8c7652f3644a2a7
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/ed/c8bc4596ba1aba6c6f01f095255474a79f3e09
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/e9/a8e551a6702ab5b1ca996c9afcd5605a8577dd
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/90/cb78cbdbf102587a6c108952e8257673ffab57
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/38/3b7d1266d51d1dddfa4d26fdf69f5a4470c090
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/d1/ffaedc97bc33249defd70ae1bdfd4ef4699a90
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/09/0d22c684b85d5cd53cb8cb75434a477c6fac55
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/78/9678c31d8e705f01b1e9e6e63e5564ceb2b395
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/99/027a86245e657cc4eb90ffef54f005ab931044
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/7b/d543afede86033f744d0625944fe3c40753465
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/a2/e065a40bc0db07600a4e3c3300b6f39355faae
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/35/4d36e16116c23c54d84289524a854c6c94cf18
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/9a/6bf1a6dd7bb59896b4072328e559e33a6d970c
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/25/90c597c3d4b765c3bda81f4a07f7b17ad6b799
+[INFO]: wirting to archived path mockup_print_data/data/.git/objects/46/2d39c2ab2f0ea14072caf62b0ab1c170817094
+[INFO]: wirting to archived path mockup_print_data/data/BCF/calls.bcf
+[INFO]: wirting to archived path mockup_print_data/data/BCF/qc/bcftools.stats.txt
+[INFO]: wirting to archived path mockup_print_data/data/BAM/aligned.bam
+[INFO]: wirting to archived path mockup_print_data/data/BAM/aligned.sam
+[INFO]: wirting to archived path mockup_print_data/data/BAM/qc/idx_stats.txt
+[INFO]: wirting to archived path mockup_print_data/data/BAM/qc/samtools.stats.txt
+[INFO]: wirting to archived path mockup_print_data/data/BAM/qc/samtools.flagstats.txt
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample2_reads2_fastqc.html
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample2_reads2.fastq
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads2.fastq
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1.fastq
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc.zip
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc.html
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample2_reads2_fastqc.zip
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/fastqc_data.txt
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/fastqc_report.html
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/fastqc.fo
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/summary.txt
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Icons/error.png
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Icons/warning.png
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Icons/tick.png
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Icons/fastqc_icon.png
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/duplication_levels.svg
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/duplication_levels.png
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/per_base_sequence_content.png
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/per_base_n_content.svg
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/per_sequence_gc_content.png
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/per_sequence_gc_content.svg
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/per_sequence_quality.svg
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/per_base_n_content.png
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/adapter_content.svg
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/adapter_content.png
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/sequence_length_distribution.png
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/sequence_length_distribution.svg
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/per_sequence_quality.png
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/per_base_sequence_content.svg
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/per_base_quality.png
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/sample1_reads1_fastqc/Images/per_base_quality.svg
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/fastqc/sample2_reads2_fastqc.html
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/fastqc/multiqc_report.html
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/fastqc/sample1_reads1_fastqc.zip
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/fastqc/sample1_reads1_fastqc.html
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/fastqc/sample2_reads2_fastqc.zip
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/fastqc/multiqc_data/multiqc_fastqc.txt
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/fastqc/multiqc_data/multiqc_sources.txt
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/fastqc/multiqc_data/multiqc_data.json
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/fastqc/multiqc_data/multiqc_general_stats.txt
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/fastqc/multiqc_data/multiqc_software_versions.txt
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/fastqc/multiqc_data/multiqc_citations.txt
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/fastqc/multiqc_data/multiqc.log
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/qc/sample1_reads2_fastqc.zip
+[INFO]: wirting to archived path mockup_print_data/data/FASTQ/qc/sample1_reads2_fastqc.html

@@ -1,11 +1,10 @@
-# pylint: disable=R0801
 """Definition of RO-Crate dataclasses"""
 
 from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 
 @dataclass
@@ -32,6 +31,7 @@ class Person:
 
     Attr:
         identifier (List[str]): An optional list of unique identifiers for the person
+            - Must contain UPI for import into MyTardis
             - typically ORCID - default None
         name (str): The full name (first name/last name) of the person
         email (str): A contact email address for the person named
@@ -47,6 +47,34 @@ class Person:
 
 @dataclass
 class BaseObject(ABC):
+    """Abstract Most basic object that can be turned into an RO-Crate entity"""
+
+    name: str
+
+
+@dataclass
+class MTMetadata(BaseObject):
+    """Concrete datafile class for RO-crate - inherits from ContextObject
+
+                    "@id": "#test-ro-crate-Metadata",
+                    "@type": "MyTardis-Metadata_field",
+                    "name": "test-ro-crate-Metadata",
+                    "value": "test value",
+                    "mt-type": "string",
+                    "sensitive": "False",
+
+    Attr:
+        experiment (str): An identifier for an experiment
+    """
+
+    ro_crate_id: str
+    value: str
+    mt_type: str
+    sensitive: bool
+
+
+@dataclass
+class ContextObject(BaseObject):
     """Abstract dataclass for an object for RO-Crate
 
     Attr:
@@ -55,17 +83,52 @@ class BaseObject(ABC):
         identifiers (List[str]): A list of identifiers for the object
     """
 
-    name: str
     description: str
     identifiers: List[str | int | float]
-    created_date: Optional[datetime]
-    updated_dates: Optional[List[datetime]]
-    metadata: Optional[Dict[str, Any]]
+    date_created: Optional[datetime]
+    date_modified: Optional[List[datetime]]
+    metadata: Optional[Dict[str, MTMetadata]]  # NOT IN SCHEMA.ORG
+    accessibility_control: Optional[str]  # https://schema.org/accessMode
+    schema_type = Optional[str | List[str]]
 
 
 @dataclass
-class Project(BaseObject):
-    """Concrete Project class for RO-Crate - inherits from BaseObject
+class Instrument(ContextObject):
+    """Dataclass for Instruments to be assoicated with MyTardis Datasets"""
+
+    location: str
+    schema_type = ["Instrument", "Thing"]
+
+
+@dataclass
+class MedicalCondition(BaseObject):
+    """object for medical condtions that correspond to various
+    standards and codes from https://schema.org/MedicalCondition
+    """
+
+    code_type: str
+    code_text: str
+    code_source: Path
+    schema_type = "MedicalCondition"
+
+
+@dataclass
+class Participant(ContextObject):
+    """participants of a study
+    # to be flattend back into Experiment when read into MyTardis
+    # person biosample object"""
+
+    date_of_birth: str
+    nhi_number: str
+    sex: str
+    ethnicity: str
+    project: str
+
+
+@dataclass
+class Project(ContextObject):
+    """Concrete Project class for RO-Crate - inherits from ContextObject
+    https://schema.org/Project
 
     Attr:
         principal_investigator (Person): The project lead
@@ -73,24 +136,57 @@ class Project(BaseObject):
             the principal investigator
     """
 
-    principal_investigator: Person
+    principal_investigator: Person  # NOT IN SCHEMA.ORG
     contributors: Optional[List[Person]]
+    mytardis_classification: str  # NOT IN SCHEMA.ORG
+    ethics_policy: str
 
 
 @dataclass
-class Experiment(BaseObject):
-    """Concrete Experiment class for RO-Crate - inherits from BaseObject
-
+class Experiment(ContextObject):
+    """Concrete Experiment/Data-Catalog class for RO-Crate - inherits from ContextObject
+    https://schema.org/DataCatalog
+    Combination type with bioschemas biosample for additional sample data feilds
+    https://bioschemas.org/types/BioSample/0.1-RELEASE-2019_06_19
     Attr:
         project (str): An identifier for a project
     """
 
-    project: str
+    project: str  # NOT IN SCHEMA.ORG
+    contributors: Optional[List[Person]]
+    mytardis_classification: str  # NOT IN SCHEMA.ORG
+    participant: str
 
 
 @dataclass
-class Dataset(BaseObject):
-    """Concrete Dataset class for RO-crate - inherits from BaseObject
+class SampleExperiment(Experiment):  # pylint: disable=too-many-instance-attributes
+    """Concrete Experiment/Data-Catalog class for RO-Crate - inherits from Experiment
+    https://schema.org/DataCatalog
+    Combination type with bioschemas biosample for additional sample data feilds
+    https://bioschemas.org/types/BioSample/0.1-RELEASE-2019_06_19
+    Attr:
+        project (str): An identifier for a project
+    """
+
+    additional_property: Optional[List[Dict[str, str]]]
+    sex: Optional[str]
+    # isControl: Optional[bool]
+    # itemLocation: Optional[str]
+    # samplingAge:  Optional[int] #calculated from person DOB
+    associated_disease: Optional[List[MedicalCondition]]
+    body_location: Optional[
+        MedicalCondition
+    ]  # not defined in either sample or data catalog
+    # but found here https://schema.org/body_location
+    tissue_processing_method: Optional[str]
+    analyate: Optional[str]
+    portion: Optional[str]
+    participant_metadata: Optional[Dict[str, MTMetadata]]
+
+
+@dataclass
+class Dataset(ContextObject):
+    """Concrete Dataset class for RO-crate - inherits from ContextObject
 
     Attr:
         experiment (str): An identifier for an experiment
@@ -98,3 +194,19 @@ class Dataset(BaseObject):
 
     experiment: str
     directory: Path
+    contributors: Optional[List[Person]]
+    instrument: Instrument
+    # mytardis_classification: str #NOT IN SCHEMA.ORG
+
+
+@dataclass
+class Datafile(ContextObject):
+    """Concrete datafile class for RO-crate - inherits from ContextObject
+
+    Attr:
+        experiment (str): An identifier for an experiment
+    """
+
+    filepath: Path
+    # mytardis_classification: str #NOT IN SCHEMA.ORG
+    dataset: Path

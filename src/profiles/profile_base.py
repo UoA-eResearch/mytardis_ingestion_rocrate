@@ -4,8 +4,8 @@ different groups and/or instruments.
 """
 
 from abc import ABC, abstractmethod
+from typing import Any, Dict
 
-from src.encryption.encrypt_metadata import Encryptor
 from src.profiles.extractor import Extractor
 
 
@@ -19,6 +19,6 @@ class Profile(ABC):
         raise NotImplementedError("Concrete implementations must specify their name")
 
     @abstractmethod
-    def get_extractor(self, encryptor: Encryptor) -> Extractor:
+    def get_extractor(self, options: Dict[str, Any]) -> Extractor:
         """Get the metadata extractor associated with this profile"""
         raise NotImplementedError("No metadata extractor has been implemented")

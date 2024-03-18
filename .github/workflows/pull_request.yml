@@ -27,7 +27,7 @@ jobs:
       if: steps.cache.outputs.cache-hit != 'true'
 
     - name: isort - check import formatting
-      run: poetry run python -m isort --check --diff --profile black .
+      run: poetry run python -m isort --check --diff --profile black src/
 
     - name: Black - check code formatting
       run: poetry run python -m black --check --diff .
@@ -36,8 +36,13 @@ jobs:
     #   run: poetry run python -m pytest -v --cov=src/ tests/
 
     - name: pylint - static code analysis
-      run: poetry run python -m pylint --rcfile .pylintrc ro_crate_abi_music/
+      run: poetry run python -m pylint --rcfile .pylintrc src/
+
+    - name: mypy - load types
+      run: poetry run mypy --install-types --non-interactive
 
     - name: mypy - static type checking
       # Takes configuration from pyproject.toml
       run: poetry run python -m mypy
+
+      #add safety and bandit back in!!!!dfpaj'f
