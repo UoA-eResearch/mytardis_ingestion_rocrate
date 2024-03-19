@@ -27,7 +27,7 @@ from src.rocrate_dataclasses.data_class_utils import CrateManifest, reduce_to_da
 from src.utils.log_utils import init_logging
 
 
-def build_crate(
+def write_crate(
     crate_source: Path, crate_destination: Path, crate_contents: CrateManifest
 ) -> ROCrate:
     """Build an RO-Crate given a manifest of files
@@ -43,7 +43,9 @@ def build_crate(
         ROCrate: _The RO-Crate object that has been written
     """
     crate = ROCrate()
+    print("crate source is %s", crate.source)
     crate.source = crate_source
+    print("crate source is %s", crate.source)
     builder = ROBuilder(crate)
     _ = [builder.add_project(project) for project in crate_contents.projcets.values()]
     _ = [
@@ -54,8 +56,62 @@ def build_crate(
     print("What are your datafiles", crate_contents.datafiles)
     _ = [builder.add_datafile(datafile) for datafile in crate_contents.datafiles]
     crate.source = None
-    crate.write(crate_destination)
+    crate.metadata.write(crate_destination)
     return ROCrate
+
+
+def archive_crate(
+    archive_type: str | None, output_location: Path, crate_location: Path
+) -> None:
+    """Archive the RO-Crate as a TAR, GZIPPED TAR or ZIP archive
+
+    Args:
+        archive_type (str | None): the archive format [tar.gz, tar, or zip]
+        output_location (Path): the path where the archive should be written to
+        crate_location (Path): the path of the RO-Crate to be archived
+    """
+
+    if not archive_type:
+        return
+    logger = logging.getLogger(__name__)
+    match archive_type:
+        case "tar.gz":
+            logger.info("Tar GZIP archiving %s", crate_location.name)
+            with tarfile.open(
+                output_location.parent / (output_location.name + ".tar.gz"),
+                mode="w:bz2",
+            ) as out_tar:
+                out_tar.add(
+                    crate_location,
+                    arcname=crate_location.name,
+                    recursive=True,
+                )
+            out_tar.close()
+        case "tar":
+            logger.info("Tar archiving %s", crate_location.name)
+            with tarfile.open(
+                output_location.parent / (output_location.name + ".tar"), mode="w"
+            ) as out_tar:
+                out_tar.add(
+                    crate_location,
+                    arcname=crate_location.name,
+                    recursive=True,
+                )
+            out_tar.close()
+        case "zip":
+            logger.info("zip archiving %s", crate_location.name)
+            with zipfile.ZipFile(
+                output_location.parent / (output_location.name + ".zip"), "w"
+            ) as out_zip:
+                for root, _, files in os.walk(crate_location):
+                    for filename in files:
+                        arcname = (
+                            crate_location.name
+                            / Path(root).relative_to(crate_location)
+                            / filename
+                        )
+                        logger.info("wirting to archived path %s", arcname)
+                        out_zip.write(os.path.join(root, filename), arcname=arcname)
 
 
 @click.command()
@@ -136,6 +192,7 @@ def main(
     # Read public keys ect
     mt_user = mt_user if mt_user else os.environ.get("AUTH__USERNAME")
     mt_api_key = mt_api_key if mt_api_key else os.environ.get("AUTH__API_KEY")
+    logger.info("Loading MyTardis API agent")
     if mt_user and mt_api_key:
         auth_config = AuthConfig(username=mt_user, api_key=mt_api_key)
     else:
@@ -146,6 +203,8 @@ def main(
         connection_proxies=None,
         verify_certificate=True,
     )
+
+    logger.info("Loading Encryption (this does nothing right now!)")
     encryptor: Encryptor = Encryptor(encryption_key)
     options = {
         "encryptor": encryptor,
@@ -153,12 +212,14 @@ def main(
         "collect_all": collect_all,
     }
 
+    logger.info("Loading extraction profile")
     profile = load_profile(profile_name)
     extractor = profile.get_extractor(options)
-
+    logger.info("extracting crate metadata")
     crate_manifest = extractor.extract(input_metadata)
 
     if split_datasets:
+        logger.info("splitting metadata into one crate per dataset")
         crates = {
             dataset.directory: reduce_to_dataset(crate_manifest, dataset)
             for dataset in crate_manifest.datasets
@@ -166,67 +227,38 @@ def main(
     else:
         crates = {Path(""): crate_manifest}
 
+    logger.debug("we've loaded these crates %s", crates)
     for crate_dir, crate_objs in crates.items():
+        logger.info("writing RO-Crate from %s", crate_dir)
         source_path = input_metadata
         if Path(input_metadata).is_file():
             source_path = Path(input_metadata).parent
 
-        logger.debug("outputting crate %s", crate_dir)
-
         final_output = output / crate_dir
         if not final_output.parent.exists():
-            logger.debug("trying to write %s", final_output)
             final_output.parent.mkdir(parents=True)
         crate_destination = final_output
+
         if archive_type:
+            logger.info("writing pre-archive temporary crate")
             tmp_crate_location = (  # pylint: disable=consider-using-with
                 tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
             )  # pylint: disable=consider-using-with
             crate_destination = Path(Path(tmp_crate_location.name) / source_path.name)
             crate_destination.mkdir()
 
-        build_crate(
-            crate_source=source_path / crate_dir,
+        logger.info("writing crate %s", source_path / crate_dir)
+        write_crate(
+            crate_source=crate_dir,
             crate_destination=crate_destination,
             crate_contents=crate_objs,
         )
 
         if bag_crate:
-            bagit.make_bag(crate_destination, {"Contact-Name": mt_user}, processes=4)
-        match archive_type:
-            case "tar.gz":
-                with tarfile.open(
-                    final_output.parent / (final_output.name + ".tar.gz"), mode="w:bz2"
-                ) as out_tar:
-                    out_tar.add(
-                        crate_destination,
-                        arcname=crate_destination.name,
-                        recursive=True,
-                    )
-                out_tar.close()
-            case "tar":
-                with tarfile.open(
-                    final_output.parent / (final_output.name + ".tar"), mode="w"
-                ) as out_tar:
-                    out_tar.add(
-                        crate_destination,
-                        arcname=crate_destination.name,
-                        recursive=True,
-                    )
-                out_tar.close()
-            case "zip":
-                with zipfile.ZipFile(
-                    final_output.parent / (final_output.name + ".zip"), "w"
-                ) as out_zip:
-                    for root, _, files in os.walk(crate_destination):
-                        for filename in files:
-                            arcname = (
-                                crate_destination.name
-                                / Path(root).relative_to(crate_destination)
-                                / filename
-                            )
-                            logger.info("wirting to archived path %s", arcname)
-                            out_zip.write(os.path.join(root, filename), arcname=arcname)
+            logger.info("generating bagit archive for %s", source_path / crate_dir)
+            bagit.make_bag(crate_destination, {"Contact-Name": mt_user}, processes=8)
+
+        archive_crate(archive_type, final_output, crate_destination)
 
 
 if __name__ == "__main__":

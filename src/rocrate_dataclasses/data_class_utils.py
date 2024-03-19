@@ -3,7 +3,6 @@
 """
 
 import copy
-from pathlib import Path
 from typing import Dict, List, Optional
 
 from src.rocrate_dataclasses.rocrate_dataclasses import (
@@ -98,7 +97,7 @@ def reduce_to_dataset(in_manifest: CrateManifest, dataset: Dataset) -> CrateMani
     ]
     _ = [df.update_to_root(dataset) for df in out_files]
 
-    dataset.update_path(Path("./"))
+    # dataset.update_path(Path("./"))
     return CrateManifest(
         projcets=out_projects,
         experiments=out_experiments,

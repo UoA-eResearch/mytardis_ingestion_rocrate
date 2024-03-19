@@ -295,7 +295,8 @@ class ROBuilder:
         Args:
             dataset (Dataset): The dataset to be added to the crate
         """
-        identifier = dataset.directory.as_posix()
+        directory = dataset.directory.relative_to(self.crate.source)
+        identifier = directory.as_posix()
         print("looking up experiments: ", dataset.experiments)
         experiments: List[str] = [
             self.crate.dereference("#" + experiment).id
@@ -322,14 +323,14 @@ class ROBuilder:
         if identifier == ".":
             logger.debug("Updating root dataset")
             self.crate.root_dataset.properties().update(properties)
-            self.crate.root_dataset.source = self.crate.source / Path(dataset.directory)
+            self.crate.root_dataset.source = self.crate.source / Path(directory)
             dataset_obj = self.crate.root_dataset
         else:
             logger.debug("adding new dataset %s", identifier)
             dataset_obj = self.crate.add_dataset(
-                source=self.crate.source / Path(dataset.directory),
+                source=self.crate.source / Path(directory),
                 properties=properties,
-                dest_path=Path(dataset.directory),
+                dest_path=Path(directory),
             )
         return self._add_identifiers(dataset, dataset_obj)
 

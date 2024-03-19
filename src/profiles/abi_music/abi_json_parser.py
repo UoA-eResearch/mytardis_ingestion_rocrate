@@ -31,6 +31,9 @@ from src.user_lookup.user_lookup import create_person_object
 
 datetime_pattern = re.compile("^[0-9]{6}-[0-9]{6}$")
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
 
 def parse_timestamp(timestamp: str) -> datetime:
     """
@@ -125,7 +128,7 @@ def process_experiment(
     json_dict = read_json(experiment_dir.file("experiment.json"))
     metadata_dict = create_metadata_objects(json_dict, metadata_schema, collect_all)
     identifiers: list[str | int | float] = [
-        slugify(f'{json_dict["project_ids"][0]}-{identifier}')
+        slugify(f'{json_dict["project"]}-{identifier}')
         for identifier in json_dict["experiment_ids"]
     ]
     return Experiment(
@@ -160,12 +163,12 @@ def process_raw_dataset(
     Returns:
         Dataset: An dataset dataclass
     """
-    json_dict = read_json(dataset_dir.file("experiment.json"))
+    json_dict = read_json(dataset_dir.file(dataset_dir.name() + ".json"))
     metadata_dict = create_metadata_objects(json_dict, metadata_schema, collect_all)
     identifiers = [
         slugify(
             (
-                f'{json_dict["project_ids"][0]}-{json_dict["experiment_ids"][0]}-'
+                f'{json_dict["Basename"]["Project"]}-{json_dict["Basename"]["Sample"]}-'
                 f'{json_dict["Basename"]["Sequence"]}'
             )
         ),
@@ -177,6 +180,10 @@ def process_raw_dataset(
             created_date = parse_timestamp(session["Session"])
         else:
             updated_dates.append(parse_timestamp(session["Session"]))
+    if slugify(json_dict["Basename"]["Sample"]) not in experiment_id:
+        logger.warning(
+            "Experiment ID does not match parent for dataset %s", identifiers[0]
+        )
     return Dataset(
         name=json_dict["Basename"]["Sequence"],
         description=json_dict["Description"],
@@ -239,7 +246,7 @@ def parse_raw_data(  # pylint: disable=too-many-locals
     project_dirs = [
         d for d in raw_dir.iter_dirs(recursive=True) if d.has_file("project.json")
     ]
-
+    print("project dirs found in %s %s", project_dirs, raw_dir.path())
     for project_dir in project_dirs:
         logging.info("Project directory: %s", project_dir.name())
         project = process_project(
@@ -271,7 +278,7 @@ def parse_raw_data(  # pylint: disable=too-many-locals
                 for d in experiment_dir.iter_dirs(recursive=True)
                 if d.has_file(d.name() + ".json")
             ]
-
+            logging.info("Dataset directoryies found: %s", dataset_dirs)
             for dataset_dir in dataset_dirs:
                 logging.info("Dataset directory: %s", dataset_dir.name())
 

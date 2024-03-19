@@ -4,8 +4,11 @@ for loading profiles.
 """
 
 import importlib
+import logging
 
 from src.profiles.profile_base import Profile
+
+logger = logging.getLogger(__name__)
 
 _PROFILE_ROOT = "src.profiles."
 
@@ -19,6 +22,7 @@ To register a new profile, add an entry here.
 """
 _PROFILES = {
     "print_lab_genomics": "print_lab_genomics.profile",
+    "abi_music": "abi_music.profile",
 }
 
 
@@ -36,6 +40,7 @@ def load_profile(name: str) -> Profile:
     """Load an ingestion profile corresponding to 'name' and 'version'"""
     profile_location = get_profile_register().get(name)
     if profile_location is None:
+        logger.error("Unknown ingestion profile %s", name)
         raise ValueError(f"Unknown ingestion profile '{name}'")
 
     profile_path = _PROFILE_ROOT + profile_location

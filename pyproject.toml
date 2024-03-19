@@ -2,7 +2,7 @@
 name = "src"
 version = "0.1.0"
 description = "Scripts to pack data files into an RO-crate for MyTardis ingestion"
-authors = ["Chris Seal <c.seal@auckland.ac.nz>"]
+authors = ["Chris Seal <c.seal@auckland.ac.nz>", "<james.love@auckland.ac.nz>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
@@ -27,6 +27,7 @@ xlrd = "^2.0.1"
 pydantic = "^2.6.3"
 backoff = "^2.2.1"
 requests = "^2.31.0"
+build = "^1.1.1"
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.1.0"
