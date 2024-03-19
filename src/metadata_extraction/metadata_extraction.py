@@ -41,7 +41,7 @@ class MetadataHanlder:
     """
 
     api_agent: MyTardisRestAgent
-    metadata_schemas: Dict[MtObject, list[Any]]
+    metadata_schemas: Dict[MtObject, Dict[Any, Any]]
 
     def __init__(
         self, api_agent: MyTardisRestAgent, schema_namespaces: Dict[MtObject, str]
@@ -49,9 +49,36 @@ class MetadataHanlder:
         self.api_agent = api_agent
         self.request_metadata_dicts(schema_namespaces)
 
+    def request_metadata_schema(self, schema_namespace: str) -> Dict[Any, Any]:
+        """Requests a metadata schema from the MyTardis API based on namespace
+
+        Args:
+            schema_namespace (str): the namespace of hte requested schema
+
+        Returns:
+            Dict[Any, Any]: the metadata schema as a dictionary keyed on its' "full name"
+        """
+        schema_stub = "schema/?namespace="
+        response = self.api_agent.mytardis_api_request(
+            "GET", self.api_agent.api_template + schema_stub + schema_namespace
+        )
+        metadata_response = [
+            response_obj.get("parameter_names")
+            for response_obj in response.json().get("objects")
+        ]
+        metadata_params = [
+            metatdata_parameters
+            for params in metadata_response
+            for metatdata_parameters in params
+        ]
+        return {
+            schema_object.get("full_name"): schema_object
+            for schema_object in metadata_params
+        }
+
     def request_metadata_dicts(
         self, schema_namespaces: Dict[MtObject, str]
-    ) -> Dict[MtObject, list[Any]]:
+    ) -> Dict[MtObject, Dict[Any, Any]]:
         """Load a set of schemas via the MyTardis API based on namespaces
 
         Args:
@@ -61,31 +88,13 @@ class MetadataHanlder:
         Returns:
             Dict[MtObject, list[Any]]: metadata schemas for creating RO-Crate objects
         """
-        schema_stub = "schema/?namespace="
         metadata_schemas = {}
-
-        def request_metadata_schema(schema_namespace: str) -> list[Any]:
-            response = self.api_agent.mytardis_api_request(
-                "GET", self.api_agent.api_template + schema_stub + schema_namespace
-            )
-            metadata_response = [
-                response_obj.get("parameter_names")
-                for response_obj in response.json().get("objects")
-            ]
-            return [
-                metatdata_parameters
-                for params in metadata_response
-                for metatdata_parameters in params
-            ]
-
         for mt_object, namespace in schema_namespaces.items():
-            metadata_schemas[mt_object] = request_metadata_schema(namespace)
+            metadata_schemas[mt_object] = self.request_metadata_schema(namespace)
         self.metadata_schemas = metadata_schemas
         return metadata_schemas
 
-    def get_metdata_lookup_dict(
-        self, schema_name: MtObject
-    ) -> Dict[str, Dict[str, Any]]:
+    def get_mtobj_schema(self, schema_name: MtObject) -> Dict[str, Dict[str, Any]]:
         """Convert a metadata schema into a lookup dictonary using the full name of the metadata
 
         Args:
@@ -97,36 +106,37 @@ class MetadataHanlder:
         all_schema_objects = self.metadata_schemas.get(schema_name)
         if not all_schema_objects:
             return {}
-        return {
-            schema_object.get("full_name"): schema_object
-            for schema_object in all_schema_objects
-        }
+        return all_schema_objects
 
-    def create_metadata_objects(
-        self, input_metadata: Dict[str, Any], metadata_schema: Dict[str, Dict[str, Any]]
-    ) -> Dict[str, MTMetadata]:
-        """Create RO-Crate metadata objects from an input dictionary and a schema for lookup
 
-        Args:
-            input_metadata (Dict[str, Any]): the metadata from an input file
-            metadata_schema (Dict[str, Dict[str, Any]]): the schema for getting info from MyTardis
+def create_metadata_objects(
+    input_metadata: Dict[str, Any],
+    metadata_schema: Dict[str, Dict[str, Any]],
+    collect_all: bool = False,
+) -> Dict[str, MTMetadata]:
+    """Create RO-Crate metadata objects from an input dictionary and a schema for lookup
 
-        Returns:
-            Dict[str, MTMetadata]: RO-Crate metadata objects for stroing MyTardis metadata
-        """
-        metadata_dict: Dict[str, MTMetadata] = {}
-        for meta_key, meta_value in input_metadata.items():
-            if meta_key in metadata_schema:
-                metadata_type = 2
-                metadata_sensitive = False
-                if metadata_object := metadata_schema.get(meta_key):
-                    metadata_type = metadata_object.get("data_type")  # type: ignore
-                    metadata_sensitive = bool(metadata_object.get("sensitive"))
-                metadata_dict[meta_key] = MTMetadata(
-                    ro_crate_id=meta_key,
-                    name=meta_key,
-                    value=meta_value,
-                    mt_type=get_metadata_type(int(metadata_type)),
-                    sensitive=metadata_sensitive is True,
-                )
-        return metadata_dict
+    Args:
+        input_metadata (Dict[str, Any]): the metadata from an input file
+        metadata_schema (Dict[str, Dict[str, Any]]): the schema for getting info from MyTardis
+
+    Returns:
+        Dict[str, MTMetadata]: RO-Crate metadata objects for stroing MyTardis metadata
+    """
+    metadata_dict: Dict[str, MTMetadata] = {}
+    for meta_key, meta_value in input_metadata.items():
+        if (meta_key and meta_value) and (collect_all or meta_key in metadata_schema):
+            # if we have metadata and the info to store it
+            metadata_type = 2
+            metadata_sensitive = False
+            if metadata_object := metadata_schema.get(meta_key):
+                metadata_type = metadata_object.get("data_type")  # type: ignore
+                metadata_sensitive = bool(metadata_object.get("sensitive"))
+            metadata_dict[meta_key] = MTMetadata(
+                ro_crate_id=meta_key,
+                name=meta_key,
+                value=str(meta_value) if metadata_type == 2 else meta_value,
+                mt_type=get_metadata_type(int(metadata_type)),
+                sensitive=metadata_sensitive is True,
+            )
+    return metadata_dict

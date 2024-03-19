@@ -11,7 +11,10 @@ import pandas as pd
 
 import src.profiles.print_lab_genomics.consts as profile_consts
 from src.encryption.encrypt_metadata import Encryptor
-from src.metadata_extraction.metadata_extraction import MetadataHanlder
+from src.metadata_extraction.metadata_extraction import (
+    MetadataHanlder,
+    create_metadata_objects,
+)
 from src.mt_api.apiconfigs import MyTardisRestAgent
 from src.mt_api.mt_consts import MtObject
 from src.profiles.extractor import Extractor
@@ -50,6 +53,7 @@ class PrintLabExtractor(Extractor):
         self.metadata_handler = MetadataHanlder(
             self.api_agent, profile_consts.NAMESPACES
         )
+        self.collect_all = options.get("collect_all") is not None
 
     #
     def _contruct_sensitive_dict(
@@ -88,68 +92,14 @@ class PrintLabExtractor(Extractor):
         )
         return parsed_df
 
-    def extract(self, input_data_source: Any) -> CrateManifest:
-        def list_sensitive_fields(mt_sensitive: Dict[str, Dict[str, Any]]) -> List[str]:
-            return [
-                metadata_name
-                for metadata_name, metadata_object in mt_sensitive.items()
-                if metadata_object.get("sensitive")
-            ]
-
-        crate_manifest = CrateManifest()
-        metadata_dict = self.metadata_handler.get_metdata_lookup_dict(MtObject.PROJECT)
-        sensitive_fields = list_sensitive_fields(metadata_dict)
-        project_df = self.datasheet_to_dataframe(
-            input_data_source, "Projects", sensitive_fields
-        )
-        crate_manifest.add_projects(
-            projcets=(
-                self._parse_projects(
-                    projects_sheet=project_df, metadata_obj_schema=metadata_dict
-                )
-            )
-        )
-
-        metadata_dict = self.metadata_handler.get_metdata_lookup_dict(
-            MtObject.EXPERIMENT
-        )
-        sensitive_fields = list_sensitive_fields(metadata_dict)
-        participants_df = self.datasheet_to_dataframe(
-            input_data_source, "Participants", sensitive_fields
-        )
-        participants = self._parse_participants(participants_df, metadata_dict)
-        experiments_df = self.datasheet_to_dataframe(
-            input_data_source=input_data_source,
-            sheet_name="Samples",
-            sensitive_fields=sensitive_fields,
-        )
-        experiments = self._parse_experiments(
-            experiments_df, participants, metadata_dict
-        )
-        crate_manifest.add_experiments(experiments)
-
-        metadata_dict = self.metadata_handler.get_metdata_lookup_dict(MtObject.DATASET)
-        sensitive_fields = list_sensitive_fields(metadata_dict)
-        dataset_df = self.datasheet_to_dataframe(
-            input_data_source, "Datasets", sensitive_fields
-        )
-        crate_manifest.add_datasets(self._parse_datasets(dataset_df, metadata_dict))
-        metadata_dict = self.metadata_handler.get_metdata_lookup_dict(MtObject.DATAFILE)
-        sensitive_fields = list_sensitive_fields(metadata_dict)
-        datafile_df = self.datasheet_to_dataframe(
-            input_data_source, "Files", sensitive_fields
-        )
-        crate_manifest.add_datafiles(self._parse_datafiles(datafile_df, metadata_dict))
-        return crate_manifest
-
     def _parse_projects(
         self,
         projects_sheet: pd.DataFrame,
         metadata_obj_schema: Dict[str, Dict[str, Any]],
-    ) -> List[Project]:
+    ) -> Dict[str, Project]:
         def parse_project(row: pd.Series) -> Project:
-            metadata_dict = self.metadata_handler.create_metadata_objects(
-                row, metadata_obj_schema
+            metadata_dict = create_metadata_objects(
+                row, metadata_obj_schema, self.collect_all
             )
             pi = create_person_object(row["Project PI"])
             new_project = Project(
@@ -167,7 +117,10 @@ class PrintLabExtractor(Extractor):
             )
             return new_project
 
-        projects: List[Project] = projects_sheet.apply(parse_project, axis=1).to_list()
+        projects: Dict[str, Project] = {
+            project.id: project
+            for project in projects_sheet.apply(parse_project, axis=1).to_list()
+        }
         return projects
 
     def _parse_experiments(
@@ -175,10 +128,10 @@ class PrintLabExtractor(Extractor):
         experiments_sheet: pd.DataFrame,
         particpants_dict: Dict[str, Participant],
         metadata_obj_schema: Dict[str, Dict[str, Any]],
-    ) -> List[Experiment]:
+    ) -> Dict[str, Experiment]:
         def parse_experiment(row: pd.Series) -> Experiment:
-            metadata_dict = self.metadata_handler.create_metadata_objects(
-                row, metadata_obj_schema
+            metadata_dict = create_metadata_objects(
+                row, metadata_obj_schema, self.collect_all
             )
             participant = particpants_dict[row["Participant"]]
             new_experiment = SampleExperiment(
@@ -190,7 +143,7 @@ class PrintLabExtractor(Extractor):
                 contributors=None,
                 mytardis_classification="",
                 metadata=metadata_dict | participant.metadata,  # type: ignore
-                project=row["Project"],
+                projects=[row["Project"]],
                 participant=row["Participant"],
                 additional_property=None,
                 sex=participant.sex,
@@ -222,9 +175,12 @@ class PrintLabExtractor(Extractor):
             )
             return new_experiment
 
-        experiments: List[Experiment] = experiments_sheet.apply(
-            parse_experiment, axis=1
-        ).to_list()
+        experiments: Dict[str, Experiment] = {
+            experiment.id: experiment
+            for experiment in experiments_sheet.apply(
+                parse_experiment, axis=1
+            ).to_list()
+        }
         return experiments
 
     def _parse_participants(
@@ -233,8 +189,8 @@ class PrintLabExtractor(Extractor):
         metadata_obj_schema: Dict[str, Dict[str, Any]],
     ) -> Dict[str, Participant]:
         def parse_participant(row: pd.Series) -> Participant:
-            metadata_dict = self.metadata_handler.create_metadata_objects(
-                row, metadata_obj_schema
+            metadata_dict = create_metadata_objects(
+                row, metadata_obj_schema, self.collect_all
             )
             new_participant = Participant(
                 name=row["Participant: Code"],
@@ -266,8 +222,8 @@ class PrintLabExtractor(Extractor):
         metadata_obj_schema: Dict[str, Dict[str, Any]],
     ) -> List[Dataset]:
         def parse_dataset(row: pd.Series) -> Dataset:
-            metadata_dict = self.metadata_handler.create_metadata_objects(
-                row, metadata_obj_schema
+            metadata_dict = create_metadata_objects(
+                row, metadata_obj_schema, self.collect_all
             )
             new_dataset = Dataset(
                 name=row["Dataset Name"],
@@ -277,7 +233,7 @@ class PrintLabExtractor(Extractor):
                 date_modified=None,
                 metadata=metadata_dict,
                 accessibility_control=None,
-                experiment=row["Sample"],
+                experiments=[row["Sample"]],
                 directory=Path(row["Directory"]),
                 contributors=None,
                 instrument=Instrument(
@@ -300,8 +256,8 @@ class PrintLabExtractor(Extractor):
         self, files_sheet: pd.DataFrame, metadata_obj_schema: Dict[str, Dict[str, Any]]
     ) -> List[Datafile]:
         def parse_datafile(row: pd.Series) -> Datafile:
-            metadata_dict = self.metadata_handler.create_metadata_objects(
-                row, metadata_obj_schema
+            metadata_dict = create_metadata_objects(
+                row, metadata_obj_schema, self.collect_all
             )
             new_datafile = Datafile(
                 name=Path(row["Filepath"]).name,
@@ -318,3 +274,58 @@ class PrintLabExtractor(Extractor):
 
         datafiles: List[Datafile] = files_sheet.apply(parse_datafile, axis=1).to_list()
         return datafiles
+
+    def extract(self, input_data_source: Any) -> CrateManifest:
+        def list_sensitive_fields(mt_sensitive: Dict[str, Dict[str, Any]]) -> List[str]:
+            return [
+                metadata_name
+                for metadata_name, metadata_object in mt_sensitive.items()
+                if metadata_object.get("sensitive")
+            ]
+
+        crate_manifest = CrateManifest()
+
+        metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.PROJECT)
+        sensitive_fields = list_sensitive_fields(metadata_dict)
+        project_df = self.datasheet_to_dataframe(
+            input_data_source, "Projects", sensitive_fields
+        )
+        crate_manifest.add_projects(
+            projcets=(
+                self._parse_projects(
+                    projects_sheet=project_df, metadata_obj_schema=metadata_dict
+                )
+            )
+        )
+
+        metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.EXPERIMENT)
+        sensitive_fields = list_sensitive_fields(metadata_dict)
+        participants_df = self.datasheet_to_dataframe(
+            input_data_source, "Participants", sensitive_fields
+        )
+        participants = self._parse_participants(participants_df, metadata_dict)
+        experiments_df = self.datasheet_to_dataframe(
+            input_data_source=input_data_source,
+            sheet_name="Samples",
+            sensitive_fields=sensitive_fields,
+        )
+        experiments = self._parse_experiments(
+            experiments_df, participants, metadata_dict
+        )
+        crate_manifest.add_experiments(experiments)
+
+        metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.DATASET)
+        sensitive_fields = list_sensitive_fields(metadata_dict)
+        dataset_df = self.datasheet_to_dataframe(
+            input_data_source, "Datasets", sensitive_fields
+        )
+        crate_manifest.add_datasets(self._parse_datasets(dataset_df, metadata_dict))
+
+        metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.DATAFILE)
+        sensitive_fields = list_sensitive_fields(metadata_dict)
+        datafile_df = self.datasheet_to_dataframe(
+            input_data_source, "Files", sensitive_fields
+        )
+        crate_manifest.add_datafiles(self._parse_datafiles(datafile_df, metadata_dict))
+
+        return crate_manifest

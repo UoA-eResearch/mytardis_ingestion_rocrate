@@ -24,6 +24,11 @@ class Organisation:
     url: Optional[str] = None
     research_org: bool = True
 
+    @property
+    def id(self) -> str | int | float:
+        """Retrieve first ID to act as RO-Crate ID"""
+        return self.identifiers[0]
+
 
 @dataclass
 class Person:
@@ -43,6 +48,11 @@ class Person:
     email: str
     affiliation: Organisation
     identifiers: List[str]
+
+    @property
+    def id(self) -> str | int | float:
+        """Retrieve first ID to act as RO-Crate ID"""
+        return self.identifiers[0]
 
 
 @dataclass
@@ -91,6 +101,11 @@ class ContextObject(BaseObject):
     accessibility_control: Optional[str]  # https://schema.org/accessMode
     schema_type = Optional[str | List[str]]
 
+    @property
+    def id(self) -> str | int | float:
+        """Retrieve first ID to act as RO-Crate ID"""
+        return self.identifiers[0]
+
 
 @dataclass
 class Instrument(ContextObject):
@@ -138,24 +153,22 @@ class Project(ContextObject):
 
     principal_investigator: Person  # NOT IN SCHEMA.ORG
     contributors: Optional[List[Person]]
-    mytardis_classification: str  # NOT IN SCHEMA.ORG
-    ethics_policy: str
+    mytardis_classification: Optional[str]  # NOT IN SCHEMA.ORG
+    ethics_policy: Optional[str]
 
 
 @dataclass
 class Experiment(ContextObject):
     """Concrete Experiment/Data-Catalog class for RO-Crate - inherits from ContextObject
     https://schema.org/DataCatalog
-    Combination type with bioschemas biosample for additional sample data feilds
-    https://bioschemas.org/types/BioSample/0.1-RELEASE-2019_06_19
     Attr:
         project (str): An identifier for a project
     """
 
-    project: str  # NOT IN SCHEMA.ORG
+    projects: List[str]  # NOT IN SCHEMA.ORG
     contributors: Optional[List[Person]]
-    mytardis_classification: str  # NOT IN SCHEMA.ORG
-    participant: str
+    mytardis_classification: Optional[str]  # NOT IN SCHEMA.ORG
+    participant: Optional[str]
 
 
 @dataclass
@@ -192,11 +205,20 @@ class Dataset(ContextObject):
         experiment (str): An identifier for an experiment
     """
 
-    experiment: str
+    experiments: List[str]
     directory: Path
     contributors: Optional[List[Person]]
     instrument: Instrument
+
     # mytardis_classification: str #NOT IN SCHEMA.ORG
+    def update_path(self, new_path: Path) -> None:
+        """Update the path of a dataset chanigng it's name and identifiers
+
+        Args:
+            new_path (Path): path to update the dataset to
+        """
+        self.directory = new_path
+        self.identifiers = [new_path.as_posix()]
 
 
 @dataclass
@@ -210,3 +232,17 @@ class Datafile(ContextObject):
     filepath: Path
     # mytardis_classification: str #NOT IN SCHEMA.ORG
     dataset: Path
+
+    def update_to_root(self, dataset: Dataset) -> Path:
+        """Update a datafile that is a child of a dataset so that dataset is now the root
+
+        Args:
+            dataset (Dataset): the dataset that is being updated to be root
+        """
+        self.dataset = Path("/.")
+        try:
+            new_filepath = self.filepath.relative_to(dataset.directory)
+        except ValueError:
+            new_filepath = self.filepath
+        self.filepath = new_filepath
+        return self.filepath

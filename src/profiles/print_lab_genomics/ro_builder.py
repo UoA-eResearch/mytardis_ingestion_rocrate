@@ -23,7 +23,7 @@ class PrintLabROBuilder(ROBuilder):
         self,
         participant: Participant,
     ) -> Any:
-        participant_id = participant.identifiers[0]
+        participant_id = participant.id
         if new_participant := self.crate.dereference(participant_id):
             return new_participant
         new_participant = ContextEntity(
@@ -74,7 +74,7 @@ class PrintLabROBuilder(ROBuilder):
     #         self._add_medical_condtion(disease)
     #         for disease in experiment.associated_disease
     #     ]
-    #     identifier = experiment.identifiers[0]
+    #     identifier = experiment.id
     #     properties = {
     #         "@type": ["DataCatalog", "BioSample"],
     #         "name": experiment.name,
