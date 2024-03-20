@@ -96,6 +96,9 @@ def process_project(
     identifiers: list[str | int | float] = [
         slugify(identifier) for identifier in json_dict["project_ids"]
     ]
+    additional_properties = {}
+    if collect_all:
+        additional_properties = json_dict
     return Project(
         name=str(json_dict["project_name"]),
         description=str(json_dict["project_description"]),
@@ -105,9 +108,10 @@ def process_project(
         metadata=metadata_dict,
         date_created=None,
         date_modified=None,
-        accessibility_control=None,
         mytardis_classification=None,
         ethics_policy=None,
+        additional_properties=additional_properties,
+        schema_type="Project",
     )
 
 
@@ -132,6 +136,9 @@ def process_experiment(
         slugify(f'{json_dict["project"]}-{identifier}')
         for identifier in json_dict["experiment_ids"]
     ]
+    additional_properties = {}
+    if collect_all:
+        additional_properties = json_dict
     return Experiment(
         name=json_dict["experiment_name"],
         description=json_dict["experiment_description"],
@@ -142,10 +149,11 @@ def process_experiment(
         metadata=metadata_dict,
         date_created=None,
         date_modified=None,
-        accessibility_control=None,
         contributors=None,
         mytardis_classification=None,
         participant=None,
+        additional_properties=additional_properties,
+        schema_type="DataCatalog",
     )
 
 
@@ -195,6 +203,9 @@ def process_raw_dataset(
         logger.warning(
             "Experiment ID does not match parent for dataset %s", identifiers[0]
         )
+    additional_properties = {}
+    if collect_all:
+        additional_properties = json_dict
     return Dataset(
         name=identifiers[0],
         description=json_dict["Description"],
@@ -208,7 +219,6 @@ def process_raw_dataset(
         date_created=created_date,
         date_modified=updated_dates or None,
         metadata=metadata_dict,
-        accessibility_control=None,
         contributors=None,
         instrument=Instrument(
             name=ABI_MUSIC_MICROSCOPE_INSTRUMENT,
@@ -217,9 +227,12 @@ def process_raw_dataset(
             date_created=None,
             date_modified=None,
             metadata=None,
-            accessibility_control=None,
             location=ABI_FACILLITY,
+            additional_properties={},
+            schema_type="Thing",
         ),
+        additional_properties=additional_properties,
+        schema_type="Dataset",
     )
 
 
@@ -322,6 +335,7 @@ def parse_raw_data(  # pylint: disable=too-many-locals
                         data_dir.path(),
                         contact_name=project.principal_investigator.name,
                     )
+                    dataset.directory = Path("data") / dataset.directory
 
                 # for file in dataset_dir.iter_files(recursive=True):
                 #     if file_filter.exclude(file.path()):

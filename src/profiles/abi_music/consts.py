@@ -3,8 +3,8 @@
 from src.mt_api.mt_consts import MtObject
 
 NAMESPACES = {
-    # MtObject.PROJECT: "",
-    # MtObject.EXPERIMENT: "http://print.lab.mockup/experiment/as_sample/v1",
+    MtObject.PROJECT: "",
+    MtObject.EXPERIMENT: "",
     MtObject.DATASET: "http://abi-music.com/dataset-raw/1",
     MtObject.DATAFILE: "http://abi-music.com/dataset-raw/1",
 }

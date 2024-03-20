@@ -28,6 +28,7 @@ repos:
         - pydantic
         - ldap3
         - passpy
+        - pydantic_settings
 -   repo: local
     hooks:
     - id: pytest

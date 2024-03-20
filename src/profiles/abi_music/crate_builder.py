@@ -2,9 +2,14 @@
 """
 
 from pathlib import Path
+from typing import Optional
 
 import src.profiles.abi_music.consts as profile_consts
-from src.metadata_extraction.metadata_extraction import MetadataHanlder
+from src.cli.mytardisconfig import SchemaConfig
+from src.metadata_extraction.metadata_extraction import (
+    MetadataHanlder,
+    load_optional_schemas,
+)
 from src.mt_api.apiconfigs import MyTardisRestAgent
 from src.profiles.abi_music.abi_json_parser import parse_raw_data
 from src.profiles.abi_music.filesystem_nodes import DirectoryNode
@@ -20,7 +25,11 @@ class ABICrateBuilder:  # pylint: disable=too-few-public-methods
 
     metadata_handler: MetadataHanlder
 
-    def __init__(self, api_agent: MyTardisRestAgent) -> None:
+    def __init__(
+        self, api_agent: MyTardisRestAgent, schemas: Optional[SchemaConfig]
+    ) -> None:
+        namespaces = profile_consts.NAMESPACES
+        namespaces = load_optional_schemas(namespaces=namespaces, schemas=schemas)
         self.metadata_handler = MetadataHanlder(api_agent, profile_consts.NAMESPACES)
 
     def build_crates(self, input_data_source: Path, collect_all: bool) -> CrateManifest:

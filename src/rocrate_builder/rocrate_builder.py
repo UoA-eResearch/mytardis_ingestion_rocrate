@@ -50,6 +50,12 @@ class ROBuilder:
     def _add_metadata_to_crate(
         self, metadata_obj: MTMetadata, metadata_id: str
     ) -> None:
+        """Add a MyTardis Metadata object to the crate
+
+        Args:
+            metadata_obj (MTMetadata): the MyTardis Metadata object
+            metadata_id (str): the id used to identify the entity in the crate
+        """
         metadata = ContextEntity(
             self.crate,
             metadata_id,
@@ -90,7 +96,9 @@ class ROBuilder:
         self.crate.add(org)
 
     def __add_person_to_crate(self, person: Person) -> ROPerson:
-        """Read in a Person object and create an entry for them in the crate
+        """Read in a Person object and create an entry for them in the crate.
+        Without Active Directory auth this will just default to providing UPI
+
 
         Args:
             person (Person): the person to add to the crate
@@ -171,7 +179,6 @@ class ROBuilder:
         if len(obj_dataclass.identifiers) > 1:
             for index, identifier in enumerate(obj_dataclass.identifiers):
                 if index != 0:
-                    # logger.debug("creating id %s", identifier)
                     rocrate_obj.append_to("identifiers", identifier)
         self.crate.add(rocrate_obj)
         return rocrate_obj
@@ -202,6 +209,27 @@ class ROBuilder:
                 properties["metadata"].append(metadata_id)  # type: ignore
         return properties
 
+    def _add_additional_properties(
+        self,
+        properties: Dict[str, Any],
+        additional_properties: Dict[str, Any],
+    ) -> Dict[str, str | List[str] | Dict[str, Any]]:
+        properties["additionalProperty"] = {}
+        for key, value in additional_properties.items():
+            if key not in properties.keys():
+                if (
+                    key not in properties["additionalProperty"].keys()
+                ):  # pylint: disable=C0201
+                    properties["additionalProperty"][key] = value
+                elif isinstance(properties[key], list):
+                    properties["additionalProperty"][key].append(value)
+                else:
+                    properties["additionalProperty"] = [
+                        properties["additionalProperty"],
+                        value,
+                    ]
+        return properties
+
     def _add_dates(
         self,
         properties: Dict[str, str | List[str] | Dict[str, Any]],
@@ -211,9 +239,10 @@ class ROBuilder:
         """Add dates, where present, to the metadata
 
         Args:
-            properties (Dict[str, str  |  List[str]  |  Dict[str, Any]]): _description_
-            date_created (datetime): _description_
-            date_modified (Optional[List[datetime]], optional): _description_. Defaults to None.
+            properties (Dict[str, str  |  List[str]  |  Dict[str, Any]]): properties of the RO-Crate
+            date_created (datetime): created date of of the object
+            date_modified (Optional[List[datetime]], optional): last modified date of the object
+                Defaults to None.
 
         Returns:
             Dict[str, str | List[str] | Dict[str, Any]]: _description_
@@ -243,6 +272,7 @@ class ROBuilder:
             "principal_investigator": principal_investigator.id,
             "contributors": [contributor.id for contributor in contributors],
         }
+
         if project.metadata:
             properties = self._add_metadata(project.id, properties, project.metadata)
         if project.date_created:
@@ -250,6 +280,11 @@ class ROBuilder:
                 properties,
                 project.date_created,
                 project.date_modified,
+            )
+        if project.additional_properties:
+            properties = self._add_additional_properties(
+                properties=properties,
+                additional_properties=project.additional_properties,
             )
         project_obj = ContextEntity(
             self.crate,
@@ -282,6 +317,11 @@ class ROBuilder:
                 experiment.date_created,
                 experiment.date_modified,
             )
+        if experiment.additional_properties:
+            properties = self._add_additional_properties(
+                properties=properties,
+                additional_properties=experiment.additional_properties,
+            )
         experiment_obj = ContextEntity(
             self.crate,
             identifier,
@@ -296,15 +336,6 @@ class ROBuilder:
             dataset (Dataset): The dataset to be added to the crate
         """
         directory = dataset.directory
-        if (self.crate.source / dataset.directory).exists():
-            directory = (self.crate.source / dataset.directory).relative_to(
-                self.crate.source
-            )
-        else:
-            logger.warning(
-                "Dataset %s is not relative to crate root, data may not be represented in crate",
-                dataset.id,
-            )
         identifier = directory.as_posix()
         experiments: List[str] = [
             self.crate.dereference("#" + experiment).id
@@ -328,6 +359,11 @@ class ROBuilder:
                 dataset.date_created,
                 dataset.date_modified,
             )
+        if dataset.additional_properties:
+            properties = self._add_additional_properties(
+                properties=properties,
+                additional_properties=dataset.additional_properties,
+            )
         if identifier == ".":
             logger.debug("Updating root dataset")
             self.crate.root_dataset.properties().update(properties)
@@ -342,10 +378,14 @@ class ROBuilder:
         return self._add_identifiers(dataset, dataset_obj)
 
     def add_datafile(self, datafile: Datafile) -> DataEntity:
-        """Add a dataset to the RO crate
+        """Add a datafile to the RO-Crate,
+        adding it to it's parent dataset has-part or the root if apropriate
 
         Args:
-            dataset (Dataset): The dataset to be added to the crate
+            datafile (Datafile): datafile to be added to the crate
+
+        Returns:
+            DataEntity: the datafile RO-Crate entity that will be written to the json-LD
         """
         identifier = datafile.filepath.as_posix()
         properties: Dict[str, Any] = {
@@ -361,6 +401,11 @@ class ROBuilder:
                 datafile.date_created,
                 datafile.date_modified,
             )
+        if datafile.additional_properties:
+            properties = self._add_additional_properties(
+                properties=properties,
+                additional_properties=datafile.additional_properties,
+            )
         source = (
             self.crate.source / datafile.filepath
             if (self.crate.source / datafile.filepath).exists()
@@ -369,27 +414,12 @@ class ROBuilder:
         dataset_obj: DataEntity = self.crate.dereference(datafile.dataset)
         if not dataset_obj:
             dataset_obj = self.crate.root_dataset
-        dataset_on_disk = Path(self.crate.source / dataset_obj.source)
         destination_path = source
-        if dataset_on_disk.exists() and dataset_on_disk.is_dir():
-            try:
-                destination_path = destination_path.relative_to(dataset_obj.source)
-            except ValueError:
-                logger.warning(
-                    "file %s not relative to dataset parent, will not be added to crate",
-                    identifier,
-                )
-                destination_path = None
-        else:
-            destination_path = None
-
         datafile_obj = self.crate.add_file(
             source=source,
             properties=properties,
             dest_path=destination_path,
         )
-        # if dataset_obj.get("hasPart") and datafile_obj in dataset_obj["hasPart"]:
-        #     return self._add_identifiers(datafile, datafile_obj)
         logger.info("Adding File to Crate %s", identifier)
         dataset_obj.append_to("hasPart", datafile_obj)
         return self._add_identifiers(datafile, datafile_obj)

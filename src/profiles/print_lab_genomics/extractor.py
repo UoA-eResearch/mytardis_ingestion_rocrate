@@ -14,6 +14,7 @@ from src.encryption.encrypt_metadata import Encryptor
 from src.metadata_extraction.metadata_extraction import (
     MetadataHanlder,
     create_metadata_objects,
+    load_optional_schemas,
 )
 from src.mt_api.apiconfigs import MyTardisRestAgent
 from src.mt_api.mt_consts import MtObject
@@ -50,10 +51,16 @@ class PrintLabExtractor(Extractor):
     def __init__(self, options: Dict[str, Any]) -> None:
         self.encryptor = options["encryptor"]
         self.api_agent = options["api_agent"]
-        self.metadata_handler = MetadataHanlder(
-            self.api_agent, profile_consts.NAMESPACES
+        self.schemas = options["schemas"]
+
+        namespaces = profile_consts.NAMESPACES
+        namespaces = load_optional_schemas(
+            namespaces=namespaces, schemas=options.get("schemas")
         )
-        self.collect_all = options.get("collect_all") is not None
+        self.metadata_handler = MetadataHanlder(self.api_agent, namespaces)
+        self.collect_all = (
+            bool(options["collect_all"]) if options.get("collect_all") else False
+        )
 
     #
     def _contruct_sensitive_dict(
@@ -113,7 +120,8 @@ class PrintLabExtractor(Extractor):
                 contributors=None,
                 mytardis_classification="SENSITIVE",
                 ethics_policy=row["Ethics Approval ID"],
-                accessibility_control=None,
+                additional_properties={},
+                schema_type="Project",
             )
             return new_project
 
@@ -170,8 +178,9 @@ class PrintLabExtractor(Extractor):
                 tissue_processing_method=row["Tissue processing"],
                 analyate=row["Analyte"],
                 portion=row["Portion"],
-                accessibility_control=None,
                 participant_metadata=participant.metadata,
+                additional_properties={},
+                schema_type="DataCatalog",
             )
             return new_experiment
 
@@ -199,12 +208,13 @@ class PrintLabExtractor(Extractor):
                 date_created=None,
                 date_modified=None,
                 metadata=metadata_dict,
-                accessibility_control=None,
                 date_of_birth=row["Participant Date of birth"],
                 nhi_number=row["Participant NHI number"],
                 sex=row["Participant Sex"],
                 ethnicity=row["Participant Ethnicity"],
                 project=row["Project"],
+                additional_properties={},
+                schema_type="Person",
             )
             return new_participant
 
@@ -232,7 +242,6 @@ class PrintLabExtractor(Extractor):
                 date_created=None,
                 date_modified=None,
                 metadata=metadata_dict,
-                accessibility_control=None,
                 experiments=[row["Sample"]],
                 directory=Path(row["Directory"]),
                 contributors=None,
@@ -244,8 +253,11 @@ class PrintLabExtractor(Extractor):
                     date_created=None,
                     date_modified=None,
                     metadata=None,
-                    accessibility_control=None,
+                    additional_properties={},
+                    schema_type=None,
                 ),
+                additional_properties={},
+                schema_type="Dataset",
             )
             return new_dataset
 
@@ -266,9 +278,10 @@ class PrintLabExtractor(Extractor):
                 metadata=metadata_dict,
                 date_created=None,
                 date_modified=None,
-                accessibility_control=None,
                 filepath=Path(row["Filepath"]),
                 dataset=row["Dataset"],
+                additional_properties={},
+                schema_type="File",
             )
             return new_datafile
 

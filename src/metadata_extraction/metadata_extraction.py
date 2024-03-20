@@ -2,6 +2,7 @@
 
 from typing import Any, Dict
 
+from src.cli.mytardisconfig import SchemaConfig
 from src.mt_api.apiconfigs import MyTardisRestAgent
 from src.mt_api.mt_consts import MtObject
 from src.rocrate_dataclasses.rocrate_dataclasses import MTMetadata
@@ -140,3 +141,32 @@ def create_metadata_objects(
                 sensitive=metadata_sensitive is True,
             )
     return metadata_dict
+
+
+def load_optional_schemas(
+    namespaces: Dict[MtObject, str], schemas: SchemaConfig | None
+) -> Dict[MtObject, str]:
+    """Update some set of default namespaces with those loaded from config. If they are present.
+
+    Args:
+        namespaces (Dict[MtObject, str]): default schema namespaces
+        schemas (SchemaConfig): namespaces loaded via a schemaConfig
+
+    Returns:
+        Dict[MtObject, str]: default schema namespaces now updated with those from config
+    """
+    if not schemas:
+        return namespaces
+    namespaces[MtObject.PROJECT] = (
+        schemas.project if schemas.project else namespaces[MtObject.PROJECT]
+    )
+    namespaces[MtObject.EXPERIMENT] = (
+        schemas.experiment if schemas.experiment else namespaces[MtObject.EXPERIMENT]
+    )
+    namespaces[MtObject.DATASET] = (
+        schemas.dataset if schemas.dataset else namespaces[MtObject.DATASET]
+    )
+    namespaces[MtObject.DATAFILE] = (
+        schemas.datafile if schemas.datafile else namespaces[MtObject.DATAFILE]
+    )
+    return namespaces

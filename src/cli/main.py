@@ -14,6 +14,7 @@ from typing import Optional
 
 import click
 
+from src.cli.mytardisconfig import MyTardisEnvConfig
 from src.encryption.encrypt_metadata import Encryptor
 from src.mt_api.api_consts import CONNECTION__HOSTNAME
 from src.mt_api.apiconfigs import AuthConfig, MyTardisRestAgent
@@ -50,7 +51,17 @@ OPTION_COLLECT_ALL = click.option(
     type=bool,
     is_flag=True,
     default=False,
-    help="collect all values into MyTardis metadata.\n even those not found in schema",
+    help="""Collect all input metadata into MyTardis metadata and RO-Crate.
+    Even those not found in schema.
+    This is a 'put everything in and deal with it later'
+    option that will probably invalidate the RO-Crate but preserves all possible metadata.""",
+)
+OPTION_ENV_PREFIX = click.option(
+    "--env_prefix",
+    type=str,
+    default="",
+    help="""enviroment file prefix for loading MyTardis API and Schemas config,
+    Config options are overwritten by CLI arguments.""",
 )
 
 
@@ -62,6 +73,7 @@ def cli() -> None:
 @click.command()
 @OPTION_INPUT_PATH
 @OPTION_LOG
+@OPTION_ENV_PREFIX
 @OPTION_HOSTNAME
 @OPTION_MT_USER
 @OPTION_MT_APIKEY
@@ -69,18 +81,23 @@ def cli() -> None:
 def crate_abi(
     input_metadata: Path,
     log_file: Path,
+    env_prefix: str,
     mt_hostname: Optional[str],
     mt_user: Optional[str],
     mt_api_key: Optional[str],
     collect_all: Optional[bool] = False,
 ) -> None:
     """
-    Create RO-Crates by dataset from ABI-music filestructure
+    Create RO-Crates by dataset from ABI-music filestructure.
+    Input Metadata is the same root directory used for MyTardis ingest
     """
     init_logging(file_name=str(log_file), level=logging.DEBUG)
     logger = logging.getLogger(__name__)
-    mt_user = mt_user if mt_user else os.environ.get("AUTH__USERNAME")
-    mt_api_key = mt_api_key if mt_api_key else os.environ.get("AUTH__API_KEY")
+    env_config = None
+    if (Path(env_prefix) / ".env").exists():
+        env_config = MyTardisEnvConfig(env_prefix=env_prefix)  # type: ignore
+        mt_user = mt_user if mt_user else env_config.auth.username
+        mt_api_key = mt_api_key if mt_api_key else env_config.auth.api_key
     logger.info("Loading MyTardis API agent")
     if mt_user and mt_api_key:
         auth_config = AuthConfig(username=mt_user, api_key=mt_api_key)
@@ -92,7 +109,9 @@ def crate_abi(
         connection_proxies=None,
         verify_certificate=True,
     )
-    builder = ABICrateBuilder(api_agent)
+    builder = ABICrateBuilder(
+        api_agent, env_config.default_schema if env_config else None
+    )
     builder.build_crates(input_metadata, bool(collect_all))
 
 
@@ -101,6 +120,7 @@ def crate_abi(
 @click.option("--profile_name", type=str, default="print_lab_genomics")
 @click.option("--encryption_key", type=str, multiple=True, default=[])
 @OPTION_LOG
+@OPTION_ENV_PREFIX
 @OPTION_HOSTNAME
 @OPTION_MT_USER
 @OPTION_MT_APIKEY
@@ -135,6 +155,7 @@ def crate_general(
     profile_name: str,
     encryption_key: list[str],
     log_file: Path,
+    env_prefix: str,
     mt_hostname: Optional[str],
     mt_user: Optional[str],
     mt_api_key: Optional[str],
@@ -152,8 +173,11 @@ def crate_general(
     # load profile
     # load encryptor
     # Read public keys ect
-    mt_user = mt_user if mt_user else os.environ.get("AUTH__USERNAME")
-    mt_api_key = mt_api_key if mt_api_key else os.environ.get("AUTH__API_KEY")
+    env_config = None
+    if (Path(env_prefix) / ".env").exists():
+        env_config = MyTardisEnvConfig(env_prefix=env_prefix)  # type: ignore
+        mt_user = mt_user if mt_user else env_config.auth.username
+        mt_api_key = mt_api_key if mt_api_key else env_config.auth.api_key
     logger.info("Loading MyTardis API agent")
     if mt_user and mt_api_key:
         auth_config = AuthConfig(username=mt_user, api_key=mt_api_key)
@@ -172,6 +196,7 @@ def crate_general(
         "encryptor": encryptor,
         "api_agent": api_agent,
         "collect_all": collect_all,
+        "schemas": env_config.default_schema if env_config else None,
     }
 
     logger.info("Loading extraction profile")

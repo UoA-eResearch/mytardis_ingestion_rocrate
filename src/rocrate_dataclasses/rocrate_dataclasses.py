@@ -4,7 +4,7 @@ from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
@@ -64,14 +64,17 @@ class BaseObject(ABC):
 
 @dataclass
 class MTMetadata(BaseObject):
-    """Concrete datafile class for RO-crate - inherits from ContextObject
+    """Concrete Metadata class for RO-crate
+    Contains all information to store or recreate MyTardis metadata.
+    Used as backup and recovery option.
 
-                    "@id": "#test-ro-crate-Metadata",
-                    "@type": "MyTardis-Metadata_field",
-                    "name": "test-ro-crate-Metadata",
-                    "value": "test value",
-                    "mt-type": "string",
-                    "sensitive": "False",
+    creates an RO-Crate JSON-LD entity matching this schema
+    "@id": string - unique ID in the RO-Crate,
+    "@type": string = "MyTardis-Metadata_field" - RO-Crate type,
+    "name": string - name of the meadata in MyTardis,
+    "value": string | Any - Metadata value in my tardis,
+    "mt-type": string - Metadata type as recorded in MyTardis,
+    "sensitive": bool - Metadata ,
 
     Attr:
         experiment (str): An identifier for an experiment
@@ -90,7 +93,14 @@ class ContextObject(BaseObject):
     Attr:
         name (str): The name of the object
         description (str): A longer form description of the object
-        identifiers (List[str]): A list of identifiers for the object
+        identifiers (List[str]):
+            A list of identifiers for the object
+            the first of which will be used as a UUID in the RO-Crate
+        date_created (Optional[datetime]) : when was the object created
+        date_modified (Optional[List[datetime]]) : when was the object last changed
+        metadata (Optional[Dict[str, MTMetadata]])  a list of the mytardis metadata elements
+        additional_properties Optional[Dict[str, Any]] : metadata not in schema
+        schema_type (Optional[str | list[str]]) :Schema.org types or type
     """
 
     description: str
@@ -98,8 +108,8 @@ class ContextObject(BaseObject):
     date_created: Optional[datetime]
     date_modified: Optional[List[datetime]]
     metadata: Optional[Dict[str, MTMetadata]]  # NOT IN SCHEMA.ORG
-    accessibility_control: Optional[str]  # https://schema.org/accessMode
-    schema_type = Optional[str | List[str]]
+    additional_properties: Optional[Dict[str, Any]]
+    schema_type: Optional[str | list[str]]
 
     @property
     def id(self) -> str | int | float:
@@ -155,6 +165,7 @@ class Project(ContextObject):
     contributors: Optional[List[Person]]
     mytardis_classification: Optional[str]  # NOT IN SCHEMA.ORG
     ethics_policy: Optional[str]
+    schema_type = "Project"
 
 
 @dataclass
@@ -169,6 +180,7 @@ class Experiment(ContextObject):
     contributors: Optional[List[Person]]
     mytardis_classification: Optional[str]  # NOT IN SCHEMA.ORG
     participant: Optional[str]
+    schema_type = "DataCatalog"
 
 
 @dataclass
@@ -195,6 +207,7 @@ class SampleExperiment(Experiment):  # pylint: disable=too-many-instance-attribu
     analyate: Optional[str]
     portion: Optional[str]
     participant_metadata: Optional[Dict[str, MTMetadata]]
+    schema_type = "DataCatalog"
 
 
 @dataclass
@@ -209,6 +222,7 @@ class Dataset(ContextObject):
     directory: Path
     contributors: Optional[List[Person]]
     instrument: Instrument
+    schema_type = "Dataset"
 
     # mytardis_classification: str #NOT IN SCHEMA.ORG
     def update_path(self, new_path: Path) -> None:
@@ -232,6 +246,7 @@ class Datafile(ContextObject):
     filepath: Path
     # mytardis_classification: str #NOT IN SCHEMA.ORG
     dataset: Path
+    schema_type = "File"
 
     def update_to_root(self, dataset: Dataset) -> Path:
         """Update a datafile that is a child of a dataset so that dataset is now the root
