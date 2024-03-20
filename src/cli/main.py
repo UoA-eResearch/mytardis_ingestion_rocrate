@@ -20,7 +20,6 @@ from src.mt_api.apiconfigs import AuthConfig, MyTardisRestAgent
 from src.profiles.abi_music.crate_builder import ABICrateBuilder
 from src.profiles.profile_register import load_profile
 from src.rocrate_builder.rocrate_writer import archive_crate, bagit_crate, write_crate
-from src.rocrate_dataclasses.data_class_utils import reduce_to_dataset
 from src.utils.log_utils import init_logging
 
 OPTION_INPUT_PATH = click.option(
@@ -73,7 +72,7 @@ def crate_abi(
     mt_hostname: Optional[str],
     mt_user: Optional[str],
     mt_api_key: Optional[str],
-    collect_all: bool = False,
+    collect_all: Optional[bool] = False,
 ) -> None:
     """
     Create RO-Crates by dataset from ABI-music filestructure
@@ -94,7 +93,7 @@ def crate_abi(
         verify_certificate=True,
     )
     builder = ABICrateBuilder(api_agent)
-    builder.build_crates(input_metadata, collect_all)
+    builder.build_crates(input_metadata, bool(collect_all))
 
 
 @click.command()
@@ -122,14 +121,15 @@ def crate_abi(
     default=None,
     help="Archive the RO-Crate in one of the following formats: [tar, tar.gz, zip]",
 )
-@click.option(
-    "-d",
-    "--split_datasets",
-    type=bool,
-    is_flag=True,
-    default=False,
-    help="Produce an RO-Crate for each dataset\n (bagging and archiving each crate individually)",
-)
+# @click.option(
+#     "-d",
+#     "--split_datasets",
+#     type=bool,
+#     is_flag=True,
+#     default=False,
+#     help="Produce an RO-Crate for each dataset\n (bagging and archiving each crate individually)",
+# )
+@OPTION_COLLECT_ALL
 def crate_general(
     input_metadata: Path,
     profile_name: str,
@@ -141,7 +141,7 @@ def crate_general(
     output: Optional[Path],
     archive_type: Optional[str],
     bag_crate: Optional[bool],
-    split_datasets: Optional[bool],
+    # split_datasets: Optional[bool],
     collect_all: Optional[bool],
 ) -> None:
     """
@@ -180,48 +180,44 @@ def crate_general(
     logger.info("extracting crate metadata")
     crate_manifest = extractor.extract(input_metadata)
 
-    if split_datasets:
-        logger.info("splitting metadata into one crate per dataset")
-        crates = {
-            dataset.directory: reduce_to_dataset(crate_manifest, dataset)
-            for dataset in crate_manifest.datasets
-        }
-    else:
-        crates = {Path(""): crate_manifest}
-    logger.debug("we've loaded these crates %s", crates)
+    # if split_datasets:
+    #     logger.info("splitting metadata into one crate per dataset")
+    #     crates = {
+    #         dataset.directory: reduce_to_dataset(crate_manifest, dataset)
+    #         for dataset in crate_manifest.datasets
+    #     }
+    # else:
     source_path = input_metadata
     if Path(input_metadata).is_file():
         source_path = Path(input_metadata).parent
     if not output:
         output = source_path
-    for crate_dir in crates.keys():
-        logger.info("writing RO-Crate from %s", crate_dir)
+    # for crate_dir in crates.keys():
+    logger.info("writing RO-Crate from %s", source_path)
 
-        final_output = output / crate_dir
-        if not final_output.parent.exists():
-            final_output.parent.mkdir(parents=True)
-        crate_destination = final_output
+    final_output = output
+    if not final_output.parent.exists():
+        final_output.parent.mkdir(parents=True)
+    crate_destination = final_output
 
-        if archive_type:
-            logger.info("writing pre-archive temporary crate")
-            tmp_crate_location = (  # pylint: disable=consider-using-with
-                tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
-            )
-            crate_destination = Path(Path(tmp_crate_location.name) / source_path.name)
-            crate_destination.mkdir()
-
-        logger.info("writing crate %s", source_path / crate_dir)
-        write_crate(
-            crate_source=crate_dir,
-            crate_destination=crate_destination,
-            crate_contents=crates[crate_dir],
+    if archive_type:
+        logger.info("writing pre-archive temporary crate")
+        tmp_crate_location = (  # pylint: disable=consider-using-with
+            tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
         )
-        if bag_crate:
-            bagit_crate(crate_destination, mt_user or "")
-        archive_crate(archive_type, final_output, crate_destination)
+        crate_destination = Path(Path(tmp_crate_location.name) / source_path.name)
+        crate_destination.mkdir()
 
-        if tmp_crate_location:
-            tmp_crate_location.cleanup()
+    logger.info("writing crate %s", source_path)
+    write_crate(
+        crate_source=source_path,
+        crate_destination=crate_destination,
+        crate_contents=crate_manifest,
+        meta_only=False,
+    )
+    if bag_crate:
+        bagit_crate(crate_destination, mt_user or "")
+    archive_crate(archive_type, final_output, crate_destination)
 
 
 cli.add_command(crate_general)

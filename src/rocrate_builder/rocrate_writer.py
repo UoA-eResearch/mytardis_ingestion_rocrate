@@ -19,7 +19,10 @@ PROCESSES = 8
 
 
 def write_crate(
-    crate_source: Path, crate_destination: Path, crate_contents: CrateManifest
+    crate_source: Path,
+    crate_destination: Path,
+    crate_contents: CrateManifest,
+    meta_only: bool = True,
 ) -> ROCrate:
     """Build an RO-Crate given a manifest of files
 
@@ -48,9 +51,18 @@ def write_crate(
     _ = [builder.add_dataset(dataset) for dataset in crate_contents.datasets]
     logger.info("adding datafiles")
     _ = [builder.add_datafile(datafile) for datafile in crate_contents.datafiles]
-    crate.source = None
-    logger.info("writing crate metadata and moving files")
-    crate.metadata.write(crate_destination)
+    # crate.source = None
+    logger.info(
+        "writing crate metadata and moving from %s files to %s",
+        crate_source,
+        crate_destination,
+    )
+    if not crate_destination.exists():
+        crate_destination.mkdir(parents=True)
+    if meta_only:
+        crate.metadata.write(crate_destination)
+        return ROCrate
+    crate.write(crate_destination)
     return ROCrate
 
 

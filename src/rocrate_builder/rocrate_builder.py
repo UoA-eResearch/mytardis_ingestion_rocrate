@@ -168,7 +168,6 @@ class ROBuilder:
         Returns:
             ContextEntity | DataEntity: The modified RO-Crate object
         """
-        logger.debug("creating id %s", obj_dataclass.identifiers)
         if len(obj_dataclass.identifiers) > 1:
             for index, identifier in enumerate(obj_dataclass.identifiers):
                 if index != 0:
@@ -296,7 +295,16 @@ class ROBuilder:
         Args:
             dataset (Dataset): The dataset to be added to the crate
         """
-        directory = dataset.directory.relative_to(self.crate.source)
+        directory = dataset.directory
+        if (self.crate.source / dataset.directory).exists():
+            directory = (self.crate.source / dataset.directory).relative_to(
+                self.crate.source
+            )
+        else:
+            logger.warning(
+                "Dataset %s is not relative to crate root, data may not be represented in crate",
+                dataset.id,
+            )
         identifier = directory.as_posix()
         experiments: List[str] = [
             self.crate.dereference("#" + experiment).id
@@ -310,7 +318,6 @@ class ROBuilder:
             "includedInDataCatalog": experiments,
         }
         if dataset.instrument and isinstance(dataset.instrument, ContextObject):
-            logger.debug("adding instrument")
             instrument_id = self.add_context_object(dataset.instrument).id
         properties["instrument"] = instrument_id
         if dataset.metadata:
@@ -327,7 +334,6 @@ class ROBuilder:
             self.crate.root_dataset.source = self.crate.source / Path(directory)
             dataset_obj = self.crate.root_dataset
         else:
-            logger.debug("adding new dataset %s", identifier)
             dataset_obj = self.crate.add_dataset(
                 source=self.crate.source / Path(directory),
                 properties=properties,
@@ -370,7 +376,7 @@ class ROBuilder:
                 destination_path = destination_path.relative_to(dataset_obj.source)
             except ValueError:
                 logger.warning(
-                    "file %s not relative to crate root, will not be added to crate",
+                    "file %s not relative to dataset parent, will not be added to crate",
                     identifier,
                 )
                 destination_path = None
@@ -384,7 +390,7 @@ class ROBuilder:
         )
         # if dataset_obj.get("hasPart") and datafile_obj in dataset_obj["hasPart"]:
         #     return self._add_identifiers(datafile, datafile_obj)
-
+        logger.info("Adding File to Crate %s", identifier)
         dataset_obj.append_to("hasPart", datafile_obj)
         return self._add_identifiers(datafile, datafile_obj)
 
@@ -411,5 +417,4 @@ class ROBuilder:
         context_entitiy = self.crate.add(
             ContextEntity(self.crate, identifier, properties=properties)
         )
-        logger.debug("context entity created adding ids")
         return context_entitiy
