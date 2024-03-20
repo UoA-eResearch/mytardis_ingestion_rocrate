@@ -168,9 +168,11 @@ class ROBuilder:
         Returns:
             ContextEntity | DataEntity: The modified RO-Crate object
         """
+        logger.debug("creating id %s", obj_dataclass.identifiers)
         if len(obj_dataclass.identifiers) > 1:
             for index, identifier in enumerate(obj_dataclass.identifiers):
                 if index != 0:
+                    # logger.debug("creating id %s", identifier)
                     rocrate_obj.append_to("identifiers", identifier)
         self.crate.add(rocrate_obj)
         return rocrate_obj
@@ -286,7 +288,6 @@ class ROBuilder:
             identifier,
             properties=properties,
         )
-        print("adding experiment ", identifier)
         return self._add_identifiers(experiment, experiment_obj)
 
     def add_dataset(self, dataset: Dataset) -> DataEntity:
@@ -297,7 +298,6 @@ class ROBuilder:
         """
         directory = dataset.directory.relative_to(self.crate.source)
         identifier = directory.as_posix()
-        print("looking up experiments: ", dataset.experiments)
         experiments: List[str] = [
             self.crate.dereference("#" + experiment).id
             for experiment in dataset.experiments
@@ -310,6 +310,7 @@ class ROBuilder:
             "includedInDataCatalog": experiments,
         }
         if dataset.instrument and isinstance(dataset.instrument, ContextObject):
+            logger.debug("adding instrument")
             instrument_id = self.add_context_object(dataset.instrument).id
         properties["instrument"] = instrument_id
         if dataset.metadata:
@@ -340,7 +341,6 @@ class ROBuilder:
         Args:
             dataset (Dataset): The dataset to be added to the crate
         """
-        print("what is the datafile", datafile.filepath, datafile)
         identifier = datafile.filepath.as_posix()
         properties: Dict[str, Any] = {
             "identifiers": identifier,
@@ -358,26 +358,32 @@ class ROBuilder:
         source = (
             self.crate.source / datafile.filepath
             if (self.crate.source / datafile.filepath).exists()
-            else None
+            else identifier
         )
         dataset_obj: DataEntity = self.crate.dereference(datafile.dataset)
         if not dataset_obj:
             dataset_obj = self.crate.root_dataset
         dataset_on_disk = Path(self.crate.source / dataset_obj.source)
-        destination_path = datafile.filepath
+        destination_path = source
         if dataset_on_disk.exists() and dataset_on_disk.is_dir():
             try:
-                destination_path.relative_to(dataset_obj.source)
+                destination_path = destination_path.relative_to(dataset_obj.source)
             except ValueError:
-                destination_path = dataset_obj.source / datafile.filepath.name
+                logger.warning(
+                    "file %s not relative to crate root, will not be added to crate",
+                    identifier,
+                )
+                destination_path = None
+        else:
+            destination_path = None
 
         datafile_obj = self.crate.add_file(
             source=source,
             properties=properties,
-            dest_path=destination_path.relative_to(self.crate.source),
+            dest_path=destination_path,
         )
-        if dataset_obj.get("hasPart") and datafile_obj in dataset_obj["hasPart"]:
-            return self._add_identifiers(datafile, datafile_obj)
+        # if dataset_obj.get("hasPart") and datafile_obj in dataset_obj["hasPart"]:
+        #     return self._add_identifiers(datafile, datafile_obj)
 
         dataset_obj.append_to("hasPart", datafile_obj)
         return self._add_identifiers(datafile, datafile_obj)
@@ -392,7 +398,6 @@ class ROBuilder:
         properties = context_object.__dict__
         if context_object.schema_type:
             properties["@type"] = context_object.schema_type
-        properties["identifiers"] = identifier
         if context_object.metadata:
             properties = self._add_metadata(
                 identifier, properties, context_object.metadata
@@ -406,5 +411,5 @@ class ROBuilder:
         context_entitiy = self.crate.add(
             ContextEntity(self.crate, identifier, properties=properties)
         )
-
-        return self._add_identifiers(context_object, context_entitiy)
+        logger.debug("context entity created adding ids")
+        return context_entitiy

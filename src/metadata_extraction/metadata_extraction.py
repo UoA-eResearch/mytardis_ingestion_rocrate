@@ -72,7 +72,7 @@ class MetadataHanlder:
             for metatdata_parameters in params
         ]
         return {
-            schema_object.get("full_name"): schema_object
+            schema_object.get("name"): schema_object
             for schema_object in metadata_params
         }
 

@@ -8,133 +8,103 @@ and file objects recorded as an RO-Crate
 
 import logging
 import os
-import tarfile
 import tempfile
-import zipfile
 from pathlib import Path
 from typing import Optional
 
-import bagit
 import click
-from rocrate.rocrate import ROCrate
 
 from src.encryption.encrypt_metadata import Encryptor
 from src.mt_api.api_consts import CONNECTION__HOSTNAME
 from src.mt_api.apiconfigs import AuthConfig, MyTardisRestAgent
+from src.profiles.abi_music.crate_builder import ABICrateBuilder
 from src.profiles.profile_register import load_profile
-from src.rocrate_builder.rocrate_builder import ROBuilder
-from src.rocrate_dataclasses.data_class_utils import CrateManifest, reduce_to_dataset
+from src.rocrate_builder.rocrate_writer import archive_crate, bagit_crate, write_crate
+from src.rocrate_dataclasses.data_class_utils import reduce_to_dataset
 from src.utils.log_utils import init_logging
 
-
-def write_crate(
-    crate_source: Path, crate_destination: Path, crate_contents: CrateManifest
-) -> ROCrate:
-    """Build an RO-Crate given a manifest of files
-
-    Args:
-        crate_source (Path): The soruce location, may contain an existing crate
-        crate_destination (Path): where the RO-Crate is to be written
-            -either location on disk if directly writing crate
-            -or tmpfile location if crate is to be output as an archive
-        crate_contents (CrateManifest): manifest of the RO-Crate
-
-    Returns:
-        ROCrate: _The RO-Crate object that has been written
-    """
-    crate = ROCrate()
-    print("crate source is %s", crate.source)
-    crate.source = crate_source
-    print("crate source is %s", crate.source)
-    builder = ROBuilder(crate)
-    _ = [builder.add_project(project) for project in crate_contents.projcets.values()]
-    _ = [
-        builder.add_experiment(experiment)
-        for experiment in crate_contents.experiments.values()
-    ]
-    _ = [builder.add_dataset(dataset) for dataset in crate_contents.datasets]
-    print("What are your datafiles", crate_contents.datafiles)
-    _ = [builder.add_datafile(datafile) for datafile in crate_contents.datafiles]
-    crate.source = None
-    crate.metadata.write(crate_destination)
-    return ROCrate
-
-
-def archive_crate(
-    archive_type: str | None, output_location: Path, crate_location: Path
-) -> None:
-    """Archive the RO-Crate as a TAR, GZIPPED TAR or ZIP archive
-
-    Args:
-        archive_type (str | None): the archive format [tar.gz, tar, or zip]
-        output_location (Path): the path where the archive should be written to
-        crate_location (Path): the path of the RO-Crate to be archived
-    """
-
-    if not archive_type:
-        return
-    logger = logging.getLogger(__name__)
-    match archive_type:
-        case "tar.gz":
-            logger.info("Tar GZIP archiving %s", crate_location.name)
-            with tarfile.open(
-                output_location.parent / (output_location.name + ".tar.gz"),
-                mode="w:bz2",
-            ) as out_tar:
-                out_tar.add(
-                    crate_location,
-                    arcname=crate_location.name,
-                    recursive=True,
-                )
-            out_tar.close()
-        case "tar":
-            logger.info("Tar archiving %s", crate_location.name)
-            with tarfile.open(
-                output_location.parent / (output_location.name + ".tar"), mode="w"
-            ) as out_tar:
-                out_tar.add(
-                    crate_location,
-                    arcname=crate_location.name,
-                    recursive=True,
-                )
-            out_tar.close()
-        case "zip":
-            logger.info("zip archiving %s", crate_location.name)
-            with zipfile.ZipFile(
-                output_location.parent / (output_location.name + ".zip"), "w"
-            ) as out_zip:
-                for root, _, files in os.walk(crate_location):
-                    for filename in files:
-                        arcname = (
-                            crate_location.name
-                            / Path(root).relative_to(crate_location)
-                            / filename
-                        )
-                        logger.info("wirting to archived path %s", arcname)
-                        out_zip.write(os.path.join(root, filename), arcname=arcname)
-
-
-@click.command()
-@click.option(
+OPTION_INPUT_PATH = click.option(
     "-i",
     "--input_metadata",
     help="input file or directory to be converted into an RO-Crate",
     type=click.Path(exists=True, file_okay=True, dir_okay=True, path_type=Path),
     default=os.getcwd(),
 )
-@click.option("--profile_name", type=str, default="print_lab_genomics")
-@click.option("--encryption_key", type=str, multiple=True, default=[])
-@click.option(
-    "--log_file", type=click.Path(writable=True), default=Path("ingestion.log")
-)
-@click.option(
+OPTION_HOSTNAME = click.option(
     "--mt_hostname",
     type=str,
     default=CONNECTION__HOSTNAME,
     help="hostname for MyTardis API",
 )
-@click.option("--mt_user", type=str, default=None, help="username for MyTardis API")
-@click.option("--mt_api_key", type=str, default=None, help="API key for MyTardis API")
+OPTION_MT_USER = click.option(
+    "--mt_user", type=str, default=None, help="username for MyTardis API"
+)
+OPTION_MT_APIKEY = click.option(
+    "--mt_api_key", type=str, default=None, help="API key for MyTardis API"
+)
+OPTION_LOG = click.option(
+    "--log_file", type=click.Path(writable=True), default=Path("ingestion.log")
+)
+
+OPTION_COLLECT_ALL = click.option(
+    "--collect-all",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="collect all values into MyTardis metadata.\n even those not found in schema",
+)
+
+
+@click.group()
+def cli() -> None:
+    "Commands to generate an RO-Crate with MyTardis Metadata"
+
+
+@click.command()
+@OPTION_INPUT_PATH
+@OPTION_LOG
+@OPTION_HOSTNAME
+@OPTION_MT_USER
+@OPTION_MT_APIKEY
+@OPTION_COLLECT_ALL
+def crate_abi(
+    input_metadata: Path,
+    log_file: Path,
+    mt_hostname: Optional[str],
+    mt_user: Optional[str],
+    mt_api_key: Optional[str],
+    collect_all: bool = False,
+) -> None:
+    """
+    Create RO-Crates by dataset from ABI-music filestructure
+    """
+    init_logging(file_name=str(log_file), level=logging.DEBUG)
+    logger = logging.getLogger(__name__)
+    mt_user = mt_user if mt_user else os.environ.get("AUTH__USERNAME")
+    mt_api_key = mt_api_key if mt_api_key else os.environ.get("AUTH__API_KEY")
+    logger.info("Loading MyTardis API agent")
+    if mt_user and mt_api_key:
+        auth_config = AuthConfig(username=mt_user, api_key=mt_api_key)
+    else:
+        auth_config = None
+    api_agent = MyTardisRestAgent(
+        auth_config=auth_config,
+        connection_hostname=mt_hostname,
+        connection_proxies=None,
+        verify_certificate=True,
+    )
+    builder = ABICrateBuilder(api_agent)
+    builder.build_crates(input_metadata, collect_all)
+
+
+@click.command()
+@OPTION_INPUT_PATH
+@click.option("--profile_name", type=str, default="print_lab_genomics")
+@click.option("--encryption_key", type=str, multiple=True, default=[])
+@OPTION_LOG
+@OPTION_HOSTNAME
+@OPTION_MT_USER
+@OPTION_MT_APIKEY
 @click.option(
     "-o", "--output", type=Path, default=None, help="output location for RO-Crate(s)"
 )
@@ -160,14 +130,7 @@ def archive_crate(
     default=False,
     help="Produce an RO-Crate for each dataset\n (bagging and archiving each crate individually)",
 )
-@click.option(
-    "--collect_all",
-    type=bool,
-    is_flag=True,
-    default=False,
-    help="collect all values into MyTardis metadata.\n even those not found in schema",
-)
-def main(
+def crate_general(
     input_metadata: Path,
     profile_name: str,
     encryption_key: list[str],
@@ -175,7 +138,7 @@ def main(
     mt_hostname: Optional[str],
     mt_user: Optional[str],
     mt_api_key: Optional[str],
-    output: Path,
+    output: Optional[Path],
     archive_type: Optional[str],
     bag_crate: Optional[bool],
     split_datasets: Optional[bool],
@@ -186,7 +149,6 @@ def main(
     """
     init_logging(file_name=str(log_file), level=logging.DEBUG)
     logger = logging.getLogger(__name__)
-
     # load profile
     # load encryptor
     # Read public keys ect
@@ -226,13 +188,14 @@ def main(
         }
     else:
         crates = {Path(""): crate_manifest}
-
     logger.debug("we've loaded these crates %s", crates)
-    for crate_dir, crate_objs in crates.items():
+    source_path = input_metadata
+    if Path(input_metadata).is_file():
+        source_path = Path(input_metadata).parent
+    if not output:
+        output = source_path
+    for crate_dir in crates.keys():
         logger.info("writing RO-Crate from %s", crate_dir)
-        source_path = input_metadata
-        if Path(input_metadata).is_file():
-            source_path = Path(input_metadata).parent
 
         final_output = output / crate_dir
         if not final_output.parent.exists():
@@ -243,7 +206,7 @@ def main(
             logger.info("writing pre-archive temporary crate")
             tmp_crate_location = (  # pylint: disable=consider-using-with
                 tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
-            )  # pylint: disable=consider-using-with
+            )
             crate_destination = Path(Path(tmp_crate_location.name) / source_path.name)
             crate_destination.mkdir()
 
@@ -251,15 +214,19 @@ def main(
         write_crate(
             crate_source=crate_dir,
             crate_destination=crate_destination,
-            crate_contents=crate_objs,
+            crate_contents=crates[crate_dir],
         )
-
         if bag_crate:
-            logger.info("generating bagit archive for %s", source_path / crate_dir)
-            bagit.make_bag(crate_destination, {"Contact-Name": mt_user}, processes=8)
-
+            bagit_crate(crate_destination, mt_user or "")
         archive_crate(archive_type, final_output, crate_destination)
+
+        if tmp_crate_location:
+            tmp_crate_location.cleanup()
+
+
+cli.add_command(crate_general)
+cli.add_command(crate_abi)
 
 
 if __name__ == "__main__":
-    main()  # pylint: disable=no-value-for-parameter
+    cli()  # pylint: disable=no-value-for-parameter

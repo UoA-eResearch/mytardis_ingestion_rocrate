@@ -38,7 +38,6 @@ class ABIExtractor(Extractor):  # pylint: disable=too-few-public-methods
         if input_data_source.is_file():
             root_dir = DirectoryNode(input_data_source.parent)
         root_dir = DirectoryNode(input_data_source)
-        print("extracting using ABI extractor")
         return parse_raw_data(
             raw_dir=root_dir,
             metadata_handler=self.metadata_handler,

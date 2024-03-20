@@ -20,6 +20,7 @@ from src.profiles.abi_music.consts import (  # ZARR_DATASET_NAMESPACE,
     ABI_MUSIC_MICROSCOPE_INSTRUMENT,
 )
 from src.profiles.abi_music.filesystem_nodes import DirectoryNode, FileNode
+from src.rocrate_builder.rocrate_writer import bagit_crate, write_crate
 from src.rocrate_dataclasses.data_class_utils import CrateManifest
 from src.rocrate_dataclasses.rocrate_dataclasses import (
     Dataset,
@@ -165,6 +166,16 @@ def process_raw_dataset(
     """
     json_dict = read_json(dataset_dir.file(dataset_dir.name() + ".json"))
     metadata_dict = create_metadata_objects(json_dict, metadata_schema, collect_all)
+
+    named_fields: dict[str, Any] = {
+        "full-description": json_dict["Description"],
+        "sequence-id": json_dict["SequenceID"],
+        "sqrt-offset": json_dict["Offsets"]["SQRT Offset"],
+    }
+    metadata_dict = metadata_dict | create_metadata_objects(
+        named_fields, metadata_schema, False
+    )
+
     identifiers = [
         slugify(
             (
@@ -185,7 +196,7 @@ def process_raw_dataset(
             "Experiment ID does not match parent for dataset %s", identifiers[0]
         )
     return Dataset(
-        name=json_dict["Basename"]["Sequence"],
+        name=identifiers[0],
         description=json_dict["Description"],
         identifiers=identifiers,
         experiments=[
@@ -202,7 +213,7 @@ def process_raw_dataset(
         instrument=Instrument(
             name=ABI_MUSIC_MICROSCOPE_INSTRUMENT,
             description=ABI_MUSIC_MICROSCOPE_INSTRUMENT,
-            identifiers=[ABI_MUSIC_MICROSCOPE_INSTRUMENT],
+            identifiers=[ABI_MUSIC_MICROSCOPE_INSTRUMENT, ABI_FACILLITY],
             date_created=None,
             date_modified=None,
             metadata=None,
@@ -230,6 +241,7 @@ def parse_raw_data(  # pylint: disable=too-many-locals
     # file_filter: filters.PathFilterSet,
     metadata_handler: MetadataHanlder,
     collect_all: bool = False,
+    write_datasets: bool = True,
 ) -> CrateManifest:
     """
     Parse the directory containing the raw data
@@ -246,7 +258,6 @@ def parse_raw_data(  # pylint: disable=too-many-locals
     project_dirs = [
         d for d in raw_dir.iter_dirs(recursive=True) if d.has_file("project.json")
     ]
-    print("project dirs found in %s %s", project_dirs, raw_dir.path())
     for project_dir in project_dirs:
         logging.info("Project directory: %s", project_dir.name())
         project = process_project(
@@ -278,7 +289,6 @@ def parse_raw_data(  # pylint: disable=too-many-locals
                 for d in experiment_dir.iter_dirs(recursive=True)
                 if d.has_file(d.name() + ".json")
             ]
-            logging.info("Dataset directoryies found: %s", dataset_dirs)
             for dataset_dir in dataset_dirs:
                 logging.info("Dataset directory: %s", dataset_dir.name())
 
@@ -298,6 +308,20 @@ def parse_raw_data(  # pylint: disable=too-many-locals
                 dataset.date_created = parse_timestamp(data_dir.name())
 
                 crate_manifest.add_datasets([dataset])
+                if write_datasets:
+                    logging.info("Writing Crate for: %s", dataset_dir.name())
+                    dataset_manifest = CrateManifest(
+                        projcets={str(project.id): project},
+                        experiments={str(experiment.id): experiment},
+                        datasets=[dataset],
+                        datafiles=None,
+                    )
+                    write_crate(dataset_dir.path(), data_dir.path(), dataset_manifest)
+                    logging.info("Bagging Crate for: %s", dataset_dir.name())
+                    bagit_crate(
+                        data_dir.path(),
+                        contact_name=project.principal_investigator.name,
+                    )
 
                 # for file in dataset_dir.iter_files(recursive=True):
                 #     if file_filter.exclude(file.path()):

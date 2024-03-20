@@ -1,9 +1,10 @@
 [tool.poetry]
-name = "src"
+name = "MyTarids_ROCrate"
 version = "0.1.0"
 description = "Scripts to pack data files into an RO-crate for MyTardis ingestion"
-authors = ["Chris Seal <c.seal@auckland.ac.nz>", "<james.love@auckland.ac.nz>"]
+authors = ["James Love <james.love@auckland.ac.nz>", "Chris Seal <c.seal@auckland.ac.nz>"]
 readme = "README.md"
+packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.12"
@@ -96,5 +97,5 @@ omit = [
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
-[project.scripts]
-ro_crate_builder = "src.cli.main:main"
+[tool.poetry.scripts]
+ro_crate_builder = "src.cli.main:cli"

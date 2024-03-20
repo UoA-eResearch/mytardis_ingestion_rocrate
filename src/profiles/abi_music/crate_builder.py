@@ -1,0 +1,44 @@
+"""Class for independently generating ro-crates from ABI data
+"""
+
+from pathlib import Path
+
+import src.profiles.abi_music.consts as profile_consts
+from src.metadata_extraction.metadata_extraction import MetadataHanlder
+from src.mt_api.apiconfigs import MyTardisRestAgent
+from src.profiles.abi_music.abi_json_parser import parse_raw_data
+from src.profiles.abi_music.filesystem_nodes import DirectoryNode
+from src.rocrate_dataclasses.data_class_utils import CrateManifest
+
+
+class ABICrateBuilder:  # pylint: disable=too-few-public-methods
+    """_summary_
+
+    Returns:
+        _type_: _description_
+    """
+
+    metadata_handler: MetadataHanlder
+
+    def __init__(self, api_agent: MyTardisRestAgent) -> None:
+        self.metadata_handler = MetadataHanlder(api_agent, profile_consts.NAMESPACES)
+
+    def build_crates(self, input_data_source: Path, collect_all: bool) -> CrateManifest:
+        """Build crates from datasets found in an ABI directory
+
+        Args:
+            input_data_source (Path): ABI Directory root
+            collect_all (bool): Collect all data found within ABI_json into poteintial MT Metadata
+
+        Returns:
+            CrateManifest: a manifest of all objects found in the ABI directory
+        """
+        if input_data_source.is_file():
+            root_dir = DirectoryNode(input_data_source.parent)
+        else:
+            root_dir = DirectoryNode(input_data_source)
+        return parse_raw_data(
+            raw_dir=root_dir,
+            metadata_handler=self.metadata_handler,
+            collect_all=collect_all,
+        )
