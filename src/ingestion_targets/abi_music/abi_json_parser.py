@@ -84,7 +84,6 @@ def process_project(
         Project: A project dataclass
     """
     json_dict = read_json(project_dir.file("project.json"))
-
     principal_investigator = create_person_object(
         str(json_dict["principal_investigator"])
     )
@@ -134,7 +133,6 @@ def process_experiment(
         Experiment: An experiment dataclass
     """
     json_dict = read_json(experiment_dir.file("experiment.json"))
-
     identifiers: list[str | int | float] = [
         slugify(f'{json_dict["project"]}-{identifier}')
         for identifier in json_dict["experiment_ids"]
@@ -179,7 +177,6 @@ def process_raw_dataset(
         Dataset: An dataset dataclass
     """
     json_dict = read_json(dataset_dir.file(dataset_dir.name() + ".json"))
-
     named_fields: dict[str, Any] = {
         "full-description": json_dict["Description"],
         "sequence-id": json_dict["SequenceID"],
