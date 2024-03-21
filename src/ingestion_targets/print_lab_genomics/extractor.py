@@ -107,7 +107,7 @@ class PrintLabExtractor:
     ) -> Dict[str, Project]:
         def parse_project(row: pd.Series) -> Project:
             metadata_dict = create_metadata_objects(
-                row, metadata_obj_schema, self.collect_all
+                row, metadata_obj_schema, self.collect_all, row["Project name"]
             )
             pi = create_person_object(row["Project PI"])
             new_project = Project(
@@ -140,7 +140,7 @@ class PrintLabExtractor:
     ) -> Dict[str, Experiment]:
         def parse_experiment(row: pd.Series) -> Experiment:
             metadata_dict = create_metadata_objects(
-                row, metadata_obj_schema, self.collect_all
+                row, metadata_obj_schema, self.collect_all, row["Sample name"]
             )
             participant = particpants_dict[row["Participant"]]
             new_experiment = SampleExperiment(
@@ -200,7 +200,7 @@ class PrintLabExtractor:
     ) -> Dict[str, Participant]:
         def parse_participant(row: pd.Series) -> Participant:
             metadata_dict = create_metadata_objects(
-                row, metadata_obj_schema, self.collect_all
+                row, metadata_obj_schema, self.collect_all, row["Participant: Code"]
             )
             new_participant = Participant(
                 name=row["Participant: Code"],
@@ -234,7 +234,7 @@ class PrintLabExtractor:
     ) -> List[Dataset]:
         def parse_dataset(row: pd.Series) -> Dataset:
             metadata_dict = create_metadata_objects(
-                row, metadata_obj_schema, self.collect_all
+                row, metadata_obj_schema, self.collect_all, row["Directory"]
             )
             new_dataset = Dataset(
                 name=row["Dataset Name"],
@@ -270,7 +270,7 @@ class PrintLabExtractor:
     ) -> List[Datafile]:
         def parse_datafile(row: pd.Series) -> Datafile:
             metadata_dict = create_metadata_objects(
-                row, metadata_obj_schema, self.collect_all
+                row, metadata_obj_schema, self.collect_all, row["Filepath"]
             )
             new_datafile = Datafile(
                 name=Path(row["Filepath"]).name,

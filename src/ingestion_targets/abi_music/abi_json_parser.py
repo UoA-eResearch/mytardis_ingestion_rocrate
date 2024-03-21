@@ -84,7 +84,7 @@ def process_project(
         Project: A project dataclass
     """
     json_dict = read_json(project_dir.file("project.json"))
-    metadata_dict = create_metadata_objects(json_dict, metadata_schema, collect_all)
+
     principal_investigator = create_person_object(
         str(json_dict["principal_investigator"])
     )
@@ -96,6 +96,9 @@ def process_project(
     identifiers: list[str | int | float] = [
         slugify(identifier) for identifier in json_dict["project_ids"]
     ]
+    metadata_dict = create_metadata_objects(
+        json_dict, metadata_schema, collect_all, identifiers[0]
+    )
     additional_properties = {}
     if collect_all:
         additional_properties = json_dict
@@ -131,11 +134,14 @@ def process_experiment(
         Experiment: An experiment dataclass
     """
     json_dict = read_json(experiment_dir.file("experiment.json"))
-    metadata_dict = create_metadata_objects(json_dict, metadata_schema, collect_all)
+
     identifiers: list[str | int | float] = [
         slugify(f'{json_dict["project"]}-{identifier}')
         for identifier in json_dict["experiment_ids"]
     ]
+    metadata_dict = create_metadata_objects(
+        json_dict, metadata_schema, collect_all, identifiers[0]
+    )
     additional_properties = {}
     if collect_all:
         additional_properties = json_dict
@@ -173,16 +179,12 @@ def process_raw_dataset(
         Dataset: An dataset dataclass
     """
     json_dict = read_json(dataset_dir.file(dataset_dir.name() + ".json"))
-    metadata_dict = create_metadata_objects(json_dict, metadata_schema, collect_all)
 
     named_fields: dict[str, Any] = {
         "full-description": json_dict["Description"],
         "sequence-id": json_dict["SequenceID"],
         "sqrt-offset": json_dict["Offsets"]["SQRT Offset"],
     }
-    metadata_dict = metadata_dict | create_metadata_objects(
-        named_fields, metadata_schema, False
-    )
 
     identifiers = [
         slugify(
@@ -193,6 +195,13 @@ def process_raw_dataset(
         ),
         json_dict["SequenceID"],
     ]
+    metadata_dict = create_metadata_objects(
+        json_dict, metadata_schema, collect_all, identifiers[0]
+    )
+    metadata_dict = metadata_dict | create_metadata_objects(
+        named_fields, metadata_schema, False, identifiers[0]
+    )
+
     updated_dates = []
     for index, session in enumerate(json_dict["Sessions"]):
         if index == 0:

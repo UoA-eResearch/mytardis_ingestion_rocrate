@@ -114,6 +114,7 @@ def create_metadata_objects(
     input_metadata: Dict[str, Any],
     metadata_schema: Dict[str, Dict[str, Any]],
     collect_all: bool = False,
+    parent_id: str | int | float | None = None,
 ) -> Dict[str, MTMetadata]:
     """Create RO-Crate metadata objects from an input dictionary and a schema for lookup
 
@@ -139,6 +140,7 @@ def create_metadata_objects(
                 value=str(meta_value) if metadata_type == 2 else meta_value,
                 mt_type=get_metadata_type(int(metadata_type)),
                 sensitive=metadata_sensitive is True,
+                parents=[str(parent_id)] if parent_id else None,
             )
     return metadata_dict
 

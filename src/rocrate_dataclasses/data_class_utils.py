@@ -9,31 +9,30 @@ from src.rocrate_dataclasses.rocrate_dataclasses import (
     Datafile,
     Dataset,
     Experiment,
-    MTMetadata,
     Project,
 )
 
+# def create_metadata_(
+#     name: str, value: str, is_sensitive: bool, metadata_type: str
+# ) -> MTMetadata:
+#     """Construct a metadata dataclass given the name of the metadata from an input file
 
-def create_metadata_(
-    name: str, value: str, is_sensitive: bool, metadata_type: str
-) -> MTMetadata:
-    """Construct a metadata dataclass given the name of the metadata from an input file
+#     Args:
+#         name (str): name of the metadata in MyTardis
+#         value (str): the value of the metadata
+#         is_sensitive (bool): _description_
 
-    Args:
-        name (str): name of the metadata in MyTardis
-        value (str): the value of the metadata
-        is_sensitive (bool): _description_
-
-    Returns:
-        MTMetadata: _description_
-    """
-    return MTMetadata(
-        ro_crate_id=name,
-        name=name,
-        value=value,
-        mt_type=metadata_type,
-        sensitive=is_sensitive,
-    )
+#     Returns:
+#         MTMetadata: _description_
+#     """
+#     return MTMetadata(
+#         ro_crate_id=name,
+#         name=name,
+#         value=value,
+#         mt_type=metadata_type,
+#         sensitive=is_sensitive,
+#         parents=parents,
+#     )
 
 
 class CrateManifest:

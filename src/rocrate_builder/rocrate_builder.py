@@ -48,7 +48,7 @@ class ROBuilder:
         self.crate = crate
 
     def _add_metadata_to_crate(
-        self, metadata_obj: MTMetadata, metadata_id: str
+        self, metadata_obj: MTMetadata, metadata_id: str, parent_id: str | int | float
     ) -> None:
         """Add a MyTardis Metadata object to the crate
 
@@ -65,6 +65,7 @@ class ROBuilder:
                 "value": metadata_obj.value,
                 "myTardis-type": metadata_obj.mt_type,
                 "sensitive": metadata_obj.sensitive,
+                "parents": [parent_id],
             },
         )
         self.crate.add(metadata)
@@ -183,6 +184,14 @@ class ROBuilder:
         self.crate.add(rocrate_obj)
         return rocrate_obj
 
+    def _crate_contains_metadata(self, metadata: MTMetadata) -> ContextEntity | None:
+        if crate_metadata := self.crate.dereference(metadata.ro_crate_id):
+            if metadata.name == crate_metadata.get(
+                "name"
+            ) and metadata.value == crate_metadata.get("value"):
+                return crate_metadata
+        return None
+
     def _add_metadata(
         self,
         parent_name: str | int | float,
@@ -201,10 +210,14 @@ class ROBuilder:
             Dict[str, str|List[str]|Dict[str, Any]]: The updated properties dictionary
         """
         properties["metadata"] = []
-        for _, value in metadata.items():
-            metadata_id = "_".join([str(parent_name), value.name])
-            if not self.crate.dereference(metadata_id):
-                self._add_metadata_to_crate(value, metadata_id)
+        for _, metadata_object in metadata.items():
+            if metadata_object.parents is None:
+                metadata_object.parents = [str(parent_name)]
+            metadata_id = "_".join([str(parent_name), metadata_object.name])
+            if existing_metadata := self._crate_contains_metadata(metadata_object):
+                existing_metadata.append_to("parents", parent_name)
+            else:
+                self._add_metadata_to_crate(metadata_object, metadata_id, parent_name)
             if metadata_id not in properties["metadata"]:  # pylint: disable=C0201
                 properties["metadata"].append(metadata_id)  # type: ignore
         return properties

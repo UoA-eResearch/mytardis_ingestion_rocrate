@@ -75,6 +75,7 @@ class MTMetadata(BaseObject):
     "value": string | Any - Metadata value in my tardis,
     "mt-type": string - Metadata type as recorded in MyTardis,
     "sensitive": bool - Metadata ,
+    "parents": List[string] - list of ids for all the parents
 
     Attr:
         experiment (str): An identifier for an experiment
@@ -84,6 +85,7 @@ class MTMetadata(BaseObject):
     value: str
     mt_type: str
     sensitive: bool
+    parents: List[str] | None
 
 
 @dataclass
