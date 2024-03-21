@@ -16,10 +16,10 @@ import click
 
 from src.cli.mytardisconfig import MyTardisEnvConfig
 from src.encryption.encrypt_metadata import Encryptor
+from src.ingestion_targets.abi_music.crate_builder import ABICrateBuilder
+from src.ingestion_targets.print_lab_genomics.extractor import PrintLabExtractor
 from src.mt_api.api_consts import CONNECTION__HOSTNAME
 from src.mt_api.apiconfigs import AuthConfig, MyTardisRestAgent
-from src.profiles.abi_music.crate_builder import ABICrateBuilder
-from src.profiles.profile_register import load_profile
 from src.rocrate_builder.rocrate_writer import archive_crate, bagit_crate, write_crate
 from src.utils.log_utils import init_logging
 
@@ -78,7 +78,7 @@ def cli() -> None:
 @OPTION_MT_USER
 @OPTION_MT_APIKEY
 @OPTION_COLLECT_ALL
-def crate_abi(
+def abi(
     input_metadata: Path,
     log_file: Path,
     env_prefix: str,
@@ -117,7 +117,6 @@ def crate_abi(
 
 @click.command()
 @OPTION_INPUT_PATH
-@click.option("--profile_name", type=str, default="print_lab_genomics")
 @click.option("--encryption_key", type=str, multiple=True, default=[])
 @OPTION_LOG
 @OPTION_ENV_PREFIX
@@ -141,18 +140,9 @@ def crate_abi(
     default=None,
     help="Archive the RO-Crate in one of the following formats: [tar, tar.gz, zip]",
 )
-# @click.option(
-#     "-d",
-#     "--split_datasets",
-#     type=bool,
-#     is_flag=True,
-#     default=False,
-#     help="Produce an RO-Crate for each dataset\n (bagging and archiving each crate individually)",
-# )
 @OPTION_COLLECT_ALL
-def crate_general(
+def print_lab(
     input_metadata: Path,
-    profile_name: str,
     encryption_key: list[str],
     log_file: Path,
     env_prefix: str,
@@ -162,17 +152,14 @@ def crate_general(
     output: Optional[Path],
     archive_type: Optional[str],
     bag_crate: Optional[bool],
-    # split_datasets: Optional[bool],
     collect_all: Optional[bool],
 ) -> None:
     """
-    Load a metadata file and datafiles on disk into an RO-Crate
+    Create an RO-Crate based on a Print Lab metadata file
     """
     init_logging(file_name=str(log_file), level=logging.DEBUG)
     logger = logging.getLogger(__name__)
-    # load profile
-    # load encryptor
-    # Read public keys ect
+
     env_config = None
     if (Path(env_prefix) / ".env").exists():
         env_config = MyTardisEnvConfig(env_prefix=env_prefix)  # type: ignore
@@ -189,35 +176,22 @@ def crate_general(
         connection_proxies=None,
         verify_certificate=True,
     )
-
     logger.info("Loading Encryption (this does nothing right now!)")
     encryptor: Encryptor = Encryptor(encryption_key)
-    options = {
-        "encryptor": encryptor,
-        "api_agent": api_agent,
-        "collect_all": collect_all,
-        "schemas": env_config.default_schema if env_config else None,
-    }
-
-    logger.info("Loading extraction profile")
-    profile = load_profile(profile_name)
-    extractor = profile.get_extractor(options)
+    extractor = PrintLabExtractor(
+        encryptor=encryptor,
+        api_agent=api_agent,
+        schemas=env_config.default_schema if env_config else None,
+        collect_all=collect_all if collect_all else False,
+    )
     logger.info("extracting crate metadata")
     crate_manifest = extractor.extract(input_metadata)
 
-    # if split_datasets:
-    #     logger.info("splitting metadata into one crate per dataset")
-    #     crates = {
-    #         dataset.directory: reduce_to_dataset(crate_manifest, dataset)
-    #         for dataset in crate_manifest.datasets
-    #     }
-    # else:
     source_path = input_metadata
     if Path(input_metadata).is_file():
         source_path = Path(input_metadata).parent
     if not output:
         output = source_path
-    # for crate_dir in crates.keys():
     logger.info("writing RO-Crate from %s", source_path)
 
     final_output = output
@@ -245,8 +219,8 @@ def crate_general(
     archive_crate(archive_type, final_output, crate_destination)
 
 
-cli.add_command(crate_general)
-cli.add_command(crate_abi)
+cli.add_command(print_lab)
+cli.add_command(abi)
 
 
 if __name__ == "__main__":

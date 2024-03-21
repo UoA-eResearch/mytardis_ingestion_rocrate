@@ -1,0 +1,267 @@
+{
+    "project":{
+        "@type": "Project",
+        "Project code": {
+            "type" : "string",
+            "input_name": "Project code",
+            "description": "the ID as it appears in the RO-Crate and will be used to name the project in My Tardis",
+            "metadata":false,
+            "identifier":true,
+            "sensitive":false
+        },
+        "Project name":{
+            "type" : "string",
+            "input_name": "Project name",
+            "description": "The name of the project in MyTardis",
+            "metadata":false,
+            "identifier":true,
+            "sensitive":false
+        },
+        "description": {
+            "type" : "string",
+            "input_name": "description",
+            "description": "description of the item and project",
+            "metadata":false,
+            "identifier":false,
+            "sensitive":false
+        },
+        "principal_investigator": {
+            "type" : "string",
+            "input_name": "Project PI",
+            "metadata":false,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Ethics Approval ID": {
+            "type" : "string",
+            "input_name": "Ethics Approval ID",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Ethics Approval Designation": {
+            "type" : "string",
+            "input_name": "Ethics Approval Designation",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Patient Consent Designation": {
+            "type" : "string",
+            "input_name": "Patient Consent Designation",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        }
+    },
+    "experiment":{
+        "@type": "Data_Catalog",
+        "Sample name": {
+            "type" : "string",
+            "input_name": "Sample name",
+            "description": "Unique sequential integer followed by cobmination green-highlighted fields above",
+            "metadata":false,
+            "identifier":true,
+            "sensitive":false
+        },
+        "Unique identifier":{
+            "type" : "string",
+            "input_name": "Unique identifier",
+            "description": "A unique sequential integer",
+            "metadata":false,
+            "identifier":true,
+            "sensitive":false
+        },
+        "Sample type text": {
+            "type" : "string",
+            "input_name": "Sample type text",
+            "description": "The type of material taken from a biological entity for testing, diagnosis, propagation, treatment, or research purposes. This includes tissues, body fluids, cells, organs, embryos, body excretory products, etc.",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Sample type code": {
+            "type" : "string",
+            "input_name": "Sample type code",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Disease type text from ICD11 ": {
+            "type" : "string",
+            "input_name": "Disease type text from ICD11 ",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Disease type ICD11 code": {
+            "type" : "string",
+            "input_name": "Disease type ICD11 code",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Other sample information": {
+            "type" : "string",
+            "input_name": "Other sample information",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Sample anatomical site text from ICD11": {
+            "type" : "string",
+            "input_name": "Sample anatomical site text from ICD11",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Sample anatomical site ICD11 code": {
+            "type" : "string",
+            "input_name": "Sample anatomical site ICD11 code",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Histological diagnosis detail text from ICD11": {
+            "type" : "string",
+            "input_name": "Histological diagnosis detail text from ICD11",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Histological diagnosis detail code from ICD11": {
+            "type" : "string",
+            "input_name": "Histological diagnosis detail code from ICD11",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Tissue processing": {
+            "type" : "string",
+            "input_name": "Tissue processing",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Analyte": {
+            "type" : "string",
+            "input_name": "Analyte",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Portion": {
+            "type" : "string",
+            "input_name": "Portion",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Project": {
+            "type" : "string",
+            "input_name": "Project",
+            "metadata":false,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Participant": {
+            "type" : "string",
+            "input_name": "Participant",
+            "metadata":false,
+            "identifier":false,
+            "sensitive":false
+        }
+    },
+    "Participant":{
+        "@type": "Person",
+        "Participant": {
+            "type" : "string",
+            "input_name": "Participant",
+            "metadata":true,
+            "identifier":true,
+            "sensitive":true
+        },
+        "Participant aliases":{
+            "type" : "string",
+            "input_name": "Participant aliases",
+            "metadata":true,
+            "identifier":true,
+            "sensitive":true
+        },
+        "Date of birth": {
+            "type" : "string",
+            "input_name": "Date of birth",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":true
+        },
+        "NHI number": {
+            "type" : "string",
+            "input_name": "Sample type code",
+            "metadata":true,
+            "identifier":true,
+            "sensitive":true
+        },
+        "Sex": {
+            "type" : "string",
+            "input_name": "Sex",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Ethnicity": {
+            "type" : "string",
+            "input_name": "Ethnicity",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        }
+    },
+    "Dataset":{
+        "@type": "dataset",
+        "Analysis platform": {
+            "type" : "string",
+            "input_name": "Analysis platform",
+            "metadata":true,
+            "identifier":true,
+            "sensitive":false
+        },
+        "Analysis code":{
+            "type" : "string",
+            "input_name": "Analysis code",
+            "metadata":true,
+            "identifier":true,
+            "sensitive":false
+        },
+        "Instrument": {
+            "type" : "string",
+            "input_name": "Instrument",
+            "metadata":false,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Center": {
+            "type" : "string",
+            "input_name": "Center",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        },
+        "Sample code from Centre": {
+            "type" : "string",
+            "input_name": "Sample code from Centre",
+            "metadata":true,
+            "identifier":true,
+            "sensitive":false
+        }
+    },
+    "Datafile":{
+        "Genome": {
+            "type" : "string",
+            "input_name": "Genome",
+            "metadata":true,
+            "identifier":false,
+            "sensitive":false
+        }
+    }
+}

@@ -9,7 +9,8 @@ from typing import Any, Callable, Dict, List
 
 import pandas as pd
 
-import src.profiles.print_lab_genomics.consts as profile_consts
+import src.ingestion_targets.print_lab_genomics.consts as profile_consts
+from src.cli.mytardisconfig import SchemaConfig
 from src.encryption.encrypt_metadata import Encryptor
 from src.metadata_extraction.metadata_extraction import (
     MetadataHanlder,
@@ -18,7 +19,6 @@ from src.metadata_extraction.metadata_extraction import (
 )
 from src.mt_api.apiconfigs import MyTardisRestAgent
 from src.mt_api.mt_consts import MtObject
-from src.profiles.extractor import Extractor
 from src.rocrate_dataclasses.data_class_utils import CrateManifest
 from src.rocrate_dataclasses.rocrate_dataclasses import (
     Datafile,
@@ -37,30 +37,31 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class PrintLabExtractor(Extractor):
+class PrintLabExtractor:
     """An extractor that takes and XLS datasheet
     as defined by the Print Genomics Lab into a Dataframe
     Encryption of strings occurs during extraction
-
-    Args:
-        Extractor (_type_): the extractor base class invoked by the CLI
     """
 
+    encryptor: Encryptor
     api_agent: MyTardisRestAgent
+    collect_all: bool
 
-    def __init__(self, options: Dict[str, Any]) -> None:
-        self.encryptor = options["encryptor"]
-        self.api_agent = options["api_agent"]
-        self.schemas = options["schemas"]
+    def __init__(
+        self,
+        encryptor: Encryptor,
+        api_agent: MyTardisRestAgent,
+        schemas: SchemaConfig | None,
+        collect_all: bool,
+    ) -> None:
+        self.encryptor = encryptor
+        self.api_agent = api_agent
+        self.schemas = schemas
 
         namespaces = profile_consts.NAMESPACES
-        namespaces = load_optional_schemas(
-            namespaces=namespaces, schemas=options.get("schemas")
-        )
+        namespaces = load_optional_schemas(namespaces=namespaces, schemas=self.schemas)
         self.metadata_handler = MetadataHanlder(self.api_agent, namespaces)
-        self.collect_all = (
-            bool(options["collect_all"]) if options.get("collect_all") else False
-        )
+        self.collect_all = collect_all
 
     #
     def _contruct_sensitive_dict(
@@ -289,6 +290,15 @@ class PrintLabExtractor(Extractor):
         return datafiles
 
     def extract(self, input_data_source: Any) -> CrateManifest:
+        """Extract data from sampledata.xlsx metadata file
+
+        Args:
+            input_data_source (Any): sampledata input file
+
+        Returns:
+            CrateManifest: manifest of all the contents of the RO-Crate
+        """
+
         def list_sensitive_fields(mt_sensitive: Dict[str, Dict[str, Any]]) -> List[str]:
             return [
                 metadata_name

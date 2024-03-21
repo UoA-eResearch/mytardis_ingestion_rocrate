@@ -4,15 +4,15 @@
 from pathlib import Path
 from typing import Optional
 
-import src.profiles.abi_music.consts as profile_consts
+import src.ingestion_targets.abi_music.consts as profile_consts
 from src.cli.mytardisconfig import SchemaConfig
+from src.ingestion_targets.abi_music.abi_json_parser import parse_raw_data
+from src.ingestion_targets.abi_music.filesystem_nodes import DirectoryNode
 from src.metadata_extraction.metadata_extraction import (
     MetadataHanlder,
     load_optional_schemas,
 )
 from src.mt_api.apiconfigs import MyTardisRestAgent
-from src.profiles.abi_music.abi_json_parser import parse_raw_data
-from src.profiles.abi_music.filesystem_nodes import DirectoryNode
 from src.rocrate_dataclasses.data_class_utils import CrateManifest
 
 
