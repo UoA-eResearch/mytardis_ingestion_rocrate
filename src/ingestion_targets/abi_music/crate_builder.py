@@ -30,6 +30,7 @@ class ABICrateBuilder:  # pylint: disable=too-few-public-methods
     ) -> None:
         namespaces = profile_consts.NAMESPACES
         namespaces = load_optional_schemas(namespaces=namespaces, schemas=schemas)
+        self.api_agent = api_agent
         self.metadata_handler = MetadataHanlder(api_agent, profile_consts.NAMESPACES)
 
     def build_crates(self, input_data_source: Path, collect_all: bool) -> CrateManifest:
@@ -50,4 +51,5 @@ class ABICrateBuilder:  # pylint: disable=too-few-public-methods
             raw_dir=root_dir,
             metadata_handler=self.metadata_handler,
             collect_all=collect_all,
+            api_agent=self.api_agent,
         )

@@ -109,7 +109,7 @@ class PrintLabExtractor:
             metadata_dict = create_metadata_objects(
                 row, metadata_obj_schema, self.collect_all, row["Project name"]
             )
-            pi = create_person_object(row["Project PI"])
+            pi = create_person_object(row["Project PI"], api_agent=self.api_agent)
             new_project = Project(
                 name=row["Project code"],
                 metadata=metadata_dict,

@@ -19,21 +19,23 @@ from src.metadata_extraction.metadata_extraction import (
     MetadataHanlder,
     create_metadata_objects,
 )
+from src.mt_api.apiconfigs import MyTardisRestAgent
 from src.mt_api.mt_consts import MtObject
 from src.rocrate_builder.rocrate_writer import bagit_crate, write_crate
 from src.rocrate_dataclasses.data_class_utils import CrateManifest
 from src.rocrate_dataclasses.rocrate_dataclasses import (
+    ContextObject,
     Dataset,
     Experiment,
     Instrument,
     Project,
+    convert_to_property_value,
 )
-from src.user_lookup.user_lookup import create_person_object
 
 datetime_pattern = re.compile("^[0-9]{6}-[0-9]{6}$")
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.INFO)
 
 
 def parse_timestamp(timestamp: str) -> datetime:
@@ -72,6 +74,7 @@ def combine_json_files(
 def process_project(
     project_dir: DirectoryNode,
     metadata_schema: Dict[str, Dict[str, Any]],
+    api_agent: MyTardisRestAgent,
     collect_all: bool = False,
 ) -> Project:
     """Extract the project specific information out of a JSON dictionary
@@ -84,11 +87,11 @@ def process_project(
         Project: A project dataclass
     """
     json_dict = read_json(project_dir.file("project.json"))
-    principal_investigator = create_person_object(
+    principal_investigator = api_agent.create_person_object(
         str(json_dict["principal_investigator"])
     )
     contributors = [
-        create_person_object(contributor)
+        api_agent.create_person_object(contributor)
         for contributor in json_dict["contributors"]
         if json_dict["contributors"]
     ]
@@ -120,7 +123,7 @@ def process_project(
 def process_experiment(
     experiment_dir: DirectoryNode,
     metadata_schema: Dict[str, Any],
-    project_id: str,
+    parent_project_id: str,
     collect_all: bool = False,
 ) -> Experiment:
     """Extract the experiment specific information out of a JSON dictionary
@@ -133,9 +136,13 @@ def process_experiment(
         Experiment: An experiment dataclass
     """
     json_dict = read_json(experiment_dir.file("experiment.json"))
+    project_ids = (
+        [json_dict["project"]] if json_dict.get("project") else json_dict["projects"]
+    )
     identifiers: list[str | int | float] = [
-        slugify(f'{json_dict["project"]}-{identifier}')
+        slugify(f"{project_ids}-{identifier}")
         for identifier in json_dict["experiment_ids"]
+        for project_id in project_ids
     ]
     metadata_dict = create_metadata_objects(
         json_dict, metadata_schema, collect_all, identifiers[0]
@@ -146,9 +153,7 @@ def process_experiment(
     return Experiment(
         name=json_dict["experiment_name"],
         description=json_dict["experiment_description"],
-        projects=[slugify(json_dict["project"])]
-        if json_dict.get("project")
-        else [project_id],
+        projects=project_ids if project_ids else [parent_project_id],
         identifiers=identifiers,
         metadata=metadata_dict,
         date_created=None,
@@ -177,12 +182,6 @@ def process_raw_dataset(
         Dataset: An dataset dataclass
     """
     json_dict = read_json(dataset_dir.file(dataset_dir.name() + ".json"))
-    named_fields: dict[str, Any] = {
-        "full-description": json_dict["Description"],
-        "sequence-id": json_dict["SequenceID"],
-        "sqrt-offset": json_dict["Offsets"]["SQRT Offset"],
-    }
-
     identifiers = [
         slugify(
             (
@@ -196,22 +195,50 @@ def process_raw_dataset(
         json_dict, metadata_schema, collect_all, identifiers[0]
     )
     metadata_dict = metadata_dict | create_metadata_objects(
-        named_fields, metadata_schema, False, identifiers[0]
+        {
+            "full-description": json_dict["Description"],
+            "sequence-id": json_dict["SequenceID"],
+            "sqrt-offset": json_dict["Offsets"]["SQRT Offset"],
+        },
+        metadata_schema,
+        False,
+        identifiers[0],
     )
-
     updated_dates = []
-    for index, session in enumerate(json_dict["Sessions"]):
-        if index == 0:
-            created_date = parse_timestamp(session["Session"])
-        else:
-            updated_dates.append(parse_timestamp(session["Session"]))
+
     if slugify(json_dict["Basename"]["Sample"]) not in experiment_id:
         logger.warning(
             "Experiment ID does not match parent for dataset %s", identifiers[0]
         )
     additional_properties = {}
+
     if collect_all:
         additional_properties = json_dict
+
+    additional_properties["Sessions"] = []
+    for index, session in enumerate(json_dict["Sessions"]):
+        session_id = slugify(
+            f'{identifiers[0]}-"session"-{index}-{session["SessionID"]}'
+        )
+        session_object = process_nested_contextobj(
+            session, session_id, "MedicalImagingTechnique"
+        )
+        session_date = parse_timestamp(session["Session"])
+        session_object.date_created = session_date
+        session_object.date_modified = [session_date]
+        if index == 0:
+            created_date = session_date
+        else:
+            updated_dates.append(session_date)
+        additional_properties["Sessions"].append(session_object)
+    additional_properties["Offsets"] = convert_to_property_value(
+        json_element=json_dict["Offsets"], name="Offsets"
+    )
+    additional_properties["Camera Settings"] = convert_to_property_value(
+        json_element=json_dict["Camera Settings"], name="Camera Settings"
+    )
+    additional_properties["absolutePath"] = dataset_dir.path().as_posix()
+    identifiers.append(dataset_dir.path().as_posix())
     return Dataset(
         name=identifiers[0],
         description=json_dict["Description"],
@@ -242,6 +269,33 @@ def process_raw_dataset(
     )
 
 
+def process_nested_contextobj(
+    sub_json: Dict[str, Any], identifier: str, schema_type: str
+) -> ContextObject:
+    """Create a context object from the subset of the json data
+
+    Args:
+        sub_json (Dict[str,Any]): the subset of the json data
+        identifier (str): the identifier of this context object
+        schema_type (str): the object's type in schema.org
+
+    Returns:
+        ContextObject: the restultant context object
+    """
+    return ContextObject(
+        name=identifier,
+        description=str(
+            sub_json.get("description") if sub_json.get("description") else identifier
+        ),
+        identifiers=[identifier],
+        date_created=None,
+        date_modified=None,
+        metadata=None,
+        additional_properties=convert_to_property_value(sub_json, identifier),
+        schema_type=schema_type,
+    )
+
+
 # def process_zarr_dataset()
 
 
@@ -259,6 +313,7 @@ def parse_raw_data(  # pylint: disable=too-many-locals
     raw_dir: DirectoryNode,
     # file_filter: filters.PathFilterSet,
     metadata_handler: MetadataHanlder,
+    api_agent: MyTardisRestAgent,
     collect_all: bool = False,
     write_datasets: bool = True,
 ) -> CrateManifest:
@@ -271,9 +326,6 @@ def parse_raw_data(  # pylint: disable=too-many-locals
     project_metadata_schema = metadata_handler.get_mtobj_schema(MtObject.PROJECT)
     experiment_metadata_schema = metadata_handler.get_mtobj_schema(MtObject.EXPERIMENT)
     raw_dataset_metadata_schema = metadata_handler.get_mtobj_schema(MtObject.DATASET)
-    # zarr_dataset_metadata_scheam =
-    #  metadata_handler.request_metadata_schema(ZARR_DATASET_NAMESPACE)
-    # datafile_metadata_schema = metadata_handler.get_mtobj_schema(MtObject.DATAFILE)
     project_dirs = [
         d for d in raw_dir.iter_dirs(recursive=True) if d.has_file("project.json")
     ]
@@ -283,6 +335,7 @@ def parse_raw_data(  # pylint: disable=too-many-locals
             project_dir=project_dir,
             metadata_schema=project_metadata_schema,
             collect_all=collect_all,
+            api_agent=api_agent,
         )
         crate_manifest.add_projects(projcets={str(project.id): project})
 
@@ -298,7 +351,7 @@ def parse_raw_data(  # pylint: disable=too-many-locals
             experiment = process_experiment(
                 experiment_dir,
                 metadata_schema=experiment_metadata_schema,
-                project_id=str(project.id),
+                parent_project_id=str(project.id),
                 collect_all=collect_all,
             )
             crate_manifest.add_experiments({str(experiment.id): experiment})
@@ -319,35 +372,45 @@ def parse_raw_data(  # pylint: disable=too-many-locals
                 )
 
                 data_dir = next(
-                    d
-                    for d in dataset_dir.iter_dirs()
-                    if datetime_pattern.match(d.path().stem)
+                    (
+                        d
+                        for d in dataset_dir.iter_dirs()
+                        if datetime_pattern.match(d.path().stem)
+                    ),
+                    None,
                 )
 
-                dataset.date_created = parse_timestamp(data_dir.name())
+                dataset.date_created = (
+                    parse_timestamp(data_dir.name()) if data_dir else None
+                )
 
                 crate_manifest.add_datasets([dataset])
-                if write_datasets:
+                if write_datasets and not dataset_dir.has_file("bagit.txt"):
                     logging.info("Writing Crate for: %s", dataset_dir.name())
+                    projects = {
+                        project_id: crate_manifest.projcets[project_id]
+                        for project_id in experiment.projects
+                        if crate_manifest.projcets.get(project_id)
+                    }
+                    projects[str(project.id)] = project
                     dataset_manifest = CrateManifest(
                         projcets={str(project.id): project},
                         experiments={str(experiment.id): experiment},
                         datasets=[dataset],
                         datafiles=None,
                     )
-                    write_crate(dataset_dir.path(), data_dir.path(), dataset_manifest)
+                    dataset.directory = Path("./")
+                    dataset.identifiers[0] = "./"
+                    write_crate(
+                        dataset_dir.path(),
+                        dataset_dir.path(),
+                        dataset_manifest,
+                        meta_only=True,
+                    )
                     logging.info("Bagging Crate for: %s", dataset_dir.name())
                     bagit_crate(
-                        data_dir.path(),
+                        dataset_dir.path(),
                         contact_name=project.principal_investigator.name,
                     )
                     dataset.directory = Path("data") / dataset.directory
-
-                # for file in dataset_dir.iter_files(recursive=True):
-                #     if file_filter.exclude(file.path()):
-                #         continue
-
-                #     datafile = collate_datafile_info(file, root_dir, dataset_id)
-                #     pedd_builder.add_datafile(datafile)
-
     return crate_manifest

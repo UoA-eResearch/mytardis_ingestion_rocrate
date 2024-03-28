@@ -18,7 +18,8 @@ from src.cli.mytardisconfig import MyTardisEnvConfig
 from src.encryption.encrypt_metadata import Encryptor
 from src.ingestion_targets.abi_music.crate_builder import ABICrateBuilder
 from src.ingestion_targets.print_lab_genomics.extractor import PrintLabExtractor
-from src.mt_api.api_consts import CONNECTION__HOSTNAME
+
+# from src.mt_api.api_consts import CONNECTION__HOSTNAME
 from src.mt_api.apiconfigs import AuthConfig, MyTardisRestAgent
 from src.rocrate_builder.rocrate_writer import archive_crate, bagit_crate, write_crate
 from src.utils.log_utils import init_logging
@@ -33,7 +34,6 @@ OPTION_INPUT_PATH = click.option(
 OPTION_HOSTNAME = click.option(
     "--mt_hostname",
     type=str,
-    default=CONNECTION__HOSTNAME,
     help="hostname for MyTardis API",
 )
 OPTION_MT_USER = click.option(
@@ -98,6 +98,7 @@ def abi(
         env_config = MyTardisEnvConfig(env_prefix=env_prefix)  # type: ignore
         mt_user = mt_user if mt_user else env_config.auth.username
         mt_api_key = mt_api_key if mt_api_key else env_config.auth.api_key
+        mt_hostname = mt_hostname if mt_hostname else env_config.connection.hostname
     logger.info("Loading MyTardis API agent")
     if mt_user and mt_api_key:
         auth_config = AuthConfig(username=mt_user, api_key=mt_api_key)

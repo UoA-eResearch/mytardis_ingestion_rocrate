@@ -35,8 +35,7 @@ class ROBuilder:
     """
 
     def __init__(
-        self,
-        crate: ROCrate,
+        self, crate: ROCrate, flatten_additional_properties: bool = True
     ) -> None:
         """Initialisation of the ROBuilder
 
@@ -46,6 +45,7 @@ class ROBuilder:
                 relating to the entries to be added.
         """
         self.crate = crate
+        self.flatten_additional_properties = flatten_additional_properties
 
     def _add_metadata_to_crate(
         self, metadata_obj: MTMetadata, metadata_id: str, parent_id: str | int | float
@@ -227,20 +227,29 @@ class ROBuilder:
         properties: Dict[str, Any],
         additional_properties: Dict[str, Any],
     ) -> Dict[str, str | List[str] | Dict[str, Any]]:
-        properties["additionalProperty"] = {}
+        entity_properties = properties
+        if not self.flatten_additional_properties:
+            properties["additonal properties"] = {}
+            entity_properties = properties["additonal properties"]
         for key, value in additional_properties.items():
-            if key not in properties.keys():
-                if (
-                    key not in properties["additionalProperty"].keys()
-                ):  # pylint: disable=C0201
-                    properties["additionalProperty"][key] = value
-                elif isinstance(properties[key], list):
-                    properties["additionalProperty"][key].append(value)
-                else:
-                    properties["additionalProperty"] = [
-                        properties["additionalProperty"],
-                        value,
-                    ]
+            if isinstance(value, List):
+                for index, item in enumerate(value):
+                    value[index] = (
+                        self.add_context_object(item).id
+                        if isinstance(item, ContextObject)
+                        else item
+                    )
+            if isinstance(value, ContextObject):
+                value = self.add_context_object(value).id
+            if key not in entity_properties.keys():  # pylint: disable=C0201
+                entity_properties[key] = value
+            elif isinstance(entity_properties[key], list):
+                entity_properties[key].append(value)
+            else:
+                entity_properties[key] = [
+                    properties,
+                    value,
+                ]
         return properties
 
     def _add_dates(
@@ -377,6 +386,7 @@ class ROBuilder:
                 properties=properties,
                 additional_properties=dataset.additional_properties,
             )
+
         if identifier == ".":
             logger.debug("Updating root dataset")
             self.crate.root_dataset.properties().update(properties)
@@ -438,11 +448,15 @@ class ROBuilder:
         return self._add_identifiers(datafile, datafile_obj)
 
     def add_context_object(self, context_object: ContextObject) -> DataEntity:
-        """Add a dataset to the RO crate
+        """Add a generic context object to the RO crate
 
         Args:
-            dataset (Dataset): The dataset to be added to the crate
+            context_object (ContextObject): the context object to be added
+
+        Returns:
+            DataEntity: the DataEntity in the RO-Crate
         """
+
         identifier = context_object.id
         properties = context_object.__dict__
         if context_object.schema_type:
@@ -457,6 +471,8 @@ class ROBuilder:
                 context_object.date_created,
                 context_object.date_modified,
             )
+            properties.pop("date_created")
+            properties.pop("date_modified")
         context_entitiy = self.crate.add(
             ContextEntity(self.crate, identifier, properties=properties)
         )

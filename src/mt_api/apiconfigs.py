@@ -15,6 +15,8 @@ from requests.exceptions import RequestException
 from requests.models import PreparedRequest
 
 from src.mt_api.api_consts import CONNECTION__HOSTNAME
+from src.rocrate_builder.constants.organisatons import UOA
+from src.rocrate_dataclasses.rocrate_dataclasses import Person
 
 logger = logging.getLogger(__name__)
 
@@ -179,3 +181,41 @@ class MyTardisRestAgent:  # pylint: disable=R0903, R0913
         response.raise_for_status()
 
         return response
+
+    def create_person_object(self, upi: str) -> Person:
+        """Look up a UPI and create a Person entry from the results
+
+        Args:
+            upi (str): The UPI for the person
+
+        Returns:
+            Person: A Person object created from the results of the UPI lookup
+
+        Raises:
+            ValueError: If the UPI can't be found
+        """
+        users_stub = "user/?username="
+        name = upi
+        email = ""
+        response = self.mytardis_api_request(
+            "GET", self.api_template + users_stub + upi
+        )
+        if response.status_code == 200:
+            if response_data := response.json().get("objects"):
+                name = (
+                    response_data[0].get("first_name")
+                    if response_data[0].get("first_name")
+                    else ""
+                )
+                name += (
+                    " " + response_data[0].get("last_name")
+                    if response_data[0].get("last_name")
+                    else ""
+                )
+                email = response_data[0].get("email")
+        return Person(
+            name=name,
+            email=email,
+            affiliation=UOA,
+            identifiers=[upi],
+        )

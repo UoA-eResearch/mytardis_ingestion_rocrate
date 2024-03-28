@@ -1,6 +1,6 @@
 # RO-Crate Generation - My Tardis
 Scripts for packaging instrument data for [ingestion](https://github.com/UoA-eResearch/mytardis_ingestion) into [MyTardis](https://github.com/UoA-eResearch/mytardis) as [Research Object Crates](https://w3id.org/ro/crate).
-Along with modules for generating RO-Crates internally within MyTardis.
+Along with modules for generating RO-Crates internally within MyTardis (to be developed).
 
 
 
@@ -14,15 +14,21 @@ to generate an RO-Crate for a collection of ABI Music datasets run:
 ```bash
 ro_crate_builder abi -i /root_of_abi_directory
 ```
-The root directory must contain a tree of directories with apropriate `project.json`, `experiment.json` and `dataset.json` files
+The root directory must contain a tree of directories with apropriate `project.json`, `experiment.json` and `dataset.json` files.
+This will generate an RO-Crate for every dataset found and package each as a bagit (so that all files are moved into a `data/` directory)
 
 to generate a Print Lab RO-Crate run
 
 ```bash
-ro_crate_builder print-lab /print_lab_dir/sampledata.xls
+ro_crate_builder print-lab -i /print_lab_dir/sampledata.xls -o /output_crate_location
 ```
 
-where sampledata is a sheet of data regarding your samples with labels matching a mytardis schema
+where sampledata is a sheet of data regarding your samples with labels matching a mytardis schema.
+with optional parameters:
+
+- `-a [tar.gz|tar|zip]` archive the final crate as a specific format
+- `--bag_crate true|false` package the crate as a bagit (default true)
+- `--collect-all` collect all metadata even if it does not appear in a given schema.
 
 ### Ingestion .env configs
 The RO-Crate builder scripts will use a a `.env` config file used for [ingestion](https://github.com/UoA-eResearch/mytardis_ingestion) for API authentication and default schema config. It will look for those by default in the current directory, an alternative directory can be provided with the j `--env_prefix` parameter.
