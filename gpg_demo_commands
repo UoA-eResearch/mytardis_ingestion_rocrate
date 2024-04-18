@@ -1,0 +1,14 @@
+
+ro_crate_builder print-lab -i examples_for_test/print_lab_test/sampledata.xlsx --gpg_binary /usr/bin/gpg2 -o /home/jlove/projects/my_tardis_ro_crate/test_outputs/no_encryption
+
+gpg --list-secret-keys
+
+awk '{gsub("\\\\n","\n")};1' test_rawPGP.txt | gpg -d -
+
+gpg -d test_rawPGP.txt
+
+ro_crate_builder print-lab -i examples_for_test/print_lab_test/sampledata.xlsx --encryption_keys 93B72373820DDB104BC6859474CBFBAB503F3CF3  --gpg_binary /usr/bin/gpg2 -o /home/jlove/projects/my_tardis_ro_crate/test_outputs/with_encryption
+
+rm -rf test_outputs/*
+
+ro_crate_builder decrypt-sensitive -i test_outputs/with_encryption/data/ --participant_id c0001

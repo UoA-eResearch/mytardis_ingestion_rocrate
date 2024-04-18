@@ -183,7 +183,7 @@ class Experiment(ContextObject):
     projects: List[str]  # NOT IN SCHEMA.ORG
     contributors: Optional[List[Person]]
     mytardis_classification: Optional[str]  # NOT IN SCHEMA.ORG
-    participant: Optional[str]
+    participant: Optional[Participant]
     schema_type = "DataCatalog"
 
 
@@ -205,6 +205,7 @@ class SampleExperiment(Experiment):  # pylint: disable=too-many-instance-attribu
     ]  # not defined in either sample or data catalog
     # but found here https://schema.org/body_location
     tissue_processing_method: Optional[str]
+    participant: Participant
     analyate: Optional[str]
     portion: Optional[str]
     participant_metadata: Optional[Dict[str, MTMetadata]]

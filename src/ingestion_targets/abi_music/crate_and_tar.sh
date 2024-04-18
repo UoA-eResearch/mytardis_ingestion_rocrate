@@ -2,6 +2,11 @@
 TARGET_DIR=$1
 TAR_OUTPUT=$2
 echo "##"
+echo "Cleaning system files"
+echo "##"
+find $TARGET_DIR \( -name "*.AppleDB" -o -name "*.Trashes" -o -name "*.DS_Store"  -o -name '*.DS_store'  -o -name "*.AppleDouble"  -o -name "*.TemporaryItems"  -o -name "*.Spotlight-V100"  -o -name "*.vol"  -o -name "*.fseventsd" -o -name "*._*"  -o -name "*.FileSync-lock " -o -name "*.com.apple.timemachine.donotpresent"  -o -name "*.fseventsd" \) -delete -printf "removed '%p'\n"
+find $TARGET_DIR -name ".*" -delete -printf "removed '%p'\n"
+echo "##"
 echo "#Building Crates for" $TARGET_DIR
 echo "##"
 ro_crate_builder abi -i $TARGET_DIR

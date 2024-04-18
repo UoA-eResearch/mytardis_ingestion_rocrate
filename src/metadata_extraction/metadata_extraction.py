@@ -1,6 +1,9 @@
 """Metadata conversion and generation"""
 
+import logging
 from typing import Any, Dict
+
+from requests.exceptions import RequestException
 
 from src.cli.mytardisconfig import SchemaConfig
 from src.mt_api.apiconfigs import MyTardisRestAgent
@@ -18,6 +21,7 @@ MT_METADATA_TYPE = {
     8: "JSON",
     "default": "STRING",
 }
+logger = logging.getLogger(__name__)
 
 
 def get_metadata_type(type_enum: int) -> str:
@@ -60,18 +64,27 @@ class MetadataHanlder:
             Dict[Any, Any]: the metadata schema as a dictionary keyed on its' "full name"
         """
         schema_stub = "schema/?namespace="
-        response = self.api_agent.mytardis_api_request(
-            "GET", self.api_agent.api_template + schema_stub + schema_namespace
-        )
-        metadata_response = [
-            response_obj.get("parameter_names")
-            for response_obj in response.json().get("objects")
-        ]
-        metadata_params = [
-            metatdata_parameters
-            for params in metadata_response
-            for metatdata_parameters in params
-        ]
+        metadata_params = []
+        try:
+            response = self.api_agent.mytardis_api_request(
+                "GET", self.api_agent.api_template + schema_stub + schema_namespace
+            )
+            metadata_response = [
+                response_obj.get("parameter_names")
+                for response_obj in response.json().get("objects")
+            ]
+            metadata_params = [
+                metatdata_parameters
+                for params in metadata_response
+                for metatdata_parameters in params
+            ]
+        except RequestException as e:
+            logger.error(
+                "bad API response getting Metadata schema %s: %s \n NO METADATA WILL BE READ",
+                schema_namespace,
+                e,
+            )
+
         return {
             schema_object.get("name"): schema_object
             for schema_object in metadata_params
@@ -137,7 +150,7 @@ def create_metadata_objects(
             metadata_dict[meta_key] = MTMetadata(
                 ro_crate_id=meta_key,
                 name=meta_key,
-                value=str(meta_value) if metadata_type == 2 else meta_value,
+                value=str(meta_value),  # if metadata_type == 2 else meta_value,
                 mt_type=get_metadata_type(int(metadata_type)),
                 sensitive=metadata_sensitive is True,
                 parents=[str(parent_id)] if parent_id else None,

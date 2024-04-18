@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
+from rocrate.rocrate import ROCrate
 from slugify import slugify
 
 from src.ingestion_targets.abi_music.consts import (  # ZARR_DATASET_NAMESPACE,
@@ -21,6 +22,7 @@ from src.metadata_extraction.metadata_extraction import (
 )
 from src.mt_api.apiconfigs import MyTardisRestAgent
 from src.mt_api.mt_consts import MtObject
+from src.rocrate_builder.rocrate_builder import ROBuilder
 from src.rocrate_builder.rocrate_writer import bagit_crate, write_crate
 from src.rocrate_dataclasses.data_class_utils import CrateManifest
 from src.rocrate_dataclasses.rocrate_dataclasses import (
@@ -237,7 +239,7 @@ def process_raw_dataset(
     additional_properties["Camera Settings"] = convert_to_property_value(
         json_element=json_dict["Camera Settings"], name="Camera Settings"
     )
-    additional_properties["absolutePath"] = dataset_dir.path().as_posix()
+    additional_properties["data root path"] = dataset_dir.path().as_posix()
     identifiers.append(dataset_dir.path().as_posix())
     return Dataset(
         name=identifiers[0],
@@ -401,11 +403,14 @@ def parse_raw_data(  # pylint: disable=too-many-locals
                     )
                     dataset.directory = Path("./")
                     dataset.identifiers[0] = "./"
+                    crate = ROCrate()
+                    crate.source = dataset_dir.path()
+                    builder = ROBuilder(crate)
                     write_crate(
-                        dataset_dir.path(),
-                        dataset_dir.path(),
-                        dataset_manifest,
-                        meta_only=True,
+                        builder=builder,
+                        crate_destination=dataset_dir.path(),
+                        crate_source=dataset_dir.path(),
+                        crate_contents=dataset_manifest,
                     )
                     logging.info("Bagging Crate for: %s", dataset_dir.name())
                     bagit_crate(

@@ -13,11 +13,15 @@ from pathlib import Path
 from typing import Optional
 
 import click
+from rocrate.rocrate import ROCrate
+from slugify import slugify
 
 from src.cli.mytardisconfig import MyTardisEnvConfig
-from src.encryption.encrypt_metadata import Encryptor
 from src.ingestion_targets.abi_music.crate_builder import ABICrateBuilder
 from src.ingestion_targets.print_lab_genomics.extractor import PrintLabExtractor
+from src.ingestion_targets.print_lab_genomics.print_crate_builder import (
+    PrintLabROBuilder,
+)
 
 # from src.mt_api.api_consts import CONNECTION__HOSTNAME
 from src.mt_api.apiconfigs import AuthConfig, MyTardisRestAgent
@@ -118,7 +122,7 @@ def abi(
 
 @click.command()
 @OPTION_INPUT_PATH
-@click.option("--encryption_key", type=str, multiple=True, default=[])
+@click.option("--pubkey_fingerprints", type=str, multiple=True, default=[])
 @OPTION_LOG
 @OPTION_ENV_PREFIX
 @OPTION_HOSTNAME
@@ -141,10 +145,13 @@ def abi(
     default=None,
     help="Archive the RO-Crate in one of the following formats: [tar, tar.gz, zip]",
 )
+@click.option(
+    "--gpg_binary", type=Path, default=None, help="binary for running gpg encryption"
+)
 @OPTION_COLLECT_ALL
 def print_lab(
     input_metadata: Path,
-    encryption_key: list[str],
+    pubkey_fingerprints: list[str],
     log_file: Path,
     env_prefix: str,
     mt_hostname: Optional[str],
@@ -154,6 +161,7 @@ def print_lab(
     archive_type: Optional[str],
     bag_crate: Optional[bool],
     collect_all: Optional[bool],
+    gpg_binary: Optional[Path],
 ) -> None:
     """
     Create an RO-Crate based on a Print Lab metadata file
@@ -177,10 +185,7 @@ def print_lab(
         connection_proxies=None,
         verify_certificate=True,
     )
-    logger.info("Loading Encryption (this does nothing right now!)")
-    encryptor: Encryptor = Encryptor(encryption_key)
     extractor = PrintLabExtractor(
-        encryptor=encryptor,
         api_agent=api_agent,
         schemas=env_config.default_schema if env_config else None,
         collect_all=collect_all if collect_all else False,
@@ -209,7 +214,15 @@ def print_lab(
         crate_destination.mkdir()
 
     logger.info("writing crate %s", source_path)
+
+    logger.info("Initalizing crate")
+    crate = ROCrate(  # pylint: disable=unexpected-keyword-arg
+        pubkey_fingerprints=pubkey_fingerprints, gpg_binary=gpg_binary
+    )
+    crate.source = source_path
+    builder = PrintLabROBuilder(crate)
     write_crate(
+        builder=builder,
         crate_source=source_path,
         crate_destination=crate_destination,
         crate_contents=crate_manifest,
@@ -220,9 +233,42 @@ def print_lab(
     archive_crate(archive_type, final_output, crate_destination)
 
 
+@click.command()
+@OPTION_INPUT_PATH
+@OPTION_LOG
+@click.option(
+    "--participant_id",
+    type=str,
+    default=None,
+    help="id of participant",
+)
+def extract_participant_sensitive(
+    input_metadata: Path, log_file: Path, participant_id: str
+) -> None:
+    """Testing function to decrypt sensitive
+
+    Args:
+        input_metadata (Path): _description_
+        log_file (Path): _description_
+        participant_id (str): _description_
+    """
+    init_logging(file_name=str(log_file), level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    crate = ROCrate(source=input_metadata)
+    decrypted_result = crate.dereference(f"#{slugify(participant_id)}-sensitive")
+    if decrypted_result:
+        logger.info(  # pylint: disable=protected-access
+            "\n\n ### \n Sensitive Json for %s is: \n %s",
+            participant_id,
+            decrypted_result._jsonld,  # pylint: disable=protected-access
+        )
+    else:
+        logger.error("Participant sensitive not available")
+
+
 cli.add_command(print_lab)
 cli.add_command(abi)
-
+cli.add_command(extract_participant_sensitive)
 
 if __name__ == "__main__":
     cli()  # pylint: disable=no-value-for-parameter

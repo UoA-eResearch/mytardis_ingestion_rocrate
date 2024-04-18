@@ -5,13 +5,13 @@ Into dataclasses that can be built into an RO-Crate.
 
 import logging
 from pathlib import Path
-from typing import Any, Callable, Dict, List
+from typing import Any, Dict, List
 
 import pandas as pd
+from slugify import slugify
 
 import src.ingestion_targets.print_lab_genomics.consts as profile_consts
 from src.cli.mytardisconfig import SchemaConfig
-from src.encryption.encrypt_metadata import Encryptor
 from src.metadata_extraction.metadata_extraction import (
     MetadataHanlder,
     create_metadata_objects,
@@ -30,7 +30,6 @@ from src.rocrate_dataclasses.rocrate_dataclasses import (
     Project,
     SampleExperiment,
 )
-from src.user_lookup.user_lookup import create_person_object
 from src.utils.file_utils import is_xslx
 
 logger = logging.getLogger(__name__)
@@ -43,18 +42,15 @@ class PrintLabExtractor:
     Encryption of strings occurs during extraction
     """
 
-    encryptor: Encryptor
     api_agent: MyTardisRestAgent
     collect_all: bool
 
     def __init__(
         self,
-        encryptor: Encryptor,
         api_agent: MyTardisRestAgent,
         schemas: SchemaConfig | None,
         collect_all: bool,
     ) -> None:
-        self.encryptor = encryptor
         self.api_agent = api_agent
         self.schemas = schemas
 
@@ -64,15 +60,13 @@ class PrintLabExtractor:
         self.collect_all = collect_all
 
     #
-    def _contruct_sensitive_dict(
-        self, sensitive_feild_names: list[str], encryptor: Encryptor
-    ) -> dict[str, Callable[[str], str]]:
-        return {
-            field_name: encryptor.encrypt_string for field_name in sensitive_feild_names
-        }
+    # def _contruct_sensitive_dict(
+    #     self, sensitive_feild_names: list[str]
+    # ) -> dict[str, Callable[[str], str]]:
+    #     return {field_name: field_name for field_name in sensitive_feild_names}
 
     def datasheet_to_dataframe(
-        self, input_data_source: Any, sheet_name: str, sensitive_fields: List[str]
+        self, input_data_source: Any, sheet_name: str
     ) -> pd.DataFrame:
         """Read the contents of an XLSX datasheet into a pandas dataframe
         invoking the chosen encryptor
@@ -90,12 +84,10 @@ class PrintLabExtractor:
         """
         if not isinstance(input_data_source, Path) or not is_xslx(input_data_source):
             raise ValueError("Print lab genomics file must be an excel file")
-        sensitive_dict = self._contruct_sensitive_dict(sensitive_fields, self.encryptor)
         worksheet_file = pd.ExcelFile(input_data_source, engine="openpyxl")
         parsed_df: Dict[str, pd.DataFrame] = pd.read_excel(
             worksheet_file,
             engine="openpyxl",
-            converters=sensitive_dict,
             sheet_name=sheet_name,
         )
         return parsed_df
@@ -106,15 +98,16 @@ class PrintLabExtractor:
         metadata_obj_schema: Dict[str, Dict[str, Any]],
     ) -> Dict[str, Project]:
         def parse_project(row: pd.Series) -> Project:
+            identifier = slugify(f'{row["Project name"]}-{row["Project code"]}')
             metadata_dict = create_metadata_objects(
                 row, metadata_obj_schema, self.collect_all, row["Project name"]
             )
-            pi = create_person_object(row["Project PI"], api_agent=self.api_agent)
+            pi = self.api_agent.create_person_object(row["Project PI"])
             new_project = Project(
-                name=row["Project code"],
+                name=identifier,
                 metadata=metadata_dict,
                 description=row["Project name"],
-                identifiers=[row["Project name"]],
+                identifiers=[slugify(f'{row["Project code"]}'), identifier],
                 principal_investigator=pi,
                 date_created=None,
                 date_modified=None,
@@ -152,8 +145,8 @@ class PrintLabExtractor:
                 contributors=None,
                 mytardis_classification="",
                 metadata=metadata_dict | participant.metadata,  # type: ignore
-                projects=[row["Project"]],
-                participant=row["Participant"],
+                projects=[slugify(f'{row["Project"]}')],
+                participant=participant,
                 additional_property=None,
                 sex=participant.sex,
                 associated_disease=[
@@ -205,15 +198,18 @@ class PrintLabExtractor:
             new_participant = Participant(
                 name=row["Participant: Code"],
                 description="",
-                identifiers=[row["Participant: Code"], row["Participant aliases"]],
+                identifiers=[
+                    slugify(f'{row["Participant: Code"]}'),
+                    row["Participant aliases"],
+                ],
                 date_created=None,
                 date_modified=None,
                 metadata=metadata_dict,
-                date_of_birth=row["Participant Date of birth"],
+                date_of_birth=str(row["Participant Date of birth"]),
                 nhi_number=row["Participant NHI number"],
                 sex=row["Participant Sex"],
                 ethnicity=row["Participant Ethnicity"],
-                project=row["Project"],
+                project=slugify(f'{row["Project"]}'),
                 additional_properties={},
                 schema_type="Person",
             )
@@ -299,20 +295,17 @@ class PrintLabExtractor:
             CrateManifest: manifest of all the contents of the RO-Crate
         """
 
-        def list_sensitive_fields(mt_sensitive: Dict[str, Dict[str, Any]]) -> List[str]:
-            return [
-                metadata_name
-                for metadata_name, metadata_object in mt_sensitive.items()
-                if metadata_object.get("sensitive")
-            ]
+        # def list_sensitive_fields(mt_sensitive: Dict[str, Dict[str, Any]]) -> List[str]:
+        #     return [
+        #         metadata_name
+        #         for metadata_name, metadata_object in mt_sensitive.items()
+        #         if metadata_object.get("sensitive")
+        #     ]
 
         crate_manifest = CrateManifest()
 
         metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.PROJECT)
-        sensitive_fields = list_sensitive_fields(metadata_dict)
-        project_df = self.datasheet_to_dataframe(
-            input_data_source, "Projects", sensitive_fields
-        )
+        project_df = self.datasheet_to_dataframe(input_data_source, "Projects")
         crate_manifest.add_projects(
             projcets=(
                 self._parse_projects(
@@ -322,15 +315,11 @@ class PrintLabExtractor:
         )
 
         metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.EXPERIMENT)
-        sensitive_fields = list_sensitive_fields(metadata_dict)
-        participants_df = self.datasheet_to_dataframe(
-            input_data_source, "Participants", sensitive_fields
-        )
+        participants_df = self.datasheet_to_dataframe(input_data_source, "Participants")
         participants = self._parse_participants(participants_df, metadata_dict)
         experiments_df = self.datasheet_to_dataframe(
             input_data_source=input_data_source,
             sheet_name="Samples",
-            sensitive_fields=sensitive_fields,
         )
         experiments = self._parse_experiments(
             experiments_df, participants, metadata_dict
@@ -338,17 +327,11 @@ class PrintLabExtractor:
         crate_manifest.add_experiments(experiments)
 
         metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.DATASET)
-        sensitive_fields = list_sensitive_fields(metadata_dict)
-        dataset_df = self.datasheet_to_dataframe(
-            input_data_source, "Datasets", sensitive_fields
-        )
+        dataset_df = self.datasheet_to_dataframe(input_data_source, "Datasets")
         crate_manifest.add_datasets(self._parse_datasets(dataset_df, metadata_dict))
 
         metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.DATAFILE)
-        sensitive_fields = list_sensitive_fields(metadata_dict)
-        datafile_df = self.datasheet_to_dataframe(
-            input_data_source, "Files", sensitive_fields
-        )
+        datafile_df = self.datasheet_to_dataframe(input_data_source, "Files")
         crate_manifest.add_datafiles(self._parse_datafiles(datafile_df, metadata_dict))
 
         return crate_manifest

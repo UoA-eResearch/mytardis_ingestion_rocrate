@@ -19,7 +19,6 @@ repos:
       entry: pylint
       language: python
       additional_dependencies:
-        - rocrate
         - bagit
         - slugify
         - pytest
@@ -29,6 +28,7 @@ repos:
         - ldap3
         - passpy
         - pydantic_settings
+        - rocrate
 -   repo: local
     hooks:
     - id: pytest

@@ -7,8 +7,7 @@ readme = "README.md"
 packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
-rocrate = "^0.8.0"
+python = ">=3.11,<3.12"
 passpy = "^1.0.2"
 ldap3 = "^2.9.1"
 python-gnupg = "^0.5.1"
@@ -30,6 +29,7 @@ backoff = "^2.2.1"
 requests = "^2.31.0"
 build = "^1.1.1"
 pydantic-settings = "^2.2.1"
+ro-crate-py = {git = "https://github.com/UoA-eResearch/ro-crate-py.git", branch = "encrypted-metadata"}
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.1.0"

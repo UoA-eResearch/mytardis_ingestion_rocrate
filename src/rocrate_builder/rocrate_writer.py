@@ -19,6 +19,7 @@ PROCESSES = 8
 
 
 def write_crate(
+    builder: ROBuilder,
     crate_source: Path,
     crate_destination: Path,
     crate_contents: CrateManifest,
@@ -36,10 +37,6 @@ def write_crate(
     Returns:
         ROCrate: _The RO-Crate object that has been written
     """
-    logger.info("Initalizing crate")
-    crate = ROCrate()
-    crate.source = crate_source
-    builder = ROBuilder(crate)
     logger.info("adding projects")
     _ = [builder.add_project(project) for project in crate_contents.projcets.values()]
     logger.info("adding experiments")
@@ -60,9 +57,9 @@ def write_crate(
     if not crate_destination.exists():
         crate_destination.mkdir(parents=True)
     if meta_only:
-        crate.metadata.write(crate_destination)
+        builder.crate.metadata.write(crate_destination)
         return ROCrate
-    crate.write(crate_destination)
+    builder.crate.write(crate_destination)
     return ROCrate
 
 

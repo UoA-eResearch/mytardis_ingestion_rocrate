@@ -17,6 +17,7 @@ from requests.models import PreparedRequest
 from src.mt_api.api_consts import CONNECTION__HOSTNAME
 from src.rocrate_builder.constants.organisatons import UOA
 from src.rocrate_dataclasses.rocrate_dataclasses import Person
+from src.user_lookup.user_lookup import lookup_user
 
 logger = logging.getLogger(__name__)
 
@@ -163,7 +164,6 @@ class MyTardisRestAgent:  # pylint: disable=R0903, R0913
         }
         if extra_headers:
             headers = {**headers, **extra_headers}
-        logger.debug("current authentication is %s", self.auth)
         response = self._session.request(
             method,
             url,
@@ -197,25 +197,33 @@ class MyTardisRestAgent:  # pylint: disable=R0903, R0913
         users_stub = "user/?username="
         name = upi
         email = ""
-        response = self.mytardis_api_request(
-            "GET", self.api_template + users_stub + upi
-        )
-        if response.status_code == 200:
-            if response_data := response.json().get("objects"):
-                name = (
-                    response_data[0].get("first_name")
-                    if response_data[0].get("first_name")
-                    else ""
-                )
-                name += (
-                    " " + response_data[0].get("last_name")
-                    if response_data[0].get("last_name")
-                    else ""
-                )
-                email = response_data[0].get("email")
-        return Person(
-            name=name,
-            email=email,
-            affiliation=UOA,
-            identifiers=[upi],
-        )
+        ldap_data = lookup_user(upi=upi)
+        if ldap_data is not None:
+            first_name, last_name, email = ldap_data
+            name = f"{first_name} {last_name}"
+            return Person(name=name, email=email, affiliation=UOA, identifiers=[upi])
+        try:
+            response = self.mytardis_api_request(
+                "GET", self.api_template + users_stub + upi
+            )
+            if response.status_code == 200:
+                if response_data := response.json().get("objects"):
+                    name = (
+                        response_data[0].get("first_name")
+                        if response_data[0].get("first_name")
+                        else name
+                    )
+                    name += (
+                        " " + response_data[0].get("last_name")
+                        if response_data[0].get("last_name")
+                        else ""
+                    )
+                    email = (
+                        response_data[0].get("email")
+                        if response_data[0].get("email")
+                        else email
+                    )
+        except RequestException as e:
+            logger.error("bad API response getting person data for %s: %s", upi, e)
+
+        return Person(name=name, email=email, affiliation=UOA, identifiers=[upi])

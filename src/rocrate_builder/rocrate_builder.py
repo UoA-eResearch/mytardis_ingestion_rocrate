@@ -8,6 +8,9 @@ from typing import Any, Dict, List, Optional
 
 from rocrate.model.contextentity import ContextEntity
 from rocrate.model.data_entity import DataEntity
+from rocrate.model.encryptedcontextentity import (  # pylint: disable=import-error, no-name-in-module
+    EncryptedContextEntity,
+)
 from rocrate.model.person import Person as ROPerson
 from rocrate.rocrate import ROCrate
 
@@ -56,18 +59,37 @@ class ROBuilder:
             metadata_obj (MTMetadata): the MyTardis Metadata object
             metadata_id (str): the id used to identify the entity in the crate
         """
-        metadata = ContextEntity(
-            self.crate,
-            metadata_id,
-            properties={
-                "@type": MT_METADATA_TYPE,
-                "name": metadata_obj.name,
-                "value": metadata_obj.value,
-                "myTardis-type": metadata_obj.mt_type,
-                "sensitive": metadata_obj.sensitive,
-                "parents": [parent_id],
-            },
-        )
+
+        if metadata_obj.sensitive:
+            if not self.crate.pubkey_fingerprints:
+                return
+            metadata = EncryptedContextEntity(
+                self.crate,
+                metadata_id,
+                properties={
+                    "@type": MT_METADATA_TYPE,
+                    "name": metadata_obj.name,
+                    "value": metadata_obj.value,
+                    "myTardis-type": metadata_obj.mt_type,
+                    "sensitive": metadata_obj.sensitive,
+                    "parents": [parent_id],
+                },
+                pubkey_fingerprints=[],
+            )
+        else:
+            metadata = ContextEntity(
+                self.crate,
+                metadata_id,
+                properties={
+                    "@type": MT_METADATA_TYPE,
+                    "name": metadata_obj.name,
+                    "value": metadata_obj.value,
+                    "myTardis-type": metadata_obj.mt_type,
+                    "sensitive": metadata_obj.sensitive,
+                    "parents": [parent_id],
+                },
+            )
+
         self.crate.add(metadata)
 
     def __add_organisation(self, organisation: Organisation) -> None:
@@ -315,22 +337,20 @@ class ROBuilder:
         )
         return self._add_identifiers(project, project_obj)
 
-    def add_experiment(self, experiment: Experiment) -> ContextEntity:
-        """Add an experiment to the RO crate
+    def _update_experiment_meta(
+        self,
+        experiment: Experiment,
+        properties: Dict[str, str | list[str] | dict[str, Any]],
+    ) -> ContextEntity:
+        """Update the metadata for an experiment and create the context entity for the experiment
 
         Args:
-            experiment (Experiment): The experiment to be added to the crate
-        """
-        # Note that this is being created as a data catalog object as there are no better
-        # fits
+            experiment (Experiment): the experiment object
 
+        Returns:
+            ContextEntity: the returned crate context entity
+        """
         identifier = experiment.id
-        properties: Dict[str, str | list[str] | dict[str, Any]] = {
-            "@type": "DataCatalog",
-            "name": experiment.name,
-            "description": experiment.description,
-            "project": experiment.projects,
-        }
         if experiment.metadata:
             properties = self._add_metadata(identifier, properties, experiment.metadata)
         if experiment.date_created:
@@ -344,10 +364,29 @@ class ROBuilder:
                 properties=properties,
                 additional_properties=experiment.additional_properties,
             )
-        experiment_obj = ContextEntity(
+        return ContextEntity(
             self.crate,
             identifier,
             properties=properties,
+        )
+
+    def add_experiment(self, experiment: Experiment) -> ContextEntity:
+        """Add an experiment to the RO crate
+
+        Args:
+            experiment (Experiment): The experiment to be added to the crate
+        """
+        # Note that this is being created as a data catalog object as there are no better
+        # fits
+
+        properties: Dict[str, str | list[str] | dict[str, Any]] = {
+            "@type": "DataCatalog",
+            "name": experiment.name,
+            "description": experiment.description,
+            "project": experiment.projects,
+        }
+        experiment_obj = self._update_experiment_meta(
+            experiment=experiment, properties=properties
         )
         return self._add_identifiers(experiment, experiment_obj)
 
