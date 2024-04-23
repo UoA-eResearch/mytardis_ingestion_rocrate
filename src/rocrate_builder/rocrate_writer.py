@@ -50,7 +50,7 @@ def write_crate(
     _ = [builder.add_datafile(datafile) for datafile in crate_contents.datafiles]
     # crate.source = None
     logger.info(
-        "writing crate metadata and moving from %s files to %s",
+        "writing crate metadata and moving files from %s to %s",
         crate_source,
         crate_destination,
     )

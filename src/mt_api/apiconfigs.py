@@ -227,3 +227,47 @@ class MyTardisRestAgent:  # pylint: disable=R0903, R0913
             logger.error("bad API response getting person data for %s: %s", upi, e)
 
         return Person(name=name, email=email, affiliation=UOA, identifiers=[upi])
+
+    def no_auth_request(
+        self,
+        method: str,
+        url: str,
+        params: Optional[Dict[str, str]] = None,
+    ) -> requests.Response:
+        """Make a request to the MyTardis API without requiring authentication.
+        Mainly used for GET requests to non-sensitive data that don't requaire AUTH
+
+        Args:
+            method (str): the REST API method
+            url (str): the hostname URL with API request
+            params (Optional[Dict[str, str]], optional): additional parameters
+
+        Returns:
+            A requests.Response object
+
+        Raises:
+            RequestException: An error raised when the request was not able to be completed due to
+                502 Bad Gateway error
+            HTTPError: An error raised when the request fails for other reasons via the
+                requests.Response.raise_for_status function.
+        """
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "User-Agent": self.user_agent,
+        }
+        response = requests.request(
+            method,
+            url,
+            params=params,
+            headers=headers,
+            verify=self.verify_certificate,
+            proxies=self.proxies,
+            timeout=5,
+        )
+
+        if response.status_code == 502:
+            raise BadGateWayException(response)
+        response.raise_for_status()
+
+        return response

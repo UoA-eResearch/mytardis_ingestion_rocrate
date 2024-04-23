@@ -122,7 +122,13 @@ def abi(
 
 @click.command()
 @OPTION_INPUT_PATH
-@click.option("--pubkey_fingerprints", type=str, multiple=True, default=[])
+@click.option(
+    "--pubkey_fingerprints",
+    type=str,
+    multiple=True,
+    default=[],
+    help="A comma seperated list of pgp public key fingerprints for encryption of metadata",
+)
 @OPTION_LOG
 @OPTION_ENV_PREFIX
 @OPTION_HOSTNAME
@@ -194,8 +200,10 @@ def print_lab(
     crate_manifest = extractor.extract(input_metadata)
 
     source_path = input_metadata
+    exclude = [(input_metadata / "sampledata.xlsx").as_posix()]
     if Path(input_metadata).is_file():
         source_path = Path(input_metadata).parent
+        exclude.append(input_metadata.name)
     if not output:
         output = source_path
     logger.info("writing RO-Crate from %s", source_path)
@@ -212,12 +220,11 @@ def print_lab(
         )
         crate_destination = Path(Path(tmp_crate_location.name) / source_path.name)
         crate_destination.mkdir()
-
     logger.info("writing crate %s", source_path)
 
     logger.info("Initalizing crate")
     crate = ROCrate(  # pylint: disable=unexpected-keyword-arg
-        pubkey_fingerprints=pubkey_fingerprints, gpg_binary=gpg_binary
+        pubkey_fingerprints=pubkey_fingerprints, gpg_binary=gpg_binary, exclude=exclude
     )
     crate.source = source_path
     builder = PrintLabROBuilder(crate)

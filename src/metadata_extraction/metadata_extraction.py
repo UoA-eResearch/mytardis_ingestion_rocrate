@@ -66,7 +66,7 @@ class MetadataHanlder:
         schema_stub = "schema/?namespace="
         metadata_params = []
         try:
-            response = self.api_agent.mytardis_api_request(
+            response = self.api_agent.no_auth_request(
                 "GET", self.api_agent.api_template + schema_stub + schema_namespace
             )
             metadata_response = [
