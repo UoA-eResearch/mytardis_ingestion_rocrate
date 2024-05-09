@@ -124,10 +124,11 @@ def abi(
 @OPTION_INPUT_PATH
 @click.option(
     "--pubkey_fingerprints",
+    "-k",
     type=str,
     multiple=True,
     default=[],
-    help="A comma seperated list of pgp public key fingerprints for encryption of metadata",
+    help="pgp public key fingerprints for encryption of metadata, accpets multiple",
 )
 @OPTION_LOG
 @OPTION_ENV_PREFIX

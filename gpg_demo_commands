@@ -11,4 +11,8 @@ ro_crate_builder print-lab -i examples_for_test/print_lab_test/sampledata.xlsx -
 
 rm -rf test_outputs/*
 
-ro_crate_builder decrypt-sensitive -i test_outputs/with_encryption/data/ --participant_id c0001
+ro_crate_builder extract-participant-sensitive -i test_outputs/encrypted_crate/data/ --participant_id C0001
+
+ro_crate_builder print-lab -i examples_for_test/print_lab_test/sampledata.xlsx -o test_outputs/example_crate
+
+ro_crate_builder print-lab -i examples_for_test/print_lab_test/sampledata.xlsx -o test_outputs/encrypted_crate --pubkey_fingerprints F523D60AED2D218D9EE1135B0DF7C73A2578B8E3
