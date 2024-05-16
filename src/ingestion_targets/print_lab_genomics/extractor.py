@@ -12,6 +12,10 @@ from slugify import slugify
 
 import src.ingestion_targets.print_lab_genomics.consts as profile_consts
 from src.cli.mytardisconfig import SchemaConfig
+from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
+    Participant,
+    SampleExperiment,
+)
 from src.metadata_extraction.metadata_extraction import (
     MetadataHanlder,
     create_metadata_objects,
@@ -21,14 +25,13 @@ from src.mt_api.apiconfigs import MyTardisRestAgent
 from src.mt_api.mt_consts import MtObject
 from src.rocrate_dataclasses.data_class_utils import CrateManifest
 from src.rocrate_dataclasses.rocrate_dataclasses import (
+    ACL,
     Datafile,
     Dataset,
     Experiment,
     Instrument,
     MedicalCondition,
-    Participant,
     Project,
-    SampleExperiment,
 )
 from src.utils.file_utils import is_xslx
 
@@ -92,6 +95,33 @@ class PrintLabExtractor:
         )
         return parsed_df
 
+    def _parse_acls(
+        self,
+        acls_sheet: pd.DataFrame,
+    ) -> Dict[str, ACL]:
+        def parse_acl(row: pd.Series) -> ACL:
+            identifier = slugify(f'{row["group name"]}')
+            new_acl = ACL(
+                name=identifier,
+                description=identifier,
+                identifiers=[identifier],
+                grantee=row["group name"],
+                date_created=None,
+                date_modified=None,
+                additional_properties=None,
+                grantee_type="organization",
+                mytardis_see_sensitive=row["see sensitive"],
+                mytardis_can_download=row["download"],
+                mytardis_owner=row["owner"],
+                schema_type="DigitalDocumentPermission",
+            )
+            return new_acl
+
+        acls: Dict[str, ACL] = {
+            acl.id: acl for acl in acls_sheet.apply(parse_acl, axis=1).to_list()
+        }
+        return acls
+
     def _parse_projects(
         self,
         projects_sheet: pd.DataFrame,
@@ -116,6 +146,7 @@ class PrintLabExtractor:
                 ethics_policy=row["Ethics Approval ID"],
                 additional_properties={},
                 schema_type="Project",
+                acls=None,
             )
             return new_project
 
@@ -129,6 +160,7 @@ class PrintLabExtractor:
         self,
         experiments_sheet: pd.DataFrame,
         particpants_dict: Dict[str, Participant],
+        acls_dict: Dict[str, ACL],
         metadata_obj_schema: Dict[str, Dict[str, Any]],
     ) -> Dict[str, Experiment]:
         def parse_experiment(row: pd.Series) -> Experiment:
@@ -175,6 +207,7 @@ class PrintLabExtractor:
                 participant_metadata=participant.metadata,
                 additional_properties={},
                 schema_type="DataCatalog",
+                acls=[acls_dict[slugify(f"{acl}")] for acl in row["Groups"].split(",")],
             )
             return new_experiment
 
@@ -212,6 +245,7 @@ class PrintLabExtractor:
                 project=slugify(f'{row["Project"]}'),
                 additional_properties={},
                 schema_type="Person",
+                acls=None,
             )
             return new_participant
 
@@ -249,12 +283,12 @@ class PrintLabExtractor:
                     description="_".join([row["Instrument"], row["Center"]]),
                     date_created=None,
                     date_modified=None,
-                    metadata=None,
                     additional_properties={},
                     schema_type=None,
                 ),
                 additional_properties={},
                 schema_type="Dataset",
+                acls=None,
             )
             return new_dataset
 
@@ -279,6 +313,7 @@ class PrintLabExtractor:
                 dataset=row["Dataset"],
                 additional_properties={},
                 schema_type="File",
+                acls=None,
             )
             return new_datafile
 
@@ -317,12 +352,14 @@ class PrintLabExtractor:
         metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.EXPERIMENT)
         participants_df = self.datasheet_to_dataframe(input_data_source, "Participants")
         participants = self._parse_participants(participants_df, metadata_dict)
+        acl_df = self.datasheet_to_dataframe(input_data_source, "Groups")
+        acls = self._parse_acls(acl_df)
         experiments_df = self.datasheet_to_dataframe(
             input_data_source=input_data_source,
             sheet_name="Samples",
         )
         experiments = self._parse_experiments(
-            experiments_df, participants, metadata_dict
+            experiments_df, participants, acls, metadata_dict
         )
         crate_manifest.add_experiments(experiments)
 

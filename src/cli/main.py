@@ -99,7 +99,7 @@ def abi(
     logger = logging.getLogger(__name__)
     env_config = None
     if (Path(env_prefix) / ".env").exists():
-        env_config = MyTardisEnvConfig(env_prefix=env_prefix)  # type: ignore
+        env_config = MyTardisEnvConfig(_env_prefix=env_prefix)  # type: ignore
         mt_user = mt_user if mt_user else env_config.auth.username
         mt_api_key = mt_api_key if mt_api_key else env_config.auth.api_key
         mt_hostname = mt_hostname if mt_hostname else env_config.connection.hostname
@@ -178,7 +178,7 @@ def print_lab(
 
     env_config = None
     if (Path(env_prefix) / ".env").exists():
-        env_config = MyTardisEnvConfig(env_prefix=env_prefix)  # type: ignore
+        env_config = MyTardisEnvConfig(_env_prefix=env_prefix)  # type: ignore
         mt_user = mt_user if mt_user else env_config.auth.username
         mt_api_key = mt_api_key if mt_api_key else env_config.auth.api_key
     logger.info("Loading MyTardis API agent")

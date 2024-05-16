@@ -3,7 +3,9 @@
 """
 
 import copy
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
+
+from slugify import slugify
 
 from src.rocrate_dataclasses.rocrate_dataclasses import (
     Datafile,
@@ -11,28 +13,6 @@ from src.rocrate_dataclasses.rocrate_dataclasses import (
     Experiment,
     Project,
 )
-
-# def create_metadata_(
-#     name: str, value: str, is_sensitive: bool, metadata_type: str
-# ) -> MTMetadata:
-#     """Construct a metadata dataclass given the name of the metadata from an input file
-
-#     Args:
-#         name (str): name of the metadata in MyTardis
-#         value (str): the value of the metadata
-#         is_sensitive (bool): _description_
-
-#     Returns:
-#         MTMetadata: _description_
-#     """
-#     return MTMetadata(
-#         ro_crate_id=name,
-#         name=name,
-#         value=value,
-#         mt_type=metadata_type,
-#         sensitive=is_sensitive,
-#         parents=parents,
-#     )
 
 
 class CrateManifest:
@@ -44,17 +24,11 @@ class CrateManifest:
         experiments: Optional[Dict[str, Experiment]] = None,
         datasets: Optional[List[Dataset]] = None,
         datafiles: Optional[List[Datafile]] = None,
-        # people: Optional[List[Person]] = None,
-        # organizations: Optional[List[Organisation]] = None,
-        # participants: Optional[Dict[str, Participant]] = None,
     ):
         self.projcets = projcets or {}
         self.experiments = experiments or {}
         self.datasets = datasets or []
         self.datafiles = datafiles or []
-        # self.people = people or []
-        # self.organizations = organizations or []
-        # self.participants = participants or {}
 
     def add_projects(self, projcets: Dict[str, Project]) -> None:
         self.projcets = self.projcets | projcets
@@ -67,12 +41,6 @@ class CrateManifest:
 
     def add_datafiles(self, datafiles: List[Datafile]) -> None:
         self.datafiles.extend(datafiles)
-
-    # def add_people(self, people: List[Person]) -> None:
-    #     self.people.extend(people)
-
-    # def add_organizations(self, organizations: List[Organisation]) -> None:
-    #     self.organizations.extend(organizations)
 
 
 def reduce_to_dataset(in_manifest: CrateManifest, dataset: Dataset) -> CrateManifest:
@@ -103,3 +71,34 @@ def reduce_to_dataset(in_manifest: CrateManifest, dataset: Dataset) -> CrateMani
         datasets=[dataset],
         datafiles=out_files,
     )
+
+
+def convert_to_property_value(
+    json_element: Dict[str, Any] | Any, name: str
+) -> Dict[str, Any]:
+    """convert a json element into property values for compliance with RO-Crate
+
+    Args:
+        json_element (Dict[str, Any] | Any): the json to turn into a Property value
+        name (str): the name for the partent json
+
+    Returns:
+        Dict[str, Any]: the input as a property value
+    """
+    if not isinstance(json_element, Dict) and not isinstance(json_element, List):
+        return {"@type": "PropertyValue", "name": name, "value": json_element}
+    if isinstance(json_element, List):
+        return {
+            "@type": "PropertyValue",
+            "name": name,
+            "value": [
+                convert_to_property_value(item, slugify(f"{name}-{index}"))
+                for index, item in enumerate(json_element)
+            ],
+        }
+    json_element["@type"] = "PropertyValue"
+    json_element["name"] = name
+    for key, value in json_element.items():
+        if isinstance(value, (Dict, List)):
+            json_element[key] = convert_to_property_value(value, key)
+    return json_element

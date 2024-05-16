@@ -24,14 +24,16 @@ from src.mt_api.apiconfigs import MyTardisRestAgent
 from src.mt_api.mt_consts import MtObject
 from src.rocrate_builder.rocrate_builder import ROBuilder
 from src.rocrate_builder.rocrate_writer import bagit_crate, write_crate
-from src.rocrate_dataclasses.data_class_utils import CrateManifest
+from src.rocrate_dataclasses.data_class_utils import (
+    CrateManifest,
+    convert_to_property_value,
+)
 from src.rocrate_dataclasses.rocrate_dataclasses import (
     ContextObject,
     Dataset,
     Experiment,
     Instrument,
     Project,
-    convert_to_property_value,
 )
 
 datetime_pattern = re.compile("^[0-9]{6}-[0-9]{6}$")
@@ -119,6 +121,7 @@ def process_project(
         ethics_policy=None,
         additional_properties=additional_properties,
         schema_type="Project",
+        acls=None,
     )
 
 
@@ -162,9 +165,9 @@ def process_experiment(
         date_modified=None,
         contributors=None,
         mytardis_classification=None,
-        participant=None,
         additional_properties=additional_properties,
         schema_type="DataCatalog",
+        acls=None,
     )
 
 
@@ -216,7 +219,7 @@ def process_raw_dataset(
 
     if collect_all:
         additional_properties = json_dict
-
+    created_date = None
     additional_properties["Sessions"] = []
     for index, session in enumerate(json_dict["Sessions"]):
         session_id = slugify(
@@ -261,13 +264,13 @@ def process_raw_dataset(
             identifiers=[ABI_MUSIC_MICROSCOPE_INSTRUMENT, ABI_FACILLITY],
             date_created=None,
             date_modified=None,
-            metadata=None,
             location=ABI_FACILLITY,
             additional_properties={},
             schema_type="Thing",
         ),
         additional_properties=additional_properties,
         schema_type="Dataset",
+        acls=None,
     )
 
 
@@ -292,7 +295,6 @@ def process_nested_contextobj(
         identifiers=[identifier],
         date_created=None,
         date_modified=None,
-        metadata=None,
         additional_properties=convert_to_property_value(sub_json, identifier),
         schema_type=schema_type,
     )

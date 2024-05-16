@@ -1,13 +1,22 @@
 ---
 repos:
 -   repo: https://github.com/rcmdnk/pyproject-pre-commit
-    rev: v0.1.5
+    rev: v0.1.9
     hooks:
     - id: black
     - id: isort
     - id: mypy
+      language: python
+      args:
+        - "--ignore-missing-imports"
+        - "--strict-optional"
+      additional_dependencies:
+        - "pydantic_settings"
+        - "types-requests"
+        - "types-python-slugify"
+        - "backoff"
 -   repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
+    rev: v4.6.0
     hooks:
     -   id: trailing-whitespace
 -   repo: https://github.com/PyCQA/pylint

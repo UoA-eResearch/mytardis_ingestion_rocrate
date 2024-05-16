@@ -9,12 +9,14 @@ from rocrate.model.encryptedcontextentity import (  # pylint: disable=import-err
 )
 from slugify import slugify
 
+from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
+    Participant,
+    SampleExperiment,
+)
 from src.rocrate_builder.rocrate_builder import ROBuilder
 from src.rocrate_dataclasses.rocrate_dataclasses import (  # BaseObject,
     Experiment,
     MedicalCondition,
-    Participant,
-    SampleExperiment,
 )
 
 logger = logging.getLogger(__name__)
@@ -108,26 +110,15 @@ class PrintLabROBuilder(ROBuilder):
             "sex": participant.sex,
             "ethnicity": participant.ethnicity,
         }
-        if participant.metadata:
-            properties = self._add_metadata(
-                identifier, properties, participant.metadata
-            )
+
+        properties = self._update_properties(
+            data_object=participant, properties=properties
+        )
         if self.crate.pubkey_fingerprints and (
             participant.date_of_birth or participant.nhi_number
         ):
             properties["sensitive"] = self._add_participant_sensitve(
                 participant, str(participant.id)
-            )
-        if participant.additional_properties:
-            properties = self._add_additional_properties(
-                properties=properties,
-                additional_properties=participant.additional_properties,
-            )
-        if participant.date_created:
-            properties = self._add_dates(
-                properties,
-                participant.date_created,
-                participant.date_modified,
             )
         if sensitive:
             participant_obj = EncryptedContextEntity(

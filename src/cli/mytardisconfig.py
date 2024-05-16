@@ -49,7 +49,9 @@ class ProxyConfig(BaseModel):
     https: Optional[str] = None
 
 
-class ConnectionConfig(BaseModel):  # pylint: disable =too-few-public-methods
+class ConnectionConfig(
+    BaseModel
+):  # pylint: disable =too-few-public-methods # type: ignore
     """MyTardis connection configuration.
 
     Pydantic model for MyTardis connection configuration.

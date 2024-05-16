@@ -24,6 +24,7 @@ elif platform == "win32":
     # Windows
     GPG_BIN = "C:\\Program Files (x86)\\GnuPG\\bin\\gpg.exe"
 else:
+    GPG_BIN = ""
     logger.warning(
         "Unknown OS, please define where the gpg executable binary can be located"
     )
@@ -41,7 +42,7 @@ def lookup_user(upi: str) -> Optional[Tuple[str, str, str]]:
     Returns:
         Tuple[str,str,str]: A tuple containing the user's first name, last name and email address
     """
-    if GPG_BIN is None:
+    if GPG_BIN == "":
         return None
     try:
         store = passpy.Store(gpg_bin=GPG_BIN)

@@ -6,8 +6,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from slugify import slugify
-
 
 @dataclass
 class Organisation:
@@ -111,7 +109,6 @@ class ContextObject(BaseObject):
     identifiers: List[str | int | float]
     date_created: Optional[datetime]
     date_modified: Optional[List[datetime]]
-    metadata: Optional[Dict[str, MTMetadata]]  # NOT IN SCHEMA.ORG
     additional_properties: Optional[Dict[str, Any]]
     schema_type: Optional[str | list[str]]
 
@@ -142,20 +139,37 @@ class MedicalCondition(BaseObject):
 
 
 @dataclass
-class Participant(ContextObject):
-    """participants of a study
-    # to be flattend back into Experiment when read into MyTardis
-    # person biosample object"""
+class ACL(ContextObject):
+    """Acess level controls in MyTardis provided to people and groups
+    based on https://schema.org/DigitalDocumentPermission
+    grantee - the user or group granted access"""
 
-    date_of_birth: str
-    nhi_number: str
-    sex: str
-    ethnicity: str
-    project: str
+    grantee: str
+    grantee_type: str
+    mytardis_owner: bool = False
+    mytardis_can_download: bool = False
+    mytardis_see_sensitive: bool = False
+    permission_type = "ReadPermission"
+    schema_type = "DigitalDocumentPermission"
 
 
 @dataclass
-class Project(ContextObject):
+class MyTardisContextObject(ContextObject):
+    """Context objects containing MyTardis specific properties.
+    These properties are not used by other RO-Crate endpoints.
+
+    Attr:
+        acls (List[ACL]): access level controls associated with the object
+        metadata (Dict[str: MTMetadata]): MyTardis metadata
+        associated with the object
+    """
+
+    acls: Optional[List[ACL]]
+    metadata: Optional[Dict[str, MTMetadata]]
+
+
+@dataclass
+class Project(MyTardisContextObject):
     """Concrete Project class for RO-Crate - inherits from ContextObject
     https://schema.org/Project
 
@@ -173,7 +187,7 @@ class Project(ContextObject):
 
 
 @dataclass
-class Experiment(ContextObject):
+class Experiment(MyTardisContextObject):
     """Concrete Experiment/Data-Catalog class for RO-Crate - inherits from ContextObject
     https://schema.org/DataCatalog
     Attr:
@@ -183,37 +197,12 @@ class Experiment(ContextObject):
     projects: List[str]  # NOT IN SCHEMA.ORG
     contributors: Optional[List[Person]]
     mytardis_classification: Optional[str]  # NOT IN SCHEMA.ORG
-    participant: Optional[Participant]
     schema_type = "DataCatalog"
+    acls: Optional[List[ACL]]
 
 
 @dataclass
-class SampleExperiment(Experiment):  # pylint: disable=too-many-instance-attributes
-    """Concrete Experiment/Data-Catalog class for RO-Crate - inherits from Experiment
-    https://schema.org/DataCatalog
-    Combination type with bioschemas biosample for additional sample data feilds
-    https://bioschemas.org/types/BioSample/0.1-RELEASE-2019_06_19
-    Attr:
-        project (str): An identifier for a project
-    """
-
-    additional_property: Optional[List[Dict[str, str]]]
-    sex: Optional[str]
-    associated_disease: Optional[List[MedicalCondition]]
-    body_location: Optional[
-        MedicalCondition
-    ]  # not defined in either sample or data catalog
-    # but found here https://schema.org/body_location
-    tissue_processing_method: Optional[str]
-    participant: Participant
-    analyate: Optional[str]
-    portion: Optional[str]
-    participant_metadata: Optional[Dict[str, MTMetadata]]
-    schema_type = "DataCatalog"
-
-
-@dataclass
-class Dataset(ContextObject):
+class Dataset(MyTardisContextObject):
     """Concrete Dataset class for RO-crate - inherits from ContextObject
 
     Attr:
@@ -225,6 +214,7 @@ class Dataset(ContextObject):
     contributors: Optional[List[Person]]
     instrument: Instrument
     schema_type = "Dataset"
+    acls: Optional[List[ACL]]
 
     # mytardis_classification: str #NOT IN SCHEMA.ORG
     def update_path(self, new_path: Path) -> None:
@@ -238,7 +228,7 @@ class Dataset(ContextObject):
 
 
 @dataclass
-class Datafile(ContextObject):
+class Datafile(MyTardisContextObject):
     """Concrete datafile class for RO-crate - inherits from ContextObject
 
     Attr:
@@ -246,9 +236,9 @@ class Datafile(ContextObject):
     """
 
     filepath: Path
-    # mytardis_classification: str #NOT IN SCHEMA.ORG
     dataset: Path
     schema_type = "File"
+    acls: Optional[List[ACL]]
 
     def update_to_root(self, dataset: Dataset) -> Path:
         """Update a datafile that is a child of a dataset so that dataset is now the root
@@ -263,34 +253,3 @@ class Datafile(ContextObject):
             new_filepath = self.filepath
         self.filepath = new_filepath
         return self.filepath
-
-
-def convert_to_property_value(
-    json_element: Dict[str, Any] | Any, name: str
-) -> Dict[str, Any]:
-    """convert a json element into property values for compliance with RO-Crate
-
-    Args:
-        json_element (Dict[str, Any] | Any): the json to turn into a Property value
-        name (str): the name for the partent json
-
-    Returns:
-        Dict[str, Any]: the input as a property value
-    """
-    if not isinstance(json_element, Dict) and not isinstance(json_element, List):
-        return {"@type": "PropertyValue", "name": name, "value": json_element}
-    if isinstance(json_element, List):
-        return {
-            "@type": "PropertyValue",
-            "name": name,
-            "value": [
-                convert_to_property_value(item, slugify(f"{name}-{index}"))
-                for index, item in enumerate(json_element)
-            ],
-        }
-    json_element["@type"] = "PropertyValue"
-    json_element["name"] = name
-    for key, value in json_element.items():
-        if isinstance(value, (Dict, List)):
-            json_element[key] = convert_to_property_value(value, key)
-    return json_element

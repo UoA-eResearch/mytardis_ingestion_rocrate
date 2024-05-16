@@ -1,5 +1,7 @@
 # Changes from Schema.org in Print Lab RO-Crate dataclasses
 
+OUTDATED! CHECK HIGHER LEVEL READMES!
+
 Guiding principles of changes:
 
 - Only add a field that deviates from schema.org or bioschemas if this field is ONLY relevant to MyTardis
