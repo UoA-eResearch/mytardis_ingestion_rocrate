@@ -127,18 +127,6 @@ class Instrument(ContextObject):
 
 
 @dataclass
-class MedicalCondition(BaseObject):
-    """object for medical condtions that correspond to various
-    standards and codes from https://schema.org/MedicalCondition
-    """
-
-    code_type: str
-    code_text: str
-    code_source: Path
-    schema_type = "MedicalCondition"
-
-
-@dataclass
 class ACL(ContextObject):
     """Acess level controls in MyTardis provided to people and groups
     based on https://schema.org/DigitalDocumentPermission
@@ -184,6 +172,20 @@ class Project(MyTardisContextObject):
     mytardis_classification: Optional[str]  # NOT IN SCHEMA.ORG
     ethics_policy: Optional[str]
     schema_type = "Project"
+
+@dataclass
+class MyTardisContextObject(ContextObject):
+    """Context objects containing MyTardis specific properties.
+    These properties are not used by other RO-Crate endpoints.
+
+    Attr:
+        acls (List[ACL]): access level controls associated with the object
+        metadata (Dict[str: MTMetadata]): MyTardis metadata
+        associated with the object
+    """
+
+    acls: Optional[List[ACL]]
+    metadata: Optional[Dict[str, MTMetadata]]
 
 
 @dataclass

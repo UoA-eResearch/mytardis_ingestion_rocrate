@@ -10,14 +10,12 @@ from rocrate.model.encryptedcontextentity import (  # pylint: disable=import-err
 from slugify import slugify
 
 from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
+    MedicalCondition,
     Participant,
     SampleExperiment,
 )
 from src.rocrate_builder.rocrate_builder import ROBuilder
-from src.rocrate_dataclasses.rocrate_dataclasses import (  # BaseObject,
-    Experiment,
-    MedicalCondition,
-)
+from src.rocrate_dataclasses.rocrate_dataclasses import Experiment  # BaseObject,
 
 logger = logging.getLogger(__name__)
 

@@ -13,6 +13,7 @@ from slugify import slugify
 import src.ingestion_targets.print_lab_genomics.consts as profile_consts
 from src.cli.mytardisconfig import SchemaConfig
 from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
+    MedicalCondition,
     Participant,
     SampleExperiment,
 )
@@ -30,7 +31,6 @@ from src.rocrate_dataclasses.rocrate_dataclasses import (
     Dataset,
     Experiment,
     Instrument,
-    MedicalCondition,
     Project,
 )
 from src.utils.file_utils import is_xslx

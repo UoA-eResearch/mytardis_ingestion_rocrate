@@ -367,7 +367,6 @@ class ROBuilder:
             "principal_investigator": principal_investigator.id,
             "contributors": [contributor.id for contributor in contributors],
         }
-
         properties = self._update_properties(data_object=project, properties=properties)
         project_obj = ContextEntity(
             self.crate,

@@ -3,14 +3,27 @@ Extend existing RO-Crate MyTardis dataclasses
 """
 
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Dict, List, Optional
 
 from src.rocrate_dataclasses.rocrate_dataclasses import (  # BaseObject,
+    BaseObject,
     Experiment,
-    MedicalCondition,
     MTMetadata,
     MyTardisContextObject,
 )
+
+
+@dataclass
+class MedicalCondition(BaseObject):
+    """object for medical condtions that correspond to various
+    standards and codes from https://schema.org/MedicalCondition
+    """
+
+    code_type: str
+    code_text: str
+    code_source: Path
+    schema_type = "MedicalCondition"
 
 
 @dataclass
