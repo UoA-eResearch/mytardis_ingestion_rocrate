@@ -3,12 +3,12 @@
 import logging
 from typing import Any, Dict
 
+from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import MTMetadata
 from requests.exceptions import RequestException
 
 from src.cli.mytardisconfig import SchemaConfig
 from src.mt_api.apiconfigs import MyTardisRestAgent
 from src.mt_api.mt_consts import MtObject
-from src.rocrate_dataclasses.rocrate_dataclasses import MTMetadata
 
 MT_METADATA_TYPE = {
     1: "NUMERIC",

@@ -4,6 +4,8 @@
 from pathlib import Path
 from typing import Optional
 
+from mytardis_rocrate_builder.rocrate_dataclasses.data_class_utils import CrateManifest
+
 import src.ingestion_targets.abi_music.consts as profile_consts
 from src.cli.mytardisconfig import SchemaConfig
 from src.ingestion_targets.abi_music.abi_json_parser import parse_raw_data
@@ -13,7 +15,6 @@ from src.metadata_extraction.metadata_extraction import (
     load_optional_schemas,
 )
 from src.mt_api.apiconfigs import MyTardisRestAgent
-from src.rocrate_dataclasses.data_class_utils import CrateManifest
 
 
 class ABICrateBuilder:  # pylint: disable=too-few-public-methods

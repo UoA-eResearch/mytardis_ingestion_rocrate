@@ -8,9 +8,9 @@ import ldap3
 import passpy
 from ldap3.utils.conv import escape_filter_chars
 from ldap3.utils.dn import escape_rdn
+from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import Person
 
-from src.rocrate_builder.constants.organisatons import UOA
-from src.rocrate_dataclasses.rocrate_dataclasses import Person
+from src.mt_api.mt_consts import UOA
 
 logger = logging.getLogger(__name__)
 

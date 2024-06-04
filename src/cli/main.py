@@ -13,6 +13,11 @@ from pathlib import Path
 from typing import Optional
 
 import click
+from mytardis_rocrate_builder.rocrate_writer import (
+    archive_crate,
+    bagit_crate,
+    write_crate,
+)
 from rocrate.rocrate import ROCrate
 from slugify import slugify
 
@@ -25,7 +30,6 @@ from src.ingestion_targets.print_lab_genomics.print_crate_builder import (
 
 # from src.mt_api.api_consts import CONNECTION__HOSTNAME
 from src.mt_api.apiconfigs import AuthConfig, MyTardisRestAgent
-from src.rocrate_builder.rocrate_writer import archive_crate, bagit_crate, write_crate
 from src.utils.log_utils import init_logging
 
 OPTION_INPUT_PATH = click.option(

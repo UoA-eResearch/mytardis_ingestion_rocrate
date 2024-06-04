@@ -8,6 +8,19 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
+from mytardis_rocrate_builder.rocrate_builder import ROBuilder
+from mytardis_rocrate_builder.rocrate_dataclasses.data_class_utils import (
+    CrateManifest,
+    convert_to_property_value,
+)
+from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
+    ContextObject,
+    Dataset,
+    Experiment,
+    Instrument,
+    Project,
+)
+from mytardis_rocrate_builder.rocrate_writer import bagit_crate, write_crate
 from rocrate.rocrate import ROCrate
 from slugify import slugify
 
@@ -22,19 +35,6 @@ from src.metadata_extraction.metadata_extraction import (
 )
 from src.mt_api.apiconfigs import MyTardisRestAgent
 from src.mt_api.mt_consts import MtObject
-from src.rocrate_builder.rocrate_builder import ROBuilder
-from src.rocrate_builder.rocrate_writer import bagit_crate, write_crate
-from src.rocrate_dataclasses.data_class_utils import (
-    CrateManifest,
-    convert_to_property_value,
-)
-from src.rocrate_dataclasses.rocrate_dataclasses import (
-    ContextObject,
-    Dataset,
-    Experiment,
-    Instrument,
-    Project,
-)
 
 datetime_pattern = re.compile("^[0-9]{6}-[0-9]{6}$")
 
@@ -117,8 +117,6 @@ def process_project(
         metadata=metadata_dict,
         date_created=None,
         date_modified=None,
-        mytardis_classification=None,
-        ethics_policy=None,
         additional_properties=additional_properties,
         schema_type="Project",
         acls=None,
@@ -248,11 +246,11 @@ def process_raw_dataset(
         name=identifiers[0],
         description=json_dict["Description"],
         identifiers=identifiers,
-        experiments=[
-            slugify(f'{json_dict["project_ids"][0]}-{json_dict["experiment_ids"][0]}')
-        ]
-        if json_dict.get("experiment_ids")
-        else [experiment_id],
+        experiments=(
+            [slugify(f'{json_dict["project_ids"][0]}-{json_dict["experiment_ids"][0]}')]
+            if json_dict.get("experiment_ids")
+            else [experiment_id]
+        ),
         directory=dataset_dir.path(),
         date_created=created_date,
         date_modified=updated_dates or None,

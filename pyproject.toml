@@ -30,6 +30,7 @@ requests = "^2.31.0"
 build = "^1.1.1"
 pydantic-settings = "^2.2.1"
 ro-crate-py = {git = "https://github.com/UoA-eResearch/ro-crate-py.git",  branch = "encrypted-metadata"}
+mytardis-rocrate-builder = {git = "https://github.com/JLoveUOA/mytardis_rocrate_builder"}
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.1.0"
@@ -39,7 +40,6 @@ flake8-mypy = "^17.8.0"
 flake8-isort = "^6.1.0"
 flake8-black = "^0.3.6"
 interrogate = "^1.5.0"
-pyproject-pre-commit = "^0.0.26"
 coverage = {extras = ["toml"], version = "^7.3.1"}
 toml = "^0.10.2"
 types-python-slugify = "^8.0.0.3"

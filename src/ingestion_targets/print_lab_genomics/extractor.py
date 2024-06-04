@@ -8,6 +8,15 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
+from mytardis_rocrate_builder.rocrate_dataclasses.data_class_utils import CrateManifest
+from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
+    ACL,
+    Datafile,
+    Dataset,
+    Experiment,
+    Instrument,
+    Project,
+)
 from slugify import slugify
 
 import src.ingestion_targets.print_lab_genomics.consts as profile_consts
@@ -24,15 +33,6 @@ from src.metadata_extraction.metadata_extraction import (
 )
 from src.mt_api.apiconfigs import MyTardisRestAgent
 from src.mt_api.mt_consts import MtObject
-from src.rocrate_dataclasses.data_class_utils import CrateManifest
-from src.rocrate_dataclasses.rocrate_dataclasses import (
-    ACL,
-    Datafile,
-    Dataset,
-    Experiment,
-    Instrument,
-    Project,
-)
 from src.utils.file_utils import is_xslx
 
 logger = logging.getLogger(__name__)
@@ -100,19 +100,19 @@ class PrintLabExtractor:
         acls_sheet: pd.DataFrame,
     ) -> Dict[str, ACL]:
         def parse_acl(row: pd.Series) -> ACL:
-            identifier = slugify(f'{row["group name"]}')
+            identifier = slugify(f'{row["Name"]}')
             new_acl = ACL(
                 name=identifier,
                 description=identifier,
                 identifiers=[identifier],
-                grantee=row["group name"],
+                grantee=row["Name"],
                 date_created=None,
                 date_modified=None,
                 additional_properties=None,
                 grantee_type="organization",
-                mytardis_see_sensitive=row["see sensitive"],
-                mytardis_can_download=row["download"],
-                mytardis_owner=row["owner"],
+                mytardis_see_sensitive=row["see_sensitive"],
+                mytardis_can_download=row["can_download"],
+                mytardis_owner=row["is_owner"],
                 schema_type="DigitalDocumentPermission",
             )
             return new_acl
@@ -142,8 +142,6 @@ class PrintLabExtractor:
                 date_created=None,
                 date_modified=None,
                 contributors=None,
-                mytardis_classification="SENSITIVE",
-                ethics_policy=row["Ethics Approval ID"],
                 additional_properties={},
                 schema_type="Project",
                 acls=None,
@@ -176,7 +174,7 @@ class PrintLabExtractor:
                 date_modified=None,
                 contributors=None,
                 mytardis_classification="",
-                metadata=metadata_dict | participant.metadata,  # type: ignore
+                metadata=metadata_dict | participant.metadata,
                 projects=[slugify(f'{row["Project"]}')],
                 participant=participant,
                 additional_property=None,
@@ -223,7 +221,7 @@ class PrintLabExtractor:
         self,
         particpant_sheet: pd.DataFrame,
         metadata_obj_schema: Dict[str, Dict[str, Any]],
-    ) -> Dict[str, Participant]:
+    ) -> Dict[str, Dataset]:
         def parse_participant(row: pd.Series) -> Participant:
             metadata_dict = create_metadata_objects(
                 row, metadata_obj_schema, self.collect_all, row["Participant: Code"]
@@ -260,8 +258,9 @@ class PrintLabExtractor:
     def _parse_datasets(
         self,
         dataset_sheet: pd.DataFrame,
+        experiments: Dict[str, Experiment],
         metadata_obj_schema: Dict[str, Dict[str, Any]],
-    ) -> List[Dataset]:
+    ) -> Dict[str, Dataset]:
         def parse_dataset(row: pd.Series) -> Dataset:
             metadata_dict = create_metadata_objects(
                 row, metadata_obj_schema, self.collect_all, row["Directory"]
@@ -273,7 +272,7 @@ class PrintLabExtractor:
                 date_created=None,
                 date_modified=None,
                 metadata=metadata_dict,
-                experiments=[row["Sample"]],
+                experiments=[experiments[row["Sample"]]],
                 directory=Path(row["Directory"]),
                 contributors=None,
                 instrument=Instrument(
@@ -292,11 +291,17 @@ class PrintLabExtractor:
             )
             return new_dataset
 
-        datasets: List[Dataset] = dataset_sheet.apply(parse_dataset, axis=1).to_list()
+        datasets = {
+            datasets_value.id: datasets_value
+            for datasets_value in dataset_sheet.apply(parse_dataset, axis=1).to_list()
+        }
         return datasets
 
     def _parse_datafiles(
-        self, files_sheet: pd.DataFrame, metadata_obj_schema: Dict[str, Dict[str, Any]]
+        self,
+        files_sheet: pd.DataFrame,
+        datasets: Dict[str, Dataset],
+        metadata_obj_schema: Dict[str, Dict[str, Any]],
     ) -> List[Datafile]:
         def parse_datafile(row: pd.Series) -> Datafile:
             metadata_dict = create_metadata_objects(
@@ -310,7 +315,7 @@ class PrintLabExtractor:
                 date_created=None,
                 date_modified=None,
                 filepath=Path(row["Filepath"]),
-                dataset=row["Dataset"],
+                dataset=datasets[Path(row["Dataset"]).as_posix()],
                 additional_properties={},
                 schema_type="File",
                 acls=None,
@@ -361,14 +366,18 @@ class PrintLabExtractor:
         experiments = self._parse_experiments(
             experiments_df, participants, acls, metadata_dict
         )
+
         crate_manifest.add_experiments(experiments)
 
         metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.DATASET)
         dataset_df = self.datasheet_to_dataframe(input_data_source, "Datasets")
-        crate_manifest.add_datasets(self._parse_datasets(dataset_df, metadata_dict))
+        datasets = self._parse_datasets(dataset_df, experiments, metadata_dict)
+        crate_manifest.add_datasets(datasets)
 
         metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.DATAFILE)
         datafile_df = self.datasheet_to_dataframe(input_data_source, "Files")
-        crate_manifest.add_datafiles(self._parse_datafiles(datafile_df, metadata_dict))
+        crate_manifest.add_datafiles(
+            self._parse_datafiles(datafile_df, datasets, metadata_dict)
+        )
 
         return crate_manifest

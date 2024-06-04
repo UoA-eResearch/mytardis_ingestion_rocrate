@@ -8,6 +8,7 @@ from urllib.parse import urljoin
 
 import backoff
 import requests
+from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import Person
 from pydantic import BaseModel
 from requests import Response
 from requests.auth import AuthBase
@@ -15,9 +16,9 @@ from requests.exceptions import RequestException
 from requests.models import PreparedRequest
 
 from src.mt_api.api_consts import CONNECTION__HOSTNAME
-from src.rocrate_builder.constants.organisatons import UOA
-from src.rocrate_dataclasses.rocrate_dataclasses import Person
 from src.user_lookup.user_lookup import lookup_user
+
+from .mt_consts import UOA
 
 logger = logging.getLogger(__name__)
 
@@ -25,18 +26,26 @@ logger = logging.getLogger(__name__)
 class AuthConfig(BaseModel, AuthBase):
     """Attaches HTTP headers for Tastypie API key Authentication to the given
 
-    Because this ingestion script will sit inside the private network and will
-    act as the primary source for uploading to myTardis, authentication via a
-    username and api key is used. The class functions to format the HTTP(S)
-    header into an appropriate form for the MyTardis authentication module.
+        Because this ingestion script will sit inside the private network and will
+        act as the primary source for uploading to myTardis, authentication via a
+        username and api key is used. The class functions to format the HTTP(S)
+        header into an appropriate form for the MyTardis authentication module.
 
-    Attributes:
-        username: str
-            A MyTardis specific username. For the UoA instance this is usually a
-            UPI
-        api_key: str
-            The API key generated through MyTardis that identifies the user with
-            username
+    UOA = Organisation(
+        identifiers=["https://ror.org/03b94tp07"],
+        name="The University of Auckland | Waipapa Taumata Rau",
+        url="https://auckland.ac.nz",
+        location="Auckland, New Zealand",
+        research_org=True,
+    )
+
+        Attributes:
+            username: str
+                A MyTardis specific username. For the UoA instance this is usually a
+                UPI
+            api_key: str
+                The API key generated through MyTardis that identifies the user with
+                username
     """
 
     username: str

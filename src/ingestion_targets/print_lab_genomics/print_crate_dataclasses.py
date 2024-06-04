@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from src.rocrate_dataclasses.rocrate_dataclasses import (  # BaseObject,
+from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (  # BaseObject,
     BaseObject,
     Experiment,
     MTMetadata,
@@ -15,7 +15,7 @@ from src.rocrate_dataclasses.rocrate_dataclasses import (  # BaseObject,
 
 
 @dataclass
-class MedicalCondition(BaseObject):
+class MedicalCondition(BaseObject):  # type: ignore
     """object for medical condtions that correspond to various
     standards and codes from https://schema.org/MedicalCondition
     """
@@ -27,7 +27,7 @@ class MedicalCondition(BaseObject):
 
 
 @dataclass
-class Participant(MyTardisContextObject):
+class Participant(MyTardisContextObject):  # type: ignore
     """participants of a study
     # to be flattend back into Experiment when read into MyTardis
     # person biosample object"""
@@ -40,7 +40,9 @@ class Participant(MyTardisContextObject):
 
 
 @dataclass
-class SampleExperiment(Experiment):  # pylint: disable=too-many-instance-attributes
+class SampleExperiment(
+    Experiment  # type: ignore
+):  # pylint: disable=too-many-instance-attributes # type: ignore
     """Concrete Experiment/Data-Catalog class for RO-Crate - inherits from Experiment
     https://schema.org/DataCatalog
     Combination type with bioschemas biosample for additional sample data feilds

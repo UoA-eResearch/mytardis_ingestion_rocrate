@@ -2,6 +2,7 @@
 A stripped down version of MyTardis configuration module (config.py)
 for reading config files provided for MyTardis ingestions
 """
+
 from typing import Any, Optional
 from urllib.parse import urljoin
 

@@ -1,8 +1,11 @@
 """Builder class and functions for translating RO-Crate dataclasses into RO-Crate Entities
 """
+
 import logging
 from typing import Any, Dict
 
+from mytardis_rocrate_builder.rocrate_builder import ROBuilder
+from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import Experiment
 from rocrate.model.contextentity import ContextEntity
 from rocrate.model.encryptedcontextentity import (  # pylint: disable=import-error, no-name-in-module
     EncryptedContextEntity,
@@ -14,13 +17,11 @@ from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
     Participant,
     SampleExperiment,
 )
-from src.rocrate_builder.rocrate_builder import ROBuilder
-from src.rocrate_dataclasses.rocrate_dataclasses import Experiment  # BaseObject,
 
 logger = logging.getLogger(__name__)
 
 
-class PrintLabROBuilder(ROBuilder):
+class PrintLabROBuilder(ROBuilder):  # type: ignore
     """Specific RO-Crate builder for print-lab dataclasses
 
     Args:
@@ -144,24 +145,32 @@ class PrintLabROBuilder(ROBuilder):
             return super().add_experiment(experiment)
         properties: Dict[str, str | list[str] | dict[str, Any]] = {
             "@type": "DataCatalog",
-            "participant": self.add_participant(experiment.participant).id
-            if experiment.participant
-            else "",
+            "participant": (
+                self.add_participant(experiment.participant).id
+                if experiment.participant
+                else ""
+            ),
             "sex": experiment.sex if experiment.sex else "",
             "name": experiment.name,
-            "associated_disease": [
-                self.add_medical_condition(condition).id
-                for condition in experiment.associated_disease
-            ]
-            if experiment.associated_disease
-            else [],
+            "associated_disease": (
+                [
+                    self.add_medical_condition(condition).id
+                    for condition in experiment.associated_disease
+                ]
+                if experiment.associated_disease
+                else []
+            ),
             "project": experiment.projects,
-            "body_location": self.add_medical_condition(experiment.body_location).id
-            if experiment.body_location
-            else "",
-            "tissue_processing_method": experiment.tissue_processing_method
-            if experiment.tissue_processing_method
-            else "",
+            "body_location": (
+                self.add_medical_condition(experiment.body_location).id
+                if experiment.body_location
+                else ""
+            ),
+            "tissue_processing_method": (
+                experiment.tissue_processing_method
+                if experiment.tissue_processing_method
+                else ""
+            ),
             "analyate": experiment.analyate if experiment.analyate else "",
             "description": experiment.description,
         }
