@@ -1283,7 +1283,7 @@ types-python-slugify = "^8.0.2.20240310"
 type = "git"
 url = "https://github.com/JLoveUOA/mytardis_rocrate_builder"
 reference = "HEAD"
-resolved_reference = "f8e7d112271fa9b41acacdd0e9ab402d24de13bf"
+resolved_reference = "37d04dd1a561f34ae1835145d4eada711c47be0a"
 
 [[package]]
 name = "numpy"
