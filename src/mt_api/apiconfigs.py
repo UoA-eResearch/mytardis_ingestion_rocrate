@@ -16,7 +16,6 @@ from requests.exceptions import RequestException
 from requests.models import PreparedRequest
 
 from src.mt_api.api_consts import CONNECTION__HOSTNAME
-from src.user_lookup.user_lookup import lookup_user
 
 from .mt_consts import UOA
 
@@ -206,11 +205,6 @@ class MyTardisRestAgent:  # pylint: disable=R0903, R0913
         users_stub = "user/?username="
         name = upi
         email = ""
-        ldap_data = lookup_user(upi=upi)
-        if ldap_data is not None:
-            first_name, last_name, email = ldap_data
-            name = f"{first_name} {last_name}"
-            return Person(name=name, email=email, affiliation=UOA, identifiers=[upi])
         try:
             response = self.mytardis_api_request(
                 "GET", self.api_template + users_stub + upi
@@ -233,7 +227,9 @@ class MyTardisRestAgent:  # pylint: disable=R0903, R0913
                         else email
                     )
         except RequestException as e:
-            logger.error("bad API response getting person data for %s: %s", upi, e)
+            logger.error(
+                "bad API response getting person data for %s. Error: %s.", upi, e
+            )
 
         return Person(name=name, email=email, affiliation=UOA, identifiers=[upi])
 
