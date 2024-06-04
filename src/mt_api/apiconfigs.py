@@ -16,6 +16,7 @@ from requests.exceptions import RequestException
 from requests.models import PreparedRequest
 
 from src.mt_api.api_consts import CONNECTION__HOSTNAME
+
 from .mt_consts import UOA
 
 logger = logging.getLogger(__name__)
@@ -226,7 +227,9 @@ class MyTardisRestAgent:  # pylint: disable=R0903, R0913
                         else email
                     )
         except RequestException as e:
-            logger.error("bad API response getting person data for %s: %s", upi, e)
+            logger.error(
+                "bad API response getting person data for %s. Error: %s.", upi, e
+            )
 
         return Person(name=name, email=email, affiliation=UOA, identifiers=[upi])
 
