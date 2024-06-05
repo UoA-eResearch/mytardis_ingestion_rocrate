@@ -64,6 +64,15 @@ OPTION_COLLECT_ALL = click.option(
     This is a 'put everything in and deal with it later'
     option that will probably invalidate the RO-Crate but preserves all possible metadata.""",
 )
+
+OPTION_CLONE_DIRECTORY = click.option(
+    "--duplicate_directory","-d",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="""duplicate the contents of the target directory even if not explicitly listed.""",
+)
+
 OPTION_ENV_PREFIX = click.option(
     "--env_prefix",
     type=str,
@@ -160,6 +169,7 @@ def abi(
     "--gpg_binary", type=Path, default=None, help="binary for running gpg encryption"
 )
 @OPTION_COLLECT_ALL
+@OPTION_CLONE_DIRECTORY
 def print_lab(
     input_metadata: Path,
     pubkey_fingerprints: list[str],
@@ -173,6 +183,7 @@ def print_lab(
     bag_crate: Optional[bool],
     collect_all: Optional[bool],
     gpg_binary: Optional[Path],
+    duplicate_directory: Optional[Path]
 ) -> None:
     """
     Create an RO-Crate based on a Print Lab metadata file
@@ -235,7 +246,7 @@ def print_lab(
     builder = PrintLabROBuilder(crate)
     write_crate(
         builder=builder,
-        crate_source=source_path,
+        crate_source=source_path if duplicate_directory else None,
         crate_destination=crate_destination,
         crate_contents=crate_manifest,
         meta_only=False,

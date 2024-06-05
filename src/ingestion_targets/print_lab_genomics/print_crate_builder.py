@@ -5,7 +5,10 @@ import logging
 from typing import Any, Dict
 
 from mytardis_rocrate_builder.rocrate_builder import ROBuilder
-from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import Experiment
+from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
+    Experiment,
+    Dataset
+)
 from rocrate.model.contextentity import ContextEntity
 from rocrate.model.encryptedcontextentity import (  # pylint: disable=import-error, no-name-in-module
     EncryptedContextEntity,
@@ -16,6 +19,7 @@ from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
     MedicalCondition,
     Participant,
     SampleExperiment,
+    ExtractionDataset
 )
 
 logger = logging.getLogger(__name__)
@@ -178,3 +182,20 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
             experiment=experiment, properties=properties
         )
         return self._add_identifiers(experiment, experiment_obj)
+
+
+    def add_dataset(self, dataset: Dataset) -> ContextEntity:
+        """Add a dataset to the RO-Crate accounting for if unlisted cildren should be added
+
+        Args:
+            experiment (Experiment): The experiment to be added to the crate
+        """
+        # Note that this is being created as a data catalog object as there are no better
+        # fits
+        datset_entity = super().add_dataset(dataset)
+        if not isinstance(dataset,  ExtractionDataset):
+            return datset_entity
+        if dataset.copy_unlisted:
+            datset_entity.source = self.crate.source / dataset.directory if self.crate.source else dataset.directory
+        return datset_entity
+

@@ -25,6 +25,7 @@ from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
     MedicalCondition,
     Participant,
     SampleExperiment,
+    ExtractionDataset
 )
 from src.metadata_extraction.metadata_extraction import (
     MetadataHanlder,
@@ -260,12 +261,12 @@ class PrintLabExtractor:
         dataset_sheet: pd.DataFrame,
         experiments: Dict[str, Experiment],
         metadata_obj_schema: Dict[str, Dict[str, Any]],
-    ) -> Dict[str, Dataset]:
-        def parse_dataset(row: pd.Series) -> Dataset:
+    ) -> Dict[str, ExtractionDataset]:
+        def parse_dataset(row: pd.Series) -> ExtractionDataset:
             metadata_dict = create_metadata_objects(
                 row, metadata_obj_schema, self.collect_all, row["Directory"]
             )
-            new_dataset = Dataset(
+            new_dataset = ExtractionDataset(
                 name=row["Dataset Name"],
                 description=row["Dataset Name"],
                 identifiers=[row["Directory"]],
@@ -288,6 +289,7 @@ class PrintLabExtractor:
                 additional_properties={},
                 schema_type="Dataset",
                 acls=None,
+                copy_unlisted=row["Crate Children"]
             )
             return new_dataset
 

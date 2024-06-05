@@ -11,6 +11,7 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (  
     Experiment,
     MTMetadata,
     MyTardisContextObject,
+    Dataset
 )
 
 
@@ -64,3 +65,9 @@ class SampleExperiment(
     portion: Optional[str]
     participant_metadata: Optional[Dict[str, MTMetadata]]
     schema_type = "DataCatalog"
+
+@dataclass
+class ExtractionDataset(Dataset):  # type: ignore
+    """Dataset information for extraction of a dataset
+     that may need to copy unlisted"""
+    copy_unlisted : bool
