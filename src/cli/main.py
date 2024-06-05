@@ -66,7 +66,8 @@ OPTION_COLLECT_ALL = click.option(
 )
 
 OPTION_CLONE_DIRECTORY = click.option(
-    "--duplicate_directory","-d",
+    "--duplicate_directory",
+    "-d",
     type=bool,
     is_flag=True,
     default=False,
@@ -183,7 +184,7 @@ def print_lab(
     bag_crate: Optional[bool],
     collect_all: Optional[bool],
     gpg_binary: Optional[Path],
-    duplicate_directory: Optional[Path]
+    duplicate_directory: Optional[bool],
 ) -> None:
     """
     Create an RO-Crate based on a Print Lab metadata file

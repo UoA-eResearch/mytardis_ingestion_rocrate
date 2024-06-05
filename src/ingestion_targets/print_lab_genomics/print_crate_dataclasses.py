@@ -67,7 +67,7 @@ class SampleExperiment(
     schema_type = "DataCatalog"
 
 @dataclass
-class ExtractionDataset(Dataset):  # type: ignore
+class ExtractionDataset(Dataset):
     """Dataset information for extraction of a dataset
      that may need to copy unlisted"""
     copy_unlisted : bool

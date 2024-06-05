@@ -22,10 +22,10 @@ from slugify import slugify
 import src.ingestion_targets.print_lab_genomics.consts as profile_consts
 from src.cli.mytardisconfig import SchemaConfig
 from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
+    ExtractionDataset,
     MedicalCondition,
     Participant,
     SampleExperiment,
-    ExtractionDataset
 )
 from src.metadata_extraction.metadata_extraction import (
     MetadataHanlder,
@@ -62,12 +62,6 @@ class PrintLabExtractor:
         namespaces = load_optional_schemas(namespaces=namespaces, schemas=self.schemas)
         self.metadata_handler = MetadataHanlder(self.api_agent, namespaces)
         self.collect_all = collect_all
-
-    #
-    # def _contruct_sensitive_dict(
-    #     self, sensitive_feild_names: list[str]
-    # ) -> dict[str, Callable[[str], str]]:
-    #     return {field_name: field_name for field_name in sensitive_feild_names}
 
     def datasheet_to_dataframe(
         self, input_data_source: Any, sheet_name: str
@@ -289,7 +283,7 @@ class PrintLabExtractor:
                 additional_properties={},
                 schema_type="Dataset",
                 acls=None,
-                copy_unlisted=row["Crate Children"]
+                copy_unlisted=row["Crate Children"],
             )
             return new_dataset
 
