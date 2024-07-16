@@ -71,7 +71,7 @@ class SampleExperiment(
 
 
 @dataclass(kw_only=True)
-class ExtractionDataset(Dataset): # type: ignore
+class ExtractionDataset(Dataset):  # type: ignore
     """Dataset information for extraction of a dataset
     that may need to copy unlisted"""
 
