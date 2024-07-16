@@ -10,9 +10,9 @@ from typing import Any, Dict, List
 
 from mytardis_rocrate_builder.rocrate_builder import ROBuilder
 from mytardis_rocrate_builder.rocrate_dataclasses.data_class_utils import (
-    CrateManifest,
     convert_to_property_value,
 )
+from mytardis_rocrate_builder.rocrate_dataclasses.crate_manifest import CrateManifest
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
     ContextObject,
     Dataset,

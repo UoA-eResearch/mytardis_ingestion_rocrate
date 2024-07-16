@@ -70,12 +70,12 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         Returns:
             ContextEntity: a context entity representing the medical condition
         """
-        identifier = slugify(f"{medical_condition.code_type}-{medical_condition.name}")
+        identifier = slugify(f"{medical_condition.code_type}-{medical_condition.code}")
         if condition := self.crate.dereference(identifier):
             return condition
         properties: Dict[str, str | list[str] | dict[str, Any]] = {
             "@type": "MedicalCondition",
-            "name": medical_condition.name,
+            "name": medical_condition.code,
             "code_type": medical_condition.code_type,
             "code_source": medical_condition.code_source.as_posix(),
             "code_text": medical_condition.code_text,
@@ -102,6 +102,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
             ContextEntity: A (poteintally encryped) context entity for this participant.
                 now stored in the RO-Crate
         """
+
         identifier = participant.id
         if participant_obj := self.crate.dereference(identifier):
             return participant_obj
@@ -110,7 +111,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
             "name": participant.name,
             "description": participant.description,
             "project": participant.project,
-            "sex": participant.sex,
+            "gender": participant.gender,
             "ethnicity": participant.ethnicity,
         }
 
@@ -129,13 +130,13 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 identifier,
                 properties=properties,
             )
-            return self._add_identifiers(participant, participant_obj)
+            return self.crate.add(participant_obj)
         participant_obj = ContextEntity(
             self.crate,
             identifier,
             properties=properties,
         )
-        return self._add_identifiers(participant, participant_obj)
+        return self.crate.add(participant_obj)
 
     def add_experiment(self, experiment: Experiment) -> ContextEntity:
         """Add a sample experiment to the RO crate
@@ -152,7 +153,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 if experiment.participant
                 else ""
             ),
-            "sex": experiment.sex if experiment.sex else "",
+            "gender": experiment.gender if experiment.gender else "",
             "name": experiment.name,
             "associated_disease": (
                 [
@@ -179,7 +180,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         experiment_obj = self._update_experiment_meta(
             experiment=experiment, properties=properties
         )
-        return self._add_identifiers(experiment, experiment_obj)
+        return self.crate.add(experiment_obj)
 
     def add_dataset(self, dataset: Dataset) -> ContextEntity:
         """Add a dataset to the RO-Crate accounting for if unlisted cildren should be added

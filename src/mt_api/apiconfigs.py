@@ -231,7 +231,7 @@ class MyTardisRestAgent:  # pylint: disable=R0903, R0913
                 "bad API response getting person data for %s. Error: %s.", upi, e
             )
 
-        return Person(name=name, email=email, affiliation=UOA, identifiers=[upi])
+        return Person(name=name, email=email, affiliation=UOA, mt_identifiers=[upi])
 
     def no_auth_request(
         self,

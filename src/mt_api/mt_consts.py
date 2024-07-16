@@ -8,7 +8,7 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
 )
 
 UOA = Organisation(
-    identifiers=["https://ror.org/03b94tp07"],
+    mt_identifiers=["https://ror.org/03b94tp07"],
     name="The University of Auckland | Waipapa Taumata Rau",
     url="https://auckland.ac.nz",
     location="Auckland, New Zealand",

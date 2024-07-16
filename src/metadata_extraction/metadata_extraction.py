@@ -1,9 +1,9 @@
 """Metadata conversion and generation"""
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
-from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import MTMetadata
+from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import MTMetadata, MyTardisContextObject
 from requests.exceptions import RequestException
 
 from src.cli.mytardisconfig import SchemaConfig
@@ -47,11 +47,13 @@ class MetadataHanlder:
 
     api_agent: MyTardisRestAgent
     metadata_schemas: Dict[MtObject, Dict[Any, Any]]
+    metadata_collected: Dict[str,MTMetadata] = {}
 
     def __init__(
         self, api_agent: MyTardisRestAgent, schema_namespaces: Dict[MtObject, str]
     ):
         self.api_agent = api_agent
+        self.schema_namespaces = schema_namespaces
         self.request_metadata_dicts(schema_namespaces)
 
     def request_metadata_schema(self, schema_namespace: str) -> Dict[Any, Any]:
@@ -121,13 +123,21 @@ class MetadataHanlder:
         if not all_schema_objects:
             return {}
         return all_schema_objects
+    
+    def create_metadata_from_schema(self, input_metadata: Dict[str, Any], mt_object:MtObject, collect_all:bool, parent: MyTardisContextObject) -> Dict[str, MTMetadata]:
+        metadata_schema = self.get_mtobj_schema(mt_object)
+        schema_url = self.schema_namespaces.get(mt_object)
+        metadata_dict = create_metadata_objects(input_metadata=input_metadata, metadata_schema=metadata_schema,collect_all=collect_all,parent=parent,schema_url=schema_url)
+        self.metadata_collected.update(metadata_dict)
+        return metadata_dict
 
 
 def create_metadata_objects(
     input_metadata: Dict[str, Any],
     metadata_schema: Dict[str, Dict[str, Any]],
     collect_all: bool = False,
-    parent_id: str | int | float | None = None,
+    parent: Optional[MyTardisContextObject] = None,
+    schema_url: Optional[str] = None,
 ) -> Dict[str, MTMetadata]:
     """Create RO-Crate metadata objects from an input dictionary and a schema for lookup
 
@@ -148,12 +158,12 @@ def create_metadata_objects(
                 metadata_type = metadata_object.get("data_type")  # type: ignore
                 metadata_sensitive = bool(metadata_object.get("sensitive"))
             metadata_dict[meta_key] = MTMetadata(
-                ro_crate_id=meta_key,
                 name=meta_key,
                 value=str(meta_value),  # if metadata_type == 2 else meta_value,
                 mt_type=get_metadata_type(int(metadata_type)),
-                sensitive=metadata_sensitive is True,
-                parents=[str(parent_id)] if parent_id else None,
+                mt_schema=schema_url,
+                sensitive=metadata_sensitive,
+                parent = parent if parent else None,
             )
     return metadata_dict
 

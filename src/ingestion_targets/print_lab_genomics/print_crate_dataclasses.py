@@ -4,7 +4,7 @@ Extend existing RO-Crate MyTardis dataclasses
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (  # BaseObject,
     BaseObject,
@@ -15,19 +15,22 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (  
 )
 
 
-@dataclass
+@dataclass(kw_only=True)
 class MedicalCondition(BaseObject):  # type: ignore
     """object for medical condtions that correspond to various
     standards and codes from https://schema.org/MedicalCondition
     """
-
+    code: str
     code_type: str
     code_text: str
     code_source: Path
     schema_type = "MedicalCondition"
 
+    def __post_init__(self):
+        object.__setattr__(self, "identifier", self.code)
 
-@dataclass
+
+@dataclass(kw_only=True)
 class Participant(MyTardisContextObject):  # type: ignore
     """participants of a study
     # to be flattend back into Experiment when read into MyTardis
@@ -35,12 +38,13 @@ class Participant(MyTardisContextObject):  # type: ignore
 
     date_of_birth: str
     nhi_number: str
-    sex: str
+    gender: str
     ethnicity: str
     project: str
+    raw_data: Dict[str,Any]
 
 
-@dataclass
+@dataclass(kw_only=True)
 class SampleExperiment(
     Experiment  # type: ignore
 ):  # pylint: disable=too-many-instance-attributes # type: ignore
@@ -52,8 +56,8 @@ class SampleExperiment(
         project (str): An identifier for a project
     """
 
-    additional_property: Optional[List[Dict[str, str]]]
-    sex: Optional[str]
+    additional_property: Optional[List[Dict[str, str]]] = None
+    gender: Optional[str]
     associated_disease: Optional[List[MedicalCondition]]
     body_location: Optional[
         MedicalCondition
@@ -63,10 +67,9 @@ class SampleExperiment(
     participant: Participant
     analyate: Optional[str]
     portion: Optional[str]
-    participant_metadata: Optional[Dict[str, MTMetadata]]
     schema_type = "DataCatalog"
 
-@dataclass
+@dataclass(kw_only=True)
 class ExtractionDataset(Dataset):
     """Dataset information for extraction of a dataset
      that may need to copy unlisted"""

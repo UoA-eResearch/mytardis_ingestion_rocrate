@@ -8,14 +8,18 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import pandas as pd
-from mytardis_rocrate_builder.rocrate_dataclasses.data_class_utils import CrateManifest
+from mytardis_rocrate_builder.rocrate_dataclasses.crate_manifest import CrateManifest
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
+    MyTardisContextObject,
     ACL,
     Datafile,
     Dataset,
     Experiment,
     Instrument,
     Project,
+    Facility,
+    MTMetadata,
+    Group,
 )
 from slugify import slugify
 
@@ -29,8 +33,7 @@ from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
 )
 from src.metadata_extraction.metadata_extraction import (
     MetadataHanlder,
-    create_metadata_objects,
-    load_optional_schemas,
+    load_optional_schemas
 )
 from src.mt_api.apiconfigs import MyTardisRestAgent
 from src.mt_api.mt_consts import MtObject
@@ -48,7 +51,9 @@ class PrintLabExtractor:
 
     api_agent: MyTardisRestAgent
     collect_all: bool
-
+    collected_acls: List[ACL] = []
+    collected_metadata: Dict[str,MTMetadata] = {}
+    
     def __init__(
         self,
         api_agent: MyTardisRestAgent,
@@ -90,61 +95,63 @@ class PrintLabExtractor:
         )
         return parsed_df
 
-    def _parse_acls(
+    
+
+    def _index_acls(
         self,
         acls_sheet: pd.DataFrame,
-    ) -> Dict[str, ACL]:
-        def parse_acl(row: pd.Series) -> ACL:
+    ) -> Dict[str, Dict[str,Any]]:
+        return {slugify(f'{row["Name"]}'):row  for row in acls_sheet.to_dict('index').values()}
+
+    def parse_acls(
+        self,
+        indexed_acls: Dict[str, Dict[str,Any]],
+        acls_to_read: list[str],
+        parent: MyTardisContextObject
+    ) -> List[ACL]:
+        def create_acl(row: Dict[str,Any]) -> ACL:
             identifier = slugify(f'{row["Name"]}')
             new_acl = ACL(
                 name=identifier,
-                description=identifier,
-                identifiers=[identifier],
-                grantee=row["Name"],
-                date_created=None,
-                date_modified=None,
-                additional_properties=None,
-                grantee_type="organization",
+                grantee=Group(name=row["Name"]),
+                grantee_type="Audiance",
                 mytardis_see_sensitive=row["see_sensitive"],
                 mytardis_can_download=row["can_download"],
                 mytardis_owner=row["is_owner"],
-                schema_type="DigitalDocumentPermission",
+                parent=parent
             )
             return new_acl
-
-        acls: Dict[str, ACL] = {
-            acl.id: acl for acl in acls_sheet.apply(parse_acl, axis=1).to_list()
-        }
-        return acls
+        acl_list = []
+        for acl_id in acls_to_read:
+            if acl_data := indexed_acls.get(slugify(f'{acl_id}')):
+                acl_list.append(create_acl(acl_data))
+        return acl_list
 
     def _parse_projects(
         self,
         projects_sheet: pd.DataFrame,
-        metadata_obj_schema: Dict[str, Dict[str, Any]],
     ) -> Dict[str, Project]:
         def parse_project(row: pd.Series) -> Project:
             identifier = slugify(f'{row["Project name"]}-{row["Project code"]}')
-            metadata_dict = create_metadata_objects(
-                row, metadata_obj_schema, self.collect_all, row["Project name"]
-            )
             pi = self.api_agent.create_person_object(row["Project PI"])
             new_project = Project(
                 name=identifier,
-                metadata=metadata_dict,
                 description=row["Project name"],
-                identifiers=[slugify(f'{row["Project code"]}'), identifier],
+                mt_identifiers=[slugify(f'{row["Project code"]}'), identifier],
                 principal_investigator=pi,
                 date_created=None,
                 date_modified=None,
                 contributors=None,
                 additional_properties={},
-                schema_type="Project",
-                acls=None,
             )
+            metadata_dict = self.metadata_handler.create_metadata_from_schema(
+                input_metadata=row, mt_object=MtObject.PROJECT, collect_all=self.collect_all, parent=new_project
+                )
+            self.collected_metadata.update(metadata_dict)
             return new_project
 
         projects: Dict[str, Project] = {
-            project.id: project
+            project.name: project
             for project in projects_sheet.apply(parse_project, axis=1).to_list()
         }
         return projects
@@ -153,43 +160,38 @@ class PrintLabExtractor:
         self,
         experiments_sheet: pd.DataFrame,
         particpants_dict: Dict[str, Participant],
-        acls_dict: Dict[str, ACL],
-        metadata_obj_schema: Dict[str, Dict[str, Any]],
+        acls: Dict[str,Dict[str, Any]],
     ) -> Dict[str, Experiment]:
         def parse_experiment(row: pd.Series) -> Experiment:
-            metadata_dict = create_metadata_objects(
-                row, metadata_obj_schema, self.collect_all, row["Sample name"]
-            )
             participant = particpants_dict[row["Participant"]]
             new_experiment = SampleExperiment(
                 name=row["Sample name"],
                 description=row["Other sample information"],
-                identifiers=[row["Sample name"]],
+                mt_identifiers=[row["Sample name"]],
                 date_created=None,
                 date_modified=None,
                 contributors=None,
                 mytardis_classification="",
-                metadata=metadata_dict | participant.metadata,
                 projects=[slugify(f'{row["Project"]}')],
                 participant=participant,
                 additional_property=None,
-                sex=participant.sex,
+                gender=participant.gender,
                 associated_disease=[
                     MedicalCondition(  # REPLACE WITH LOOKUPS FOR IDC11
-                        name=row["Disease type ICD11 code"],
+                        code=row["Disease type ICD11 code"],
                         code_text=row["Disease type text from ICD11"],
                         code_type="Disease type ICD11 code",
                         code_source=Path("https://icd.who.int/en"),
                     ),
                     MedicalCondition(  # REPLACE WITH LOOKUPS FOR IDC11
-                        name=row["Histological diagnosis detail code from ICD11"],
+                        code=row["Histological diagnosis detail code from ICD11"],
                         code_text=row["Histological diagnosis detail text from ICD11"],
                         code_type="Histological diagnosis detail code from ICD11",
                         code_source=Path("https://icd.who.int/en"),
                     ),
                 ],
                 body_location=MedicalCondition(  # REPLACE WITH LOOKUPS FOR IDC11
-                    name=row["Sample anatomical site ICD11 code"],
+                    code=row["Sample anatomical site ICD11 code"],
                     code_text=row["Histological diagnosis detail code from ICD11"],
                     code_type="Sample anatomical site ICD11 code",
                     code_source=Path("https://icd.who.int/en"),
@@ -197,15 +199,21 @@ class PrintLabExtractor:
                 tissue_processing_method=row["Tissue processing"],
                 analyate=row["Analyte"],
                 portion=row["Portion"],
-                participant_metadata=participant.metadata,
                 additional_properties={},
                 schema_type="DataCatalog",
-                acls=[acls_dict[slugify(f"{acl}")] for acl in row["Groups"].split(",")],
             )
+            metadata_raw = participant.raw_data
+            metadata_raw.update(row)
+            metadata_dict = self.metadata_handler.create_metadata_from_schema(
+                input_metadata=metadata_raw, mt_object=MtObject.EXPERIMENT, collect_all=self.collect_all, parent=new_experiment
+            )
+            acl_data = self.parse_acls(acls, str(row["Groups"]).split(),new_experiment)
+            self.collected_acls.extend(acl_data)
+            self.collected_metadata.update(metadata_dict)
             return new_experiment
 
         experiments: Dict[str, Experiment] = {
-            experiment.id: experiment
+            experiment.name: experiment
             for experiment in experiments_sheet.apply(
                 parse_experiment, axis=1
             ).to_list()
@@ -215,30 +223,23 @@ class PrintLabExtractor:
     def _parse_participants(
         self,
         particpant_sheet: pd.DataFrame,
-        metadata_obj_schema: Dict[str, Dict[str, Any]],
     ) -> Dict[str, Dataset]:
         def parse_participant(row: pd.Series) -> Participant:
-            metadata_dict = create_metadata_objects(
-                row, metadata_obj_schema, self.collect_all, row["Participant: Code"]
-            )
             new_participant = Participant(
                 name=row["Participant: Code"],
                 description="",
-                identifiers=[
+                mt_identifiers=[
                     slugify(f'{row["Participant: Code"]}'),
                     row["Participant aliases"],
                 ],
-                date_created=None,
-                date_modified=None,
-                metadata=metadata_dict,
                 date_of_birth=str(row["Participant Date of birth"]),
                 nhi_number=row["Participant NHI number"],
-                sex=row["Participant Sex"],
+                gender=row["Participant gender"],
                 ethnicity=row["Participant Ethnicity"],
                 project=slugify(f'{row["Project"]}'),
                 additional_properties={},
                 schema_type="Person",
-                acls=None,
+                raw_data = row
             )
             return new_participant
 
@@ -254,37 +255,34 @@ class PrintLabExtractor:
         self,
         dataset_sheet: pd.DataFrame,
         experiments: Dict[str, Experiment],
-        metadata_obj_schema: Dict[str, Dict[str, Any]],
     ) -> Dict[str, ExtractionDataset]:
         def parse_dataset(row: pd.Series) -> ExtractionDataset:
-            metadata_dict = create_metadata_objects(
-                row, metadata_obj_schema, self.collect_all, row["Directory"]
-            )
             new_dataset = ExtractionDataset(
                 name=row["Dataset Name"],
                 description=row["Dataset Name"],
-                identifiers=[row["Directory"]],
-                date_created=None,
-                date_modified=None,
-                metadata=metadata_dict,
+                mt_identifiers=[row["Directory"]],
                 experiments=[experiments[row["Sample"]]],
                 directory=Path(row["Directory"]),
-                contributors=None,
                 instrument=Instrument(
                     name=row["Instrument"],
-                    location=row["Center"],
-                    identifiers=[str(row["Instrument"])],
+                    location=Facility(
+                        name=row["Center"], 
+                        description=row["Center"],
+                        mt_identifiers=None,
+                        manager_group=Group(
+                            name="facility manager group"
+                        )),
                     description="_".join([row["Instrument"], row["Center"]]),
-                    date_created=None,
-                    date_modified=None,
-                    additional_properties={},
-                    schema_type=None,
+                    mt_identifiers = None
                 ),
                 additional_properties={},
                 schema_type="Dataset",
-                acls=None,
                 copy_unlisted=row["Crate Children"],
             )
+            metadata_dict = self.metadata_handler.create_metadata_from_schema(
+                input_metadata=row, mt_object=MtObject.DATASET, collect_all=self.collect_all, parent=new_dataset
+            )
+            self.collected_metadata.update(metadata_dict)
             return new_dataset
 
         datasets = {
@@ -297,27 +295,22 @@ class PrintLabExtractor:
         self,
         files_sheet: pd.DataFrame,
         datasets: Dict[str, Dataset],
-        metadata_obj_schema: Dict[str, Dict[str, Any]],
     ) -> List[Datafile]:
         def parse_datafile(row: pd.Series) -> Datafile:
-            metadata_dict = create_metadata_objects(
-                row, metadata_obj_schema, self.collect_all, row["Filepath"]
-            )
             new_datafile = Datafile(
                 name=Path(row["Filepath"]).name,
                 description=row["Description"],
-                identifiers=[],
-                metadata=metadata_dict,
-                date_created=None,
-                date_modified=None,
                 filepath=Path(row["Filepath"]),
                 dataset=datasets[Path(row["Dataset"]).as_posix()],
                 additional_properties={},
-                schema_type="File",
-                acls=None,
+                mt_identifiers = []
             )
+            metadata_dict = self.metadata_handler.create_metadata_from_schema(
+                input_metadata=row, mt_object=MtObject.DATAFILE, collect_all=self.collect_all, parent=new_datafile
+            )
+            self.collected_metadata.update(metadata_dict)
             return new_datafile
-
+            
         datafiles: List[Datafile] = files_sheet.apply(parse_datafile, axis=1).to_list()
         return datafiles
 
@@ -339,41 +332,42 @@ class PrintLabExtractor:
         #     ]
 
         crate_manifest = CrateManifest()
-
-        metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.PROJECT)
+        self.collected_metadata = {}
+        self.collected_acls = []
         project_df = self.datasheet_to_dataframe(input_data_source, "Projects")
         crate_manifest.add_projects(
             projcets=(
                 self._parse_projects(
-                    projects_sheet=project_df, metadata_obj_schema=metadata_dict
+                    projects_sheet=project_df
                 )
             )
         )
 
-        metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.EXPERIMENT)
         participants_df = self.datasheet_to_dataframe(input_data_source, "Participants")
-        participants = self._parse_participants(participants_df, metadata_dict)
+        participants = self._parse_participants(participants_df)
         acl_df = self.datasheet_to_dataframe(input_data_source, "Groups")
-        acls = self._parse_acls(acl_df)
+        acls = self._index_acls(acl_df)
         experiments_df = self.datasheet_to_dataframe(
             input_data_source=input_data_source,
             sheet_name="Samples",
         )
         experiments = self._parse_experiments(
-            experiments_df, participants, acls, metadata_dict
+            experiments_df, participants, acls
         )
 
         crate_manifest.add_experiments(experiments)
 
-        metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.DATASET)
         dataset_df = self.datasheet_to_dataframe(input_data_source, "Datasets")
-        datasets = self._parse_datasets(dataset_df, experiments, metadata_dict)
+        datasets = self._parse_datasets(dataset_df, experiments)
         crate_manifest.add_datasets(datasets)
 
-        metadata_dict = self.metadata_handler.get_mtobj_schema(MtObject.DATAFILE)
+        
         datafile_df = self.datasheet_to_dataframe(input_data_source, "Files")
         crate_manifest.add_datafiles(
-            self._parse_datafiles(datafile_df, datasets, metadata_dict)
+            self._parse_datafiles(datafile_df, datasets)
         )
-
+        logger.debug("acls collected is %s", self.collected_acls)
+        crate_manifest.add_acls(self.collected_acls)
+        
+        crate_manifest.add_metadata(self.collected_metadata.values())
         return crate_manifest
