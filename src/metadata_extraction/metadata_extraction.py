@@ -3,7 +3,10 @@
 import logging
 from typing import Any, Dict, Optional
 
-from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import MTMetadata, MyTardisContextObject
+from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
+    MTMetadata,
+    MyTardisContextObject,
+)
 from requests.exceptions import RequestException
 
 from src.cli.mytardisconfig import SchemaConfig
@@ -47,7 +50,7 @@ class MetadataHanlder:
 
     api_agent: MyTardisRestAgent
     metadata_schemas: Dict[MtObject, Dict[Any, Any]]
-    metadata_collected: Dict[str,MTMetadata] = {}
+    metadata_collected: Dict[str, MTMetadata] = {}
 
     def __init__(
         self, api_agent: MyTardisRestAgent, schema_namespaces: Dict[MtObject, str]
@@ -123,11 +126,34 @@ class MetadataHanlder:
         if not all_schema_objects:
             return {}
         return all_schema_objects
-    
-    def create_metadata_from_schema(self, input_metadata: Dict[str, Any], mt_object:MtObject, collect_all:bool, parent: MyTardisContextObject) -> Dict[str, MTMetadata]:
+
+    def create_metadata_from_schema(
+        self,
+        input_metadata: Dict[str, Any],
+        mt_object: MtObject,
+        collect_all: bool,
+        parent: MyTardisContextObject,
+    ) -> Dict[str, MTMetadata]:
+        """Create a new metadata object from schemas
+
+        Args:
+            input_metadata (Dict[str, Any]): input metadata to be read in
+            mt_object (MtObject): what kind of mytardis object is this
+            collect_all (bool): collect all metadata from this object
+            parent (MyTardisContextObject): what parent should we associate this metadata with
+
+        Returns:
+            Dict[str, MTMetadata]: all the metadata collected
+        """
         metadata_schema = self.get_mtobj_schema(mt_object)
         schema_url = self.schema_namespaces.get(mt_object)
-        metadata_dict = create_metadata_objects(input_metadata=input_metadata, metadata_schema=metadata_schema,collect_all=collect_all,parent=parent,schema_url=schema_url)
+        metadata_dict = create_metadata_objects(
+            input_metadata=input_metadata,
+            metadata_schema=metadata_schema,
+            collect_all=collect_all,
+            parent=parent,
+            schema_url=schema_url,
+        )
         self.metadata_collected.update(metadata_dict)
         return metadata_dict
 
@@ -163,7 +189,7 @@ def create_metadata_objects(
                 mt_type=get_metadata_type(int(metadata_type)),
                 mt_schema=schema_url,
                 sensitive=metadata_sensitive,
-                parent = parent if parent else None,
+                parent=parent if parent else None,
             )
     return metadata_dict
 

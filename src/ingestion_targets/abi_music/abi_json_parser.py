@@ -9,10 +9,10 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from mytardis_rocrate_builder.rocrate_builder import ROBuilder
+from mytardis_rocrate_builder.rocrate_dataclasses.crate_manifest import CrateManifest
 from mytardis_rocrate_builder.rocrate_dataclasses.data_class_utils import (
     convert_to_property_value,
 )
-from mytardis_rocrate_builder.rocrate_dataclasses.crate_manifest import CrateManifest
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
     ContextObject,
     Dataset,
@@ -77,7 +77,7 @@ def combine_json_files(
 
 def process_project(
     project_dir: DirectoryNode,
-    metadata_schema: Dict[str, Dict[str, Any]],
+    # metadata_schema: Dict[str, Dict[str, Any]],
     api_agent: MyTardisRestAgent,
     collect_all: bool = False,
 ) -> Project:
@@ -99,12 +99,12 @@ def process_project(
         for contributor in json_dict["contributors"]
         if json_dict["contributors"]
     ]
-    identifiers: list[str | int | float] = [
-        slugify(identifier) for identifier in json_dict["project_ids"]
-    ]
-    metadata_dict = create_metadata_objects(
-        json_dict, metadata_schema, collect_all, identifiers[0]
-    )
+    # identifiers: list[str | int | float] = [
+    #     slugify(identifier) for identifier in json_dict["project_ids"]
+    # ]
+    # metadata_dict = create_metadata_objects(
+    #     json_dict, metadata_schema, collect_all, identifiers[0]
+    # )
     additional_properties = {}
     if collect_all:
         additional_properties = json_dict
@@ -113,19 +113,16 @@ def process_project(
         description=str(json_dict["project_description"]),
         principal_investigator=principal_investigator,
         contributors=contributors or None,
-        identifiers=identifiers,
-        metadata=metadata_dict,
         date_created=None,
         date_modified=None,
         additional_properties=additional_properties,
         schema_type="Project",
-        acls=None,
     )
 
 
 def process_experiment(
     experiment_dir: DirectoryNode,
-    metadata_schema: Dict[str, Any],
+    # metadata_schema: Dict[str, Any],
     parent_project_id: str,
     collect_all: bool = False,
 ) -> Experiment:
@@ -142,14 +139,14 @@ def process_experiment(
     project_ids = (
         [json_dict["project"]] if json_dict.get("project") else json_dict["projects"]
     )
-    identifiers: list[str | int | float] = [
-        slugify(f"{project_ids}-{identifier}")
-        for identifier in json_dict["experiment_ids"]
-        for project_id in project_ids
-    ]
-    metadata_dict = create_metadata_objects(
-        json_dict, metadata_schema, collect_all, identifiers[0]
-    )
+    # identifiers: list[str | int | float] = [
+    #     slugify(f"{project_ids}-{identifier}")
+    #     for identifier in json_dict["experiment_ids"]
+    #     for project_id in project_ids
+    # ]
+    # metadata_dict = create_metadata_objects(
+    #     json_dict, metadata_schema, collect_all, identifiers[0]
+    # )
     additional_properties = {}
     if collect_all:
         additional_properties = json_dict
@@ -157,15 +154,11 @@ def process_experiment(
         name=json_dict["experiment_name"],
         description=json_dict["experiment_description"],
         projects=project_ids if project_ids else [parent_project_id],
-        identifiers=identifiers,
-        metadata=metadata_dict,
         date_created=None,
         date_modified=None,
         contributors=None,
         mytardis_classification=None,
         additional_properties=additional_properties,
-        schema_type="DataCatalog",
-        acls=None,
     )
 
 
@@ -245,7 +238,6 @@ def process_raw_dataset(
     return Dataset(
         name=identifiers[0],
         description=json_dict["Description"],
-        identifiers=identifiers,
         experiments=(
             [slugify(f'{json_dict["project_ids"][0]}-{json_dict["experiment_ids"][0]}')]
             if json_dict.get("experiment_ids")
@@ -254,12 +246,10 @@ def process_raw_dataset(
         directory=dataset_dir.path(),
         date_created=created_date,
         date_modified=updated_dates or None,
-        metadata=metadata_dict,
         contributors=None,
         instrument=Instrument(
             name=ABI_MUSIC_MICROSCOPE_INSTRUMENT,
             description=ABI_MUSIC_MICROSCOPE_INSTRUMENT,
-            identifiers=[ABI_MUSIC_MICROSCOPE_INSTRUMENT, ABI_FACILLITY],
             date_created=None,
             date_modified=None,
             location=ABI_FACILLITY,
@@ -268,7 +258,6 @@ def process_raw_dataset(
         ),
         additional_properties=additional_properties,
         schema_type="Dataset",
-        acls=None,
     )
 
 
@@ -290,7 +279,6 @@ def process_nested_contextobj(
         description=str(
             sub_json.get("description") if sub_json.get("description") else identifier
         ),
-        identifiers=[identifier],
         date_created=None,
         date_modified=None,
         additional_properties=convert_to_property_value(sub_json, identifier),
@@ -325,8 +313,8 @@ def parse_raw_data(  # pylint: disable=too-many-locals
     """
 
     crate_manifest = CrateManifest()
-    project_metadata_schema = metadata_handler.get_mtobj_schema(MtObject.PROJECT)
-    experiment_metadata_schema = metadata_handler.get_mtobj_schema(MtObject.EXPERIMENT)
+    # project_metadata_schema = metadata_handler.get_mtobj_schema(MtObject.PROJECT)
+    # experiment_metadata_schema = metadata_handler.get_mtobj_schema(MtObject.EXPERIMENT)
     raw_dataset_metadata_schema = metadata_handler.get_mtobj_schema(MtObject.DATASET)
     project_dirs = [
         d for d in raw_dir.iter_dirs(recursive=True) if d.has_file("project.json")
@@ -335,7 +323,7 @@ def parse_raw_data(  # pylint: disable=too-many-locals
         logging.info("Project directory: %s", project_dir.name())
         project = process_project(
             project_dir=project_dir,
-            metadata_schema=project_metadata_schema,
+            # metadata_schema=project_metadata_schema,
             collect_all=collect_all,
             api_agent=api_agent,
         )
@@ -352,7 +340,7 @@ def parse_raw_data(  # pylint: disable=too-many-locals
 
             experiment = process_experiment(
                 experiment_dir,
-                metadata_schema=experiment_metadata_schema,
+                # metadata_schema=experiment_metadata_schema,
                 parent_project_id=str(project.id),
                 collect_all=collect_all,
             )
@@ -402,7 +390,7 @@ def parse_raw_data(  # pylint: disable=too-many-locals
                         datafiles=None,
                     )
                     dataset.directory = Path("./")
-                    dataset.identifiers[0] = "./"
+                    dataset.id = "./"
                     crate = ROCrate()
                     crate.source = dataset_dir.path()
                     builder = ROBuilder(crate)
