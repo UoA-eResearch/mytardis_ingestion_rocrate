@@ -10,16 +10,16 @@ from typing import Any, Dict, List
 import pandas as pd
 from mytardis_rocrate_builder.rocrate_dataclasses.crate_manifest import CrateManifest
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
-    MyTardisContextObject,
     ACL,
     Datafile,
     Dataset,
     Experiment,
-    Instrument,
-    Project,
     Facility,
-    MTMetadata,
     Group,
+    Instrument,
+    MTMetadata,
+    MyTardisContextObject,
+    Project,
 )
 from slugify import slugify
 
@@ -33,7 +33,7 @@ from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
 )
 from src.metadata_extraction.metadata_extraction import (
     MetadataHanlder,
-    load_optional_schemas
+    load_optional_schemas,
 )
 from src.mt_api.apiconfigs import MyTardisRestAgent
 from src.mt_api.mt_consts import MtObject
@@ -52,8 +52,8 @@ class PrintLabExtractor:
     api_agent: MyTardisRestAgent
     collect_all: bool
     collected_acls: List[ACL] = []
-    collected_metadata: Dict[str,MTMetadata] = {}
-    
+    collected_metadata: Dict[str, MTMetadata] = {}
+
     def __init__(
         self,
         api_agent: MyTardisRestAgent,
@@ -95,21 +95,32 @@ class PrintLabExtractor:
         )
         return parsed_df
 
-    
-
     def _index_acls(
         self,
         acls_sheet: pd.DataFrame,
-    ) -> Dict[str, Dict[str,Any]]:
-        return {slugify(f'{row["Name"]}'):row  for row in acls_sheet.to_dict('index').values()}
+    ) -> Dict[str, Dict[str, Any]]:
+        return {
+            slugify(f'{row["Name"]}'): row
+            for row in acls_sheet.to_dict("index").values()
+        }
 
     def parse_acls(
         self,
-        indexed_acls: Dict[str, Dict[str,Any]],
+        indexed_acls: Dict[str, Dict[str, Any]],
         acls_to_read: list[str],
-        parent: MyTardisContextObject
+        parent: MyTardisContextObject,
     ) -> List[ACL]:
-        def create_acl(row: Dict[str,Any]) -> ACL:
+        """parse access level controsl from those found in groups sheet
+
+        Args:
+            indexed_acls (Dict[str, Dict[str, Any]]): an indexed set of ACLS
+            acls_to_read (list[str]): all access level controls that are to be read
+            parent (MyTardisContextObject): parent of this acl
+
+        Returns:
+            List[ACL]: all ACLs returned
+        """
+        def create_acl(row: Dict[str, Any]) -> ACL:
             identifier = slugify(f'{row["Name"]}')
             new_acl = ACL(
                 name=identifier,
@@ -118,12 +129,13 @@ class PrintLabExtractor:
                 mytardis_see_sensitive=row["see_sensitive"],
                 mytardis_can_download=row["can_download"],
                 mytardis_owner=row["is_owner"],
-                parent=parent
+                parent=parent,
             )
             return new_acl
+
         acl_list = []
         for acl_id in acls_to_read:
-            if acl_data := indexed_acls.get(slugify(f'{acl_id}')):
+            if acl_data := indexed_acls.get(slugify(f"{acl_id}")):
                 acl_list.append(create_acl(acl_data))
         return acl_list
 
@@ -145,8 +157,11 @@ class PrintLabExtractor:
                 additional_properties={},
             )
             metadata_dict = self.metadata_handler.create_metadata_from_schema(
-                input_metadata=row, mt_object=MtObject.PROJECT, collect_all=self.collect_all, parent=new_project
-                )
+                input_metadata=row,
+                mt_object=MtObject.PROJECT,
+                collect_all=self.collect_all,
+                parent=new_project,
+            )
             self.collected_metadata.update(metadata_dict)
             return new_project
 
@@ -160,7 +175,7 @@ class PrintLabExtractor:
         self,
         experiments_sheet: pd.DataFrame,
         particpants_dict: Dict[str, Participant],
-        acls: Dict[str,Dict[str, Any]],
+        acls: Dict[str, Dict[str, Any]],
     ) -> Dict[str, Experiment]:
         def parse_experiment(row: pd.Series) -> Experiment:
             participant = particpants_dict[row["Participant"]]
@@ -205,9 +220,12 @@ class PrintLabExtractor:
             metadata_raw = participant.raw_data
             metadata_raw.update(row)
             metadata_dict = self.metadata_handler.create_metadata_from_schema(
-                input_metadata=metadata_raw, mt_object=MtObject.EXPERIMENT, collect_all=self.collect_all, parent=new_experiment
+                input_metadata=metadata_raw,
+                mt_object=MtObject.EXPERIMENT,
+                collect_all=self.collect_all,
+                parent=new_experiment,
             )
-            acl_data = self.parse_acls(acls, str(row["Groups"]).split(),new_experiment)
+            acl_data = self.parse_acls(acls, str(row["Groups"]).split(), new_experiment)
             self.collected_acls.extend(acl_data)
             self.collected_metadata.update(metadata_dict)
             return new_experiment
@@ -239,7 +257,7 @@ class PrintLabExtractor:
                 project=slugify(f'{row["Project"]}'),
                 additional_properties={},
                 schema_type="Person",
-                raw_data = row
+                raw_data=row,
             )
             return new_participant
 
@@ -266,21 +284,23 @@ class PrintLabExtractor:
                 instrument=Instrument(
                     name=row["Instrument"],
                     location=Facility(
-                        name=row["Center"], 
+                        name=row["Center"],
                         description=row["Center"],
                         mt_identifiers=None,
-                        manager_group=Group(
-                            name="facility manager group"
-                        )),
+                        manager_group=Group(name="facility manager group"),
+                    ),
                     description="_".join([row["Instrument"], row["Center"]]),
-                    mt_identifiers = None
+                    mt_identifiers=None,
                 ),
                 additional_properties={},
                 schema_type="Dataset",
                 copy_unlisted=row["Crate Children"],
             )
             metadata_dict = self.metadata_handler.create_metadata_from_schema(
-                input_metadata=row, mt_object=MtObject.DATASET, collect_all=self.collect_all, parent=new_dataset
+                input_metadata=row,
+                mt_object=MtObject.DATASET,
+                collect_all=self.collect_all,
+                parent=new_dataset,
             )
             self.collected_metadata.update(metadata_dict)
             return new_dataset
@@ -303,14 +323,17 @@ class PrintLabExtractor:
                 filepath=Path(row["Filepath"]),
                 dataset=datasets[Path(row["Dataset"]).as_posix()],
                 additional_properties={},
-                mt_identifiers = []
+                mt_identifiers=[],
             )
             metadata_dict = self.metadata_handler.create_metadata_from_schema(
-                input_metadata=row, mt_object=MtObject.DATAFILE, collect_all=self.collect_all, parent=new_datafile
+                input_metadata=row,
+                mt_object=MtObject.DATAFILE,
+                collect_all=self.collect_all,
+                parent=new_datafile,
             )
             self.collected_metadata.update(metadata_dict)
             return new_datafile
-            
+
         datafiles: List[Datafile] = files_sheet.apply(parse_datafile, axis=1).to_list()
         return datafiles
 
@@ -336,11 +359,7 @@ class PrintLabExtractor:
         self.collected_acls = []
         project_df = self.datasheet_to_dataframe(input_data_source, "Projects")
         crate_manifest.add_projects(
-            projcets=(
-                self._parse_projects(
-                    projects_sheet=project_df
-                )
-            )
+            projcets=(self._parse_projects(projects_sheet=project_df))
         )
 
         participants_df = self.datasheet_to_dataframe(input_data_source, "Participants")
@@ -351,9 +370,7 @@ class PrintLabExtractor:
             input_data_source=input_data_source,
             sheet_name="Samples",
         )
-        experiments = self._parse_experiments(
-            experiments_df, participants, acls
-        )
+        experiments = self._parse_experiments(experiments_df, participants, acls)
 
         crate_manifest.add_experiments(experiments)
 
@@ -361,13 +378,10 @@ class PrintLabExtractor:
         datasets = self._parse_datasets(dataset_df, experiments)
         crate_manifest.add_datasets(datasets)
 
-        
         datafile_df = self.datasheet_to_dataframe(input_data_source, "Files")
-        crate_manifest.add_datafiles(
-            self._parse_datafiles(datafile_df, datasets)
-        )
+        crate_manifest.add_datafiles(self._parse_datafiles(datafile_df, datasets))
         logger.debug("acls collected is %s", self.collected_acls)
         crate_manifest.add_acls(self.collected_acls)
-        
+
         crate_manifest.add_metadata(self.collected_metadata.values())
         return crate_manifest

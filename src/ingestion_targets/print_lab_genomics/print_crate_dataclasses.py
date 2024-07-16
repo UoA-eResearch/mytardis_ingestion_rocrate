@@ -4,14 +4,14 @@ Extend existing RO-Crate MyTardis dataclasses
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (  # BaseObject,
     BaseObject,
+    Dataset,
     Experiment,
-    MTMetadata,
+    # MTMetadata,
     MyTardisContextObject,
-    Dataset
 )
 
 
@@ -20,13 +20,14 @@ class MedicalCondition(BaseObject):  # type: ignore
     """object for medical condtions that correspond to various
     standards and codes from https://schema.org/MedicalCondition
     """
+
     code: str
     code_type: str
     code_text: str
     code_source: Path
     schema_type = "MedicalCondition"
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         object.__setattr__(self, "identifier", self.code)
 
 
@@ -41,7 +42,7 @@ class Participant(MyTardisContextObject):  # type: ignore
     gender: str
     ethnicity: str
     project: str
-    raw_data: Dict[str,Any]
+    raw_data: Dict[str, Any]
 
 
 @dataclass(kw_only=True)
@@ -69,8 +70,10 @@ class SampleExperiment(
     portion: Optional[str]
     schema_type = "DataCatalog"
 
+
 @dataclass(kw_only=True)
-class ExtractionDataset(Dataset):
+class ExtractionDataset(Dataset): # type: ignore
     """Dataset information for extraction of a dataset
-     that may need to copy unlisted"""
-    copy_unlisted : bool
+    that may need to copy unlisted"""
+
+    copy_unlisted: bool
