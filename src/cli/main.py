@@ -17,6 +17,7 @@ from mytardis_rocrate_builder.rocrate_writer import (
     archive_crate,
     bagit_crate,
     write_crate,
+    bulk_encrypt_file
 )
 from rocrate.rocrate import ROCrate
 from slugify import slugify
@@ -171,6 +172,9 @@ def abi(
 )
 @OPTION_COLLECT_ALL
 @OPTION_CLONE_DIRECTORY
+@click.option(
+    "--bulk_encrypt",type=bool,is_flag=True, default=False, help="Bulk encrypt the entire crate or archive"
+)
 def print_lab(
     input_metadata: Path,
     pubkey_fingerprints: list[str],
@@ -185,6 +189,7 @@ def print_lab(
     collect_all: Optional[bool],
     gpg_binary: Optional[Path],
     duplicate_directory: Optional[bool],
+    bulk_encrypt: Optional[bool]
 ) -> None:
     """
     Create an RO-Crate based on a Print Lab metadata file
@@ -254,7 +259,12 @@ def print_lab(
     )
     if bag_crate:
         bagit_crate(crate_destination, mt_user or "")
-    archive_crate(archive_type, final_output, crate_destination)
+    if bulk_encrypt:
+        archive_crate(archive_type, crate_destination, crate_destination, True)
+        logger.info("Bulk Encrypting RO-Crate")
+        bulk_encrypt_file(gpg_binary=gpg_binary, pubkey_fingerprints=pubkey_fingerprints, data_to_encrypt=crate_destination,output_path=final_output)
+    else:
+        archive_crate(archive_type, final_output, crate_destination, True)
 
 
 @click.command()
