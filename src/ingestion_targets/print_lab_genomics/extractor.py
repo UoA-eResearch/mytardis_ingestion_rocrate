@@ -120,6 +120,7 @@ class PrintLabExtractor:
         Returns:
             List[ACL]: all ACLs returned
         """
+
         def create_acl(row: Dict[str, Any]) -> ACL:
             identifier = slugify(f'{row["Name"]}')
             new_acl = ACL(
