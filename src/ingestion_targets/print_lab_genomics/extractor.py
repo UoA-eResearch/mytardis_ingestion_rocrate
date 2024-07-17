@@ -253,7 +253,7 @@ class PrintLabExtractor:
                 ],
                 date_of_birth=str(row["Participant Date of birth"]),
                 nhi_number=row["Participant NHI number"],
-                gender=row["Participant gender"],
+                gender=row["Participant Sex"],
                 ethnicity=row["Participant Ethnicity"],
                 project=slugify(f'{row["Project"]}'),
                 additional_properties={},
