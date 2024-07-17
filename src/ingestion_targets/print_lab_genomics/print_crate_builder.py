@@ -54,8 +54,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 "NHI number": participant.nhi_number or "N/A",
                 "date_of_birth": participant.date_of_birth,
                 "parents": [participant_id],
-            },
-            pubkey_fingerprints=[],
+            }
         )
         return self.crate.add(sensitive_data).id
 
