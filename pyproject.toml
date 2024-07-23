@@ -13,7 +13,6 @@ pylint = "^3.1.0"
 mypy = "^1.8.0"
 pytest = "^8.0.2"
 slugify = "^0.0.1"
-logging = "^0.4.9.6"
 pandas = "^2.2.1"
 xlrd = "^2.0.1"
 pydantic = "^2.6.3"
@@ -23,6 +22,7 @@ pydantic-settings = "^2.2.1"
 mytardis-rocrate-builder = {git = "https://github.com/JLoveUOA/mytardis_rocrate_builder", branch="optional-identifiers"}
 ro-crate-py = {git = "https://github.com/UoA-eResearch/ro-crate-py.git",  branch = "move-encrypted-into-graph"}
 openpyxl = "^3.1.5"
+click = "^8.1.7"
 
 
 [tool.poetry.group.dev.dependencies]
