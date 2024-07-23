@@ -1,7 +1,8 @@
 """Metadata conversion and generation"""
 
 import logging
-from typing import Any, Dict, Optional
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
     MTMetadata,
@@ -25,6 +26,15 @@ MT_METADATA_TYPE = {
     "default": "STRING",
 }
 logger = logging.getLogger(__name__)
+
+
+@dataclass(kw_only=True)
+class MetadataSchema:
+    """A class for holding bundled information about a metadata schema"""
+
+    schema: Dict[str, Dict[str, Any]]
+    url: str
+    mt_type: Optional[MtObject] = None
 
 
 def get_metadata_type(type_enum: int) -> str:
@@ -51,13 +61,18 @@ class MetadataHanlder:
     api_agent: MyTardisRestAgent
     metadata_schemas: Dict[MtObject, Dict[Any, Any]]
     metadata_collected: Dict[str, MTMetadata] = {}
+    pubkey_fingerprints: Optional[List[str]] = None
 
     def __init__(
-        self, api_agent: MyTardisRestAgent, schema_namespaces: Dict[MtObject, str]
+        self,
+        api_agent: MyTardisRestAgent,
+        schema_namespaces: Dict[MtObject, str],
+        pubkey_fingerprints: Optional[List[str]],
     ):
         self.api_agent = api_agent
         self.schema_namespaces = schema_namespaces
         self.request_metadata_dicts(schema_namespaces)
+        self.pubkey_fingerprints = pubkey_fingerprints
 
     def request_metadata_schema(self, schema_namespace: str) -> Dict[Any, Any]:
         """Requests a metadata schema from the MyTardis API based on namespace
@@ -145,14 +160,17 @@ class MetadataHanlder:
         Returns:
             Dict[str, MTMetadata]: all the metadata collected
         """
-        metadata_schema = self.get_mtobj_schema(mt_object)
-        schema_url = self.schema_namespaces.get(mt_object)
+        metadata_schema = MetadataSchema(
+            schema=self.get_mtobj_schema(mt_object),
+            url=self.schema_namespaces.get(mt_object) or "",
+            mt_type=mt_object,
+        )
         metadata_dict = create_metadata_objects(
             input_metadata=input_metadata,
             metadata_schema=metadata_schema,
             collect_all=collect_all,
             parent=parent,
-            schema_url=schema_url,
+            pubkey_fingerprints=self.pubkey_fingerprints,
         )
         self.metadata_collected.update(metadata_dict)
         return metadata_dict
@@ -160,10 +178,10 @@ class MetadataHanlder:
 
 def create_metadata_objects(
     input_metadata: Dict[str, Any],
-    metadata_schema: Dict[str, Dict[str, Any]],
+    metadata_schema: MetadataSchema,
     collect_all: bool = False,
     parent: Optional[MyTardisContextObject] = None,
-    schema_url: Optional[str] = None,
+    pubkey_fingerprints: Optional[List[str]] = None,
 ) -> Dict[str, MTMetadata]:
     """Create RO-Crate metadata objects from an input dictionary and a schema for lookup
 
@@ -176,20 +194,23 @@ def create_metadata_objects(
     """
     metadata_dict: Dict[str, MTMetadata] = {}
     for meta_key, meta_value in input_metadata.items():
-        if (meta_key and meta_value) and (collect_all or meta_key in metadata_schema):
+        if (meta_key and meta_value) and (
+            collect_all or meta_key in metadata_schema.schema
+        ):
             # if we have metadata and the info to store it
             metadata_type = 2
             metadata_sensitive = False
-            if metadata_object := metadata_schema.get(meta_key):
+            if metadata_object := metadata_schema.schema.get(meta_key):
                 metadata_type = metadata_object.get("data_type")  # type: ignore
                 metadata_sensitive = bool(metadata_object.get("sensitive"))
             metadata_dict[meta_key] = MTMetadata(
                 name=meta_key,
                 value=str(meta_value),  # if metadata_type == 2 else meta_value,
                 mt_type=get_metadata_type(int(metadata_type)),
-                mt_schema=schema_url,
+                mt_schema=metadata_schema.url,
                 sensitive=metadata_sensitive,
                 parent=parent if parent else None,
+                pubkey_fingerprints=pubkey_fingerprints,
             )
     return metadata_dict
 

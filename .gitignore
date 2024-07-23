@@ -16,3 +16,4 @@ test_crate*
 *.log
 test*
 .env
+.vscode/*
