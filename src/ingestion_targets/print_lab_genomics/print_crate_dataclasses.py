@@ -36,12 +36,13 @@ class Participant(MyTardisContextObject):  # type: ignore
     # to be flattend back into Experiment when read into MyTardis
     # person biosample object"""
 
-    date_of_birth: str
-    nhi_number: str
     gender: str
     ethnicity: str
     project: str
     raw_data: Dict[str, Any]
+    date_of_birth: Optional[str] = None
+    nhi_number: Optional[str] = None
+    pubkey_fingerprints: Optional[list[str]] = None
 
 
 @dataclass(kw_only=True)

@@ -2,7 +2,7 @@
 """
 
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from mytardis_rocrate_builder.rocrate_builder import ROBuilder
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
@@ -56,6 +56,8 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 "parents": [participant_id],
             },
         )
+        recipients = self._add_pubkey_recipients(pubkey_fingerprints=participant.pubkey_fingerprints)
+        sensitive_data.append_to("recipients", recipients)
         return self.crate.add(sensitive_data).id
 
     def add_medical_condition(
@@ -117,18 +119,20 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         properties = self._update_properties(
             data_object=participant, properties=properties
         )
-        # if self.crate.pubkey_fingerprints and (
-        #     participant.date_of_birth or participant.nhi_number
-        # ):
-        #     properties["sensitive"] = self._add_participant_sensitve(
-        #         participant, str(participant.id)
-        #     )
-        if sensitive:
+        if participant.pubkey_fingerprints and (
+            participant.date_of_birth or participant.nhi_number
+        ):
+            properties["sensitive"] = self._add_participant_sensitve(
+                participant, str(participant.id)
+            )
+        if sensitive and participant.pubkey_fingerprints:
             participant_obj = EncryptedContextEntity(
                 self.crate,
                 identifier,
                 properties=properties,
             )
+            recipients = self._add_pubkey_recipients(pubkey_fingerprints=participant.pubkey_fingerprints)
+            participant_obj.append_to("recipients", recipients)
             return self.crate.add(participant_obj)
         participant_obj = ContextEntity(
             self.crate,

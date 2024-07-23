@@ -63,7 +63,7 @@ class PrintLabExtractor:
     ) -> None:
         self.api_agent = api_agent
         self.schemas = schemas
-
+        self.pubkey_fingerprints = pubkey_fingerprints
         namespaces = profile_consts.NAMESPACES
         namespaces = load_optional_schemas(namespaces=namespaces, schemas=self.schemas)
         self.metadata_handler = MetadataHanlder(
@@ -255,8 +255,8 @@ class PrintLabExtractor:
                     slugify(f'{row["Participant: Code"]}'),
                     row["Participant aliases"],
                 ],
-                date_of_birth=str(row["Participant Date of birth"]),
-                nhi_number=row["Participant NHI number"],
+                date_of_birth="",
+                nhi_number="",
                 gender=row["Participant Sex"],
                 ethnicity=row["Participant Ethnicity"],
                 project=slugify(f'{row["Project"]}'),
@@ -264,6 +264,10 @@ class PrintLabExtractor:
                 schema_type="Person",
                 raw_data=row,
             )
+            if self.pubkey_fingerprints:
+                new_participant.nhi_number=row["Participant NHI number"]
+                new_participant.date_of_birth = str(row["Participant Date of birth"])
+                new_participant.pubkey_fingerprints = self.pubkey_fingerprints
             return new_participant
 
         participants_dict = {
