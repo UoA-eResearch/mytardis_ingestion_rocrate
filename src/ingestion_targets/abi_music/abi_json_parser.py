@@ -30,6 +30,7 @@ from src.ingestion_targets.abi_music.consts import (  # ZARR_DATASET_NAMESPACE,
 )
 from src.ingestion_targets.abi_music.filesystem_nodes import DirectoryNode, FileNode
 from src.metadata_extraction.metadata_extraction import (
+    MetadataSchema,
     MetadataHanlder,
     create_metadata_objects,
 )
@@ -164,7 +165,7 @@ def process_experiment(
 
 def process_raw_dataset(
     dataset_dir: DirectoryNode,
-    metadata_schema: Dict[str, Dict[str, Any]],
+    metadata_schema: MetadataSchema,
     experiment_id: str,
     collect_all: bool = False,
 ) -> Dataset:
@@ -315,7 +316,10 @@ def parse_raw_data(  # pylint: disable=too-many-locals
     crate_manifest = CrateManifest()
     # project_metadata_schema = metadata_handler.get_mtobj_schema(MtObject.PROJECT)
     # experiment_metadata_schema = metadata_handler.get_mtobj_schema(MtObject.EXPERIMENT)
-    raw_dataset_metadata_schema = metadata_handler.get_mtobj_schema(MtObject.DATASET)
+    raw_dataset_metadata_schema = MetadataSchema(
+        schema=metadata_handler.get_mtobj_schema(MtObject.DATASET),
+        url=metadata_handler.schema_namespaces.get(MtObject.DATASET) or "",
+    )
     project_dirs = [
         d for d in raw_dir.iter_dirs(recursive=True) if d.has_file("project.json")
     ]

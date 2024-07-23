@@ -5,7 +5,7 @@ Into dataclasses that can be built into an RO-Crate.
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 from mytardis_rocrate_builder.rocrate_dataclasses.crate_manifest import CrateManifest
@@ -52,20 +52,23 @@ class PrintLabExtractor:
     api_agent: MyTardisRestAgent
     collect_all: bool
     collected_acls: List[ACL] = []
-    collected_metadata: Dict[str, MTMetadata] = {}
+    collected_metadata: List[MTMetadata] = []
 
     def __init__(
         self,
         api_agent: MyTardisRestAgent,
         schemas: SchemaConfig | None,
         collect_all: bool,
+        pubkey_fingerprints:Optional[List[str]],
     ) -> None:
         self.api_agent = api_agent
         self.schemas = schemas
 
         namespaces = profile_consts.NAMESPACES
         namespaces = load_optional_schemas(namespaces=namespaces, schemas=self.schemas)
-        self.metadata_handler = MetadataHanlder(self.api_agent, namespaces)
+        self.metadata_handler = MetadataHanlder(
+            self.api_agent, namespaces, pubkey_fingerprints
+        )
         self.collect_all = collect_all
 
     def datasheet_to_dataframe(
@@ -145,11 +148,11 @@ class PrintLabExtractor:
         projects_sheet: pd.DataFrame,
     ) -> Dict[str, Project]:
         def parse_project(row: pd.Series) -> Project:
-            identifier = slugify(f'{row["Project name"]}-{row["Project code"]}')
+            identifier = slugify(f'{row["Project code"]}')
             pi = self.api_agent.create_person_object(row["Project PI"])
             new_project = Project(
                 name=identifier,
-                description=row["Project name"],
+                description=slugify(f'{row["Project name"]}-{row["Project code"]}'),
                 mt_identifiers=[slugify(f'{row["Project code"]}'), identifier],
                 principal_investigator=pi,
                 date_created=None,
@@ -163,7 +166,7 @@ class PrintLabExtractor:
                 collect_all=self.collect_all,
                 parent=new_project,
             )
-            self.collected_metadata.update(metadata_dict)
+            self.collected_metadata.extend(metadata_dict.values())
             return new_project
 
         projects: Dict[str, Project] = {
@@ -177,6 +180,7 @@ class PrintLabExtractor:
         experiments_sheet: pd.DataFrame,
         particpants_dict: Dict[str, Participant],
         acls: Dict[str, Dict[str, Any]],
+        projcets: Dict[str, Project],
     ) -> Dict[str, Experiment]:
         def parse_experiment(row: pd.Series) -> Experiment:
             participant = particpants_dict[row["Participant"]]
@@ -188,7 +192,7 @@ class PrintLabExtractor:
                 date_modified=None,
                 contributors=None,
                 mytardis_classification="",
-                projects=[slugify(f'{row["Project"]}')],
+                projects=[projcets.get(slugify(f'{row["Project"]}'))],
                 participant=participant,
                 additional_property=None,
                 gender=participant.gender,
@@ -228,7 +232,7 @@ class PrintLabExtractor:
             )
             acl_data = self.parse_acls(acls, str(row["Groups"]).split(), new_experiment)
             self.collected_acls.extend(acl_data)
-            self.collected_metadata.update(metadata_dict)
+            self.collected_metadata.extend(metadata_dict.values())
             return new_experiment
 
         experiments: Dict[str, Experiment] = {
@@ -303,7 +307,7 @@ class PrintLabExtractor:
                 collect_all=self.collect_all,
                 parent=new_dataset,
             )
-            self.collected_metadata.update(metadata_dict)
+            self.collected_metadata.extend(metadata_dict.values())
             return new_dataset
 
         datasets = {
@@ -319,7 +323,7 @@ class PrintLabExtractor:
     ) -> List[Datafile]:
         def parse_datafile(row: pd.Series) -> Datafile:
             new_datafile = Datafile(
-                name=Path(row["Filepath"]).name,
+                name=Path(row["Filepath"]),
                 description=row["Description"],
                 filepath=Path(row["Filepath"]),
                 dataset=datasets[Path(row["Dataset"]).as_posix()],
@@ -332,7 +336,7 @@ class PrintLabExtractor:
                 collect_all=self.collect_all,
                 parent=new_datafile,
             )
-            self.collected_metadata.update(metadata_dict)
+            self.collected_metadata.extend(metadata_dict.values())
             return new_datafile
 
         datafiles: List[Datafile] = files_sheet.apply(parse_datafile, axis=1).to_list()
@@ -356,11 +360,12 @@ class PrintLabExtractor:
         #     ]
 
         crate_manifest = CrateManifest()
-        self.collected_metadata = {}
+        self.collected_metadata = []
         self.collected_acls = []
         project_df = self.datasheet_to_dataframe(input_data_source, "Projects")
+        projects = self._parse_projects(projects_sheet=project_df)
         crate_manifest.add_projects(
-            projcets=(self._parse_projects(projects_sheet=project_df))
+            {project.id: project for project in projects.values()}
         )
 
         participants_df = self.datasheet_to_dataframe(input_data_source, "Participants")
@@ -371,9 +376,13 @@ class PrintLabExtractor:
             input_data_source=input_data_source,
             sheet_name="Samples",
         )
-        experiments = self._parse_experiments(experiments_df, participants, acls)
+        experiments = self._parse_experiments(
+            experiments_df, participants, acls, projects
+        )
 
-        crate_manifest.add_experiments(experiments)
+        crate_manifest.add_experiments(
+            {experiment.id: experiment for experiment in experiments.values()}
+        )
 
         dataset_df = self.datasheet_to_dataframe(input_data_source, "Datasets")
         datasets = self._parse_datasets(dataset_df, experiments)
@@ -381,8 +390,7 @@ class PrintLabExtractor:
 
         datafile_df = self.datasheet_to_dataframe(input_data_source, "Files")
         crate_manifest.add_datafiles(self._parse_datafiles(datafile_df, datasets))
-        logger.debug("acls collected is %s", self.collected_acls)
         crate_manifest.add_acls(self.collected_acls)
 
-        crate_manifest.add_metadata(self.collected_metadata.values())
+        crate_manifest.add_metadata(self.collected_metadata)
         return crate_manifest

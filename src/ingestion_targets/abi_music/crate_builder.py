@@ -32,7 +32,9 @@ class ABICrateBuilder:  # pylint: disable=too-few-public-methods
         namespaces = profile_consts.NAMESPACES
         namespaces = load_optional_schemas(namespaces=namespaces, schemas=schemas)
         self.api_agent = api_agent
-        self.metadata_handler = MetadataHanlder(api_agent, profile_consts.NAMESPACES)
+        self.metadata_handler = MetadataHanlder(
+            api_agent, profile_consts.NAMESPACES, pubkey_fingerprints=None
+        )
 
     def build_crates(self, input_data_source: Path, collect_all: bool) -> CrateManifest:
         """Build crates from datasets found in an ABI directory

@@ -10,9 +10,13 @@ import logging
 import os
 import tempfile
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import click
+from mytardis_rocrate_builder.rocrate_dataclasses.crate_manifest import (
+    CrateManifest,
+    reduce_to_dataset,
+)
 from mytardis_rocrate_builder.rocrate_writer import (
     archive_crate,
     bagit_crate,
@@ -138,6 +142,9 @@ def abi(
 @click.command()
 @OPTION_INPUT_PATH
 @click.option(
+    "-o", "--output", type=Path, default=None, help="output location for RO-Crate(s)"
+)
+@click.option(
     "--pubkey_fingerprints",
     "-k",
     type=str,
@@ -150,9 +157,6 @@ def abi(
 @OPTION_HOSTNAME
 @OPTION_MT_USER
 @OPTION_MT_APIKEY
-@click.option(
-    "-o", "--output", type=Path, default=None, help="output location for RO-Crate(s)"
-)
 @click.option(
     "-b",
     "--bag_crate",
@@ -179,21 +183,29 @@ def abi(
     default=False,
     help="Bulk encrypt the entire crate or archive",
 )
+@click.option(
+    "--split_datasets",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Bulk encrypt the entire crate or archive",
+)
 def print_lab(
     input_metadata: Path,
+    output: Path,
     pubkey_fingerprints: list[str],
     log_file: Path,
     env_prefix: str,
     mt_hostname: Optional[str],
     mt_user: Optional[str],
     mt_api_key: Optional[str],
-    output: Optional[Path],
     archive_type: Optional[str],
     bag_crate: Optional[bool],
     collect_all: Optional[bool],
     gpg_binary: Optional[Path],
     duplicate_directory: Optional[bool],
     bulk_encrypt: Optional[bool],
+    split_datasets: Optional[bool],
 ) -> None:
     """
     Create an RO-Crate based on a Print Lab metadata file
@@ -221,59 +233,86 @@ def print_lab(
         api_agent=api_agent,
         schemas=env_config.default_schema if env_config else None,
         collect_all=collect_all if collect_all else False,
+        pubkey_fingerprints=pubkey_fingerprints,
     )
     logger.info("extracting crate metadata")
     crate_manifest = extractor.extract(input_metadata)
 
-    source_path = input_metadata
     exclude = [(input_metadata / "sampledata.xlsx").as_posix()]
+    source_path = input_metadata
     if Path(input_metadata).is_file():
         source_path = Path(input_metadata).parent
         exclude.append(input_metadata.name)
-    if not output:
-        output = source_path
-    logger.info("writing RO-Crate from %s", source_path)
+    crate_manifests: List[CrateManifest] = []
+    if split_datasets:
+        crate_manifests = [
+            reduce_to_dataset(crate_manifest, dataset=dataset)
+            for dataset in crate_manifest.datasets.values()
+        ]
+    else:
+        crate_manifests = [crate_manifest]
+    exclude = [(input_metadata / "sampledata.xlsx").as_posix()]
 
-    final_output = output
+    for manifest in crate_manifests:
+        logger.info("writing RO-Crate from %s", source_path)
+        final_output = make_output_dir(output=output, manifest_id=manifest.identifier)
+        crate_destination = final_output
+        if archive_type:
+            tmp_crate_location = (  # pylint: disable=consider-using-with
+                tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
+            )
+            crate_destination = Path(
+                Path(tmp_crate_location.name) / source_path.name / manifest.identifier
+            )
+            logger.info(
+                "Archiving crate writing, temp crate to tmpdir: %s",
+                crate_destination.as_posix(),
+            )
+            crate_destination.mkdir()
+        logger.info("writing crate %s", source_path)
+
+        logger.info("Initalizing crate")
+        crate = ROCrate(  # pylint: disable=unexpected-keyword-arg
+            gpg_binary=gpg_binary, exclude=exclude
+        )
+        crate.source = source_path if duplicate_directory else None
+        builder = PrintLabROBuilder(crate)
+        write_crate(
+            builder=builder,
+            crate_source=crate.source,
+            crate_destination=crate_destination,
+            crate_contents=manifest,
+            meta_only=False,
+        )
+        if bag_crate:
+            bagit_crate(crate_destination, mt_user or "")
+        if bulk_encrypt:
+            archive_crate(archive_type, crate_destination, crate_destination, True)
+            logger.info("Bulk Encrypting RO-Crate")
+            bulk_encrypt_file(
+                gpg_binary=gpg_binary,
+                pubkey_fingerprints=pubkey_fingerprints,
+                data_to_encrypt=crate_destination,
+                output_path=final_output,
+            )
+        else:
+            archive_crate(archive_type, final_output, crate_destination, True)
+
+
+def make_output_dir(output: Path, manifest_id: str) -> Path:
+    """Create the path for an output RO-Crate if the directory does not exist create it
+
+    Args:
+        output (Path): the output path of the RO-Crate
+        manifest_id (str): the manifest of the RO-Crate
+
+    Returns:
+        Path:the destination of the crate
+    """
+    final_output = output / manifest_id
     if not final_output.parent.exists():
         final_output.parent.mkdir(parents=True)
-    crate_destination = final_output
-
-    if archive_type:
-        logger.info("writing pre-archive temporary crate")
-        tmp_crate_location = (  # pylint: disable=consider-using-with
-            tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
-        )
-        crate_destination = Path(Path(tmp_crate_location.name) / source_path.name)
-        crate_destination.mkdir()
-    logger.info("writing crate %s", source_path)
-
-    logger.info("Initalizing crate")
-    crate = ROCrate(  # pylint: disable=unexpected-keyword-arg
-        pubkey_fingerprints=pubkey_fingerprints, gpg_binary=gpg_binary, exclude=exclude
-    )
-    crate.source = source_path
-    builder = PrintLabROBuilder(crate)
-    write_crate(
-        builder=builder,
-        crate_source=source_path if duplicate_directory else None,
-        crate_destination=crate_destination,
-        crate_contents=crate_manifest,
-        meta_only=False,
-    )
-    if bag_crate:
-        bagit_crate(crate_destination, mt_user or "")
-    if bulk_encrypt:
-        archive_crate(archive_type, crate_destination, crate_destination, True)
-        logger.info("Bulk Encrypting RO-Crate")
-        bulk_encrypt_file(
-            gpg_binary=gpg_binary,
-            pubkey_fingerprints=pubkey_fingerprints,
-            data_to_encrypt=crate_destination,
-            output_path=final_output,
-        )
-    else:
-        archive_crate(archive_type, final_output, crate_destination, True)
+    return final_output
 
 
 @click.command()

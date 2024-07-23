@@ -54,7 +54,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 "NHI number": participant.nhi_number or "N/A",
                 "date_of_birth": participant.date_of_birth,
                 "parents": [participant_id],
-            }
+            },
         )
         return self.crate.add(sensitive_data).id
 
@@ -117,12 +117,12 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         properties = self._update_properties(
             data_object=participant, properties=properties
         )
-        if self.crate.pubkey_fingerprints and (
-            participant.date_of_birth or participant.nhi_number
-        ):
-            properties["sensitive"] = self._add_participant_sensitve(
-                participant, str(participant.id)
-            )
+        # if self.crate.pubkey_fingerprints and (
+        #     participant.date_of_birth or participant.nhi_number
+        # ):
+        #     properties["sensitive"] = self._add_participant_sensitve(
+        #         participant, str(participant.id)
+        #     )
         if sensitive:
             participant_obj = EncryptedContextEntity(
                 self.crate,
@@ -162,7 +162,6 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 if experiment.associated_disease
                 else []
             ),
-            "project": experiment.projects,
             "body_location": (
                 self.add_medical_condition(experiment.body_location).id
                 if experiment.body_location
@@ -176,23 +175,25 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
             "analyate": experiment.analyate if experiment.analyate else "",
             "description": experiment.description,
         }
+        projects = []
+        for project in experiment.projects:
+            if crate_project := self.crate.dereference("#" + str(project.id)):
+                projects.append(crate_project)
+            else:
+                projects.append(self.add_project(project))
         experiment_obj = self._update_experiment_meta(
-            experiment=experiment, properties=properties
+            experiment=experiment, properties=properties, projects=projects
         )
+
         return self.crate.add(experiment_obj)
 
     def add_dataset(self, dataset: Dataset) -> ContextEntity:
         """Add a dataset to the RO-Crate accounting for if unlisted cildren should be added
-
-        Args:
-            experiment (Experiment): The experiment to be added to the crate
         """
-        # Note that this is being created as a data catalog object as there are no better
-        # fits
         datset_entity = super().add_dataset(dataset)
         if not isinstance(dataset, ExtractionDataset):
             return datset_entity
-        if dataset.copy_unlisted:
+        if dataset.copy_unlisted:#update source so dataset directory and all children are added
             datset_entity.source = (
                 self.crate.source / dataset.directory
                 if self.crate.source
