@@ -1447,7 +1447,7 @@ validators = "^0.28.3"
 type = "git"
 url = "https://github.com/JLoveUOA/mytardis_rocrate_builder"
 reference = "optional-identifiers"
-resolved_reference = "17426a2b798c7e3d5a88ccb485af70d7eec66fc4"
+resolved_reference = "b09eea3fecf7278846803044741b83ae511f8b91"
 
 [[package]]
 name = "numpy"
