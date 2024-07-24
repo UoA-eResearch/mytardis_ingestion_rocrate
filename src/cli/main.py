@@ -289,17 +289,18 @@ def print_lab(
         if bulk_encrypt:
             archive_crate(archive_type, crate_destination, crate_destination, True)
             logger.info("Bulk Encrypting RO-Crate")
+            target = crate_destination.with_suffix("."+archive_type) if archive_type else crate_destination
             bulk_encrypt_file(
-                gpg_binary=gpg_binary,
+                gpg_binary=crate.gpg_binary,
                 pubkey_fingerprints=pubkey_fingerprints,
-                data_to_encrypt=crate_destination,
+                data_to_encrypt=target,
                 output_path=final_output,
             )
         else:
             archive_crate(archive_type, final_output, crate_destination, True)
 
 
-def make_output_dir(output: Path, manifest_id: str) -> Path:
+def make_output_dir(output: Path, manifest_id: str) -> Path:   
     """Create the path for an output RO-Crate if the directory does not exist create it
 
     Args:
