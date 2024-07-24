@@ -59,7 +59,7 @@ class PrintLabExtractor:
         api_agent: MyTardisRestAgent,
         schemas: SchemaConfig | None,
         collect_all: bool,
-        pubkey_fingerprints:Optional[List[str]],
+        pubkey_fingerprints: Optional[List[str]],
     ) -> None:
         self.api_agent = api_agent
         self.schemas = schemas
@@ -265,7 +265,7 @@ class PrintLabExtractor:
                 raw_data=row,
             )
             if self.pubkey_fingerprints:
-                new_participant.nhi_number=row["Participant NHI number"]
+                new_participant.nhi_number = row["Participant NHI number"]
                 new_participant.date_of_birth = str(row["Participant Date of birth"])
                 new_participant.pubkey_fingerprints = self.pubkey_fingerprints
             return new_participant

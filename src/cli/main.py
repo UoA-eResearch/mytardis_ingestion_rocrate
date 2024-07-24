@@ -237,7 +237,6 @@ def print_lab(
     )
     logger.info("extracting crate metadata")
     crate_manifest = extractor.extract(input_metadata)
-
     exclude = [(input_metadata / "sampledata.xlsx").as_posix()]
     source_path = input_metadata
     if Path(input_metadata).is_file():
@@ -251,8 +250,6 @@ def print_lab(
         ]
     else:
         crate_manifests = [crate_manifest]
-    exclude = [(input_metadata / "sampledata.xlsx").as_posix()]
-
     for manifest in crate_manifests:
         logger.info("writing RO-Crate from %s", source_path)
         final_output = make_output_dir(output=output, manifest_id=manifest.identifier)
@@ -289,7 +286,11 @@ def print_lab(
         if bulk_encrypt:
             archive_crate(archive_type, crate_destination, crate_destination, True)
             logger.info("Bulk Encrypting RO-Crate")
-            target = crate_destination.with_suffix("."+archive_type) if archive_type else crate_destination
+            target = (
+                crate_destination.with_suffix("." + archive_type)
+                if archive_type
+                else crate_destination
+            )
             bulk_encrypt_file(
                 gpg_binary=crate.gpg_binary,
                 pubkey_fingerprints=pubkey_fingerprints,
@@ -300,7 +301,7 @@ def print_lab(
             archive_crate(archive_type, final_output, crate_destination, True)
 
 
-def make_output_dir(output: Path, manifest_id: str) -> Path:   
+def make_output_dir(output: Path, manifest_id: str) -> Path:
     """Create the path for an output RO-Crate if the directory does not exist create it
 
     Args:

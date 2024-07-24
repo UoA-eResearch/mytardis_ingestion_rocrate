@@ -2,7 +2,7 @@
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 from mytardis_rocrate_builder.rocrate_builder import ROBuilder
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
@@ -56,7 +56,9 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 "parents": [participant_id],
             },
         )
-        recipients = self._add_pubkey_recipients(pubkey_fingerprints=participant.pubkey_fingerprints)
+        recipients = self._add_pubkey_recipients(
+            pubkey_fingerprints=participant.pubkey_fingerprints
+        )
         sensitive_data.append_to("recipients", recipients)
         return self.crate.add(sensitive_data).id
 
@@ -131,7 +133,9 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 identifier,
                 properties=properties,
             )
-            recipients = self._add_pubkey_recipients(pubkey_fingerprints=participant.pubkey_fingerprints)
+            recipients = self._add_pubkey_recipients(
+                pubkey_fingerprints=participant.pubkey_fingerprints
+            )
             participant_obj.append_to("recipients", recipients)
             return self.crate.add(participant_obj)
         participant_obj = ContextEntity(
@@ -192,12 +196,13 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         return self.crate.add(experiment_obj)
 
     def add_dataset(self, dataset: Dataset) -> ContextEntity:
-        """Add a dataset to the RO-Crate accounting for if unlisted cildren should be added
-        """
+        """Add a dataset to the RO-Crate accounting for if unlisted cildren should be added"""
         datset_entity = super().add_dataset(dataset)
         if not isinstance(dataset, ExtractionDataset):
             return datset_entity
-        if dataset.copy_unlisted:#update source so dataset directory and all children are added
+        if (
+            dataset.copy_unlisted
+        ):  # update source so dataset directory and all children are added
             datset_entity.source = (
                 self.crate.source / dataset.directory
                 if self.crate.source

@@ -30,8 +30,8 @@ from src.ingestion_targets.abi_music.consts import (  # ZARR_DATASET_NAMESPACE,
 )
 from src.ingestion_targets.abi_music.filesystem_nodes import DirectoryNode, FileNode
 from src.metadata_extraction.metadata_extraction import (
-    MetadataSchema,
     MetadataHanlder,
+    MetadataSchema,
     create_metadata_objects,
 )
 from src.mt_api.apiconfigs import MyTardisRestAgent
