@@ -20,7 +20,7 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
     MTMetadata,
     MyTardisContextObject,
     Project,
-    User
+    User,
 )
 from slugify import slugify
 
@@ -37,9 +37,8 @@ from src.metadata_extraction.metadata_extraction import (
     load_optional_schemas,
 )
 from src.mt_api.apiconfigs import MyTardisRestAgent
-from src.mt_api.mt_consts import MtObject
+from src.mt_api.mt_consts import UOA, MtObject
 from src.utils.file_utils import is_xslx
-from src.mt_api.mt_consts import UOA
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -65,10 +64,8 @@ class PrintLabExtractor:
         pubkey_fingerprints: Optional[List[str]],
     ) -> None:
         self.api_agent = api_agent
-        self.schemas = schemas
         self.pubkey_fingerprints = pubkey_fingerprints
-        namespaces = profile_consts.NAMESPACES
-        namespaces = load_optional_schemas(namespaces=namespaces, schemas=self.schemas)
+        namespaces = load_optional_schemas(namespaces=profile_consts.NAMESPACES, schemas=schemas)
         self.metadata_handler = MetadataHanlder(
             self.api_agent, namespaces, pubkey_fingerprints
         )
@@ -190,20 +187,43 @@ class PrintLabExtractor:
             participant = particpants_dict[row["Participant"]]
             disease = []
             if pd.notna(row["Disease type ICD11 code"]):
-                disease.append(MedicalCondition(  # REPLACE WITH LOOKUPS FOR IDC11
-                        code=row["Disease type ICD11 code"]if pd.notna(row["Disease type ICD11 code"]) else None,
-                        code_text=row["Disease type text from ICD11"] if pd.notna(row["Disease type text from ICD11"]) else None,
+                disease.append(
+                    MedicalCondition(  # REPLACE WITH LOOKUPS FOR IDC11
+                        code=(
+                            row["Disease type ICD11 code"]
+                            if pd.notna(row["Disease type ICD11 code"])
+                            else None
+                        ),
+                        code_text=(
+                            row["Disease type text from ICD11"]
+                            if pd.notna(row["Disease type text from ICD11"])
+                            else None
+                        ),
                         code_type="Disease type ICD11 code",
                         code_source=Path("https://icd.who.int/en"),
-                    )),
+                    )
+                )
             if pd.notna(row["Histological diagnosis detail code from ICD11"]):
                 disease.append(
                     MedicalCondition(  # REPLACE WITH LOOKUPS FOR IDC11
-                        code=row["Histological diagnosis detail code from ICD11"] if pd.notna(row["Histological diagnosis detail code from ICD11"]) else None,
-                        code_text=row["Histological diagnosis detail text from ICD11"] if pd.notna(row["Histological diagnosis detail text from ICD11"]) else None,
+                        code=(
+                            row["Histological diagnosis detail code from ICD11"]
+                            if pd.notna(
+                                row["Histological diagnosis detail code from ICD11"]
+                            )
+                            else None
+                        ),
+                        code_text=(
+                            row["Histological diagnosis detail text from ICD11"]
+                            if pd.notna(
+                                row["Histological diagnosis detail text from ICD11"]
+                            )
+                            else None
+                        ),
                         code_type="Histological diagnosis detail code from ICD11",
                         code_source=Path("https://icd.who.int/en"),
-                    ))
+                    )
+                )
             new_experiment = SampleExperiment(
                 name=row["Sample name"],
                 description=row["Other sample information"],
@@ -270,7 +290,6 @@ class PrintLabExtractor:
                 additional_properties={},
                 schema_type="Person",
                 raw_data=row,
-
             )
             if self.users:
                 new_participant.nhi_number = row["Participant NHI number"]
@@ -358,9 +377,25 @@ class PrintLabExtractor:
         self,
         users_sheet: pd.DataFrame,
     ) -> List[User]:
+        """Parse users from dataframe into user objects to be added to an RO-Crate
+
+        Args:
+            users_sheet (pd.DataFrame): the dataframe for constructing users
+
+        Returns:
+            List[User]: users to be added to the dataframe
+        """
         def parse_user(row: Dict[str, Any]) -> User:
             identifier = slugify(f'{row["UPI"]}')
-            new_user = User(identifier=identifier, name=row["Name"],email=row["Email"],affiliation=UOA,full_name=row["Name"], pubkey_fingerprints=row["Pubkey"], mt_identifiers=[identifier])
+            new_user = User(
+                identifier=identifier,
+                name=row["Name"],
+                email=row["Email"],
+                affiliation=UOA,
+                full_name=row["Name"],
+                pubkey_fingerprints=row["Pubkey"],
+                mt_identifiers=[identifier],
+            )
             if pd.notna(row["Identifier"]):
                 new_user.mt_identifiers.append(row["Identifier"])
             return new_user
@@ -377,14 +412,6 @@ class PrintLabExtractor:
         Returns:
             CrateManifest: manifest of all the contents of the RO-Crate
         """
-
-        # def list_sensitive_fields(mt_sensitive: Dict[str, Dict[str, Any]]) -> List[str]:
-        #     return [
-        #         metadata_name
-        #         for metadata_name, metadata_object in mt_sensitive.items()
-        #         if metadata_object.get("sensitive")
-        #     ]
-
         crate_manifest = CrateManifest()
         self.collected_metadata = []
         self.collected_acls = []
@@ -393,10 +420,6 @@ class PrintLabExtractor:
         self.users = self.parse_users(users_df)
         project_df = self.datasheet_to_dataframe(input_data_source, "Projects")
         projects = self._parse_projects(projects_sheet=project_df)
-        crate_manifest.add_projects(
-            {project.id: project for project in projects.values()}
-        )
-
         participants_df = self.datasheet_to_dataframe(input_data_source, "Participants")
         participants = self._parse_participants(participants_df)
         acl_df = self.datasheet_to_dataframe(input_data_source, "Groups")
@@ -408,22 +431,20 @@ class PrintLabExtractor:
         experiments = self._parse_experiments(
             experiments_df, participants, acls, projects
         )
-
+        dataset_df = self.datasheet_to_dataframe(input_data_source, "Datasets")
+        datasets = self._parse_datasets(dataset_df, experiments)
+        crate_manifest.add_projects(
+            {project.id: project for project in projects.values()}
+        )
         crate_manifest.add_experiments(
             {experiment.id: experiment for experiment in experiments.values()}
         )
-
-        dataset_df = self.datasheet_to_dataframe(input_data_source, "Datasets")
-        datasets = self._parse_datasets(dataset_df, experiments)
         crate_manifest.add_datasets(datasets)
-
         datafile_df = self.datasheet_to_dataframe(input_data_source, "Files")
         crate_manifest.add_datafiles(self._parse_datafiles(datafile_df, datasets))
         crate_manifest.add_acls(self.collected_acls)
         for metadata in self.collected_metadata:
-            print("Is metadata sensitive?", metadata.name)
             if metadata.sensitive:
                 metadata.recipients = self.users
-                print("adding metadata:", metadata.recipients)
         crate_manifest.add_metadata(self.collected_metadata)
         return crate_manifest

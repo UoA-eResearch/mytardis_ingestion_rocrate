@@ -56,8 +56,12 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 "parents": [participant_id],
             },
         )
-        recipients = [self.crate.dereference(user.roc_id) or self.add_user(user) for user in participant.recipients]
-        sensitive_data.append_to("recipients", recipients)
+        if participant.recipients:
+            recipients = [
+                self.crate.dereference(user.roc_id) or self.add_user(user)
+                for user in participant.recipients if user
+            ]
+            sensitive_data.append_to("recipients", recipients)
         return self.crate.add(sensitive_data).id
 
     def add_medical_condition(
@@ -126,7 +130,10 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 identifier,
                 properties=properties,
             )
-            recipients = [self.crate.dereference(participant.user.rocid) or self.add_user(user) for user in participant.recipients]
+            recipients = [
+                self.crate.dereference(participant.user.rocid) or self.add_user(user)
+                for user in participant.recipients
+            ]
             participant_obj.append_to("recipients", recipients)
             return self.crate.add(participant_obj)
 

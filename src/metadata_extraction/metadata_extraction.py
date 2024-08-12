@@ -7,7 +7,6 @@ from typing import Any, Dict, List, Optional
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
     MTMetadata,
     MyTardisContextObject,
-    User
 )
 from requests.exceptions import RequestException
 
@@ -74,12 +73,6 @@ class MetadataHanlder:
         self.schema_namespaces = schema_namespaces
         self.request_metadata_dicts(schema_namespaces)
         self.pubkey_fingerprints = pubkey_fingerprints
-
-    def generate_predefined_recuipients():
-        recipents: List[User] = []
-        for pubkey in self.pubkey_fingerprints:
-            pass
-
 
     def request_metadata_schema(self, schema_namespace: str) -> Dict[Any, Any]:
         """Requests a metadata schema from the MyTardis API based on namespace
@@ -177,7 +170,6 @@ class MetadataHanlder:
             metadata_schema=metadata_schema,
             collect_all=collect_all,
             parent=parent,
-            pubkey_fingerprints=self.pubkey_fingerprints,
         )
         self.metadata_collected.update(metadata_dict)
         return metadata_dict
@@ -188,7 +180,6 @@ def create_metadata_objects(
     metadata_schema: MetadataSchema,
     collect_all: bool = False,
     parent: Optional[MyTardisContextObject] = None,
-    pubkey_fingerprints: Optional[List[str]] = None,
 ) -> Dict[str, MTMetadata]:
     """Create RO-Crate metadata objects from an input dictionary and a schema for lookup
 
