@@ -56,9 +56,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 "parents": [participant_id],
             },
         )
-        recipients = self._add_pubkey_recipients(
-            pubkey_fingerprints=participant.pubkey_fingerprints
-        )
+        recipients = [self.crate.dereference(user.roc_id) or self.add_user(user) for user in participant.recipients]
         sensitive_data.append_to("recipients", recipients)
         return self.crate.add(sensitive_data).id
 
@@ -81,13 +79,14 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
             "name": medical_condition.code,
             "code_type": medical_condition.code_type,
             "code_source": medical_condition.code_source.as_posix(),
-            "code_text": medical_condition.code_text,
         }
         medical_condition_obj = ContextEntity(
             self.crate,
             identifier,
             properties=properties,
         )
+        if medical_condition.code_text:
+            medical_condition_obj.append_to("code_text", medical_condition.code_text)
         self.crate.add(medical_condition_obj)
         return medical_condition_obj
 
@@ -121,23 +120,23 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         properties = self._update_properties(
             data_object=participant, properties=properties
         )
-        if participant.pubkey_fingerprints and (
-            participant.date_of_birth or participant.nhi_number
-        ):
-            properties["sensitive"] = self._add_participant_sensitve(
-                participant, str(participant.id)
-            )
-        if sensitive and participant.pubkey_fingerprints:
+        if sensitive and participant.recipients:
             participant_obj = EncryptedContextEntity(
                 self.crate,
                 identifier,
                 properties=properties,
             )
-            recipients = self._add_pubkey_recipients(
-                pubkey_fingerprints=participant.pubkey_fingerprints
-            )
+            recipients = [self.crate.dereference(participant.user.rocid) or self.add_user(user) for user in participant.recipients]
             participant_obj.append_to("recipients", recipients)
             return self.crate.add(participant_obj)
+
+        if participant.recipients and (
+            participant.date_of_birth or participant.nhi_number
+        ):
+            properties["sensitive"] = self._add_participant_sensitve(
+                participant, str(participant.id)
+            )
+
         participant_obj = ContextEntity(
             self.crate,
             identifier,
