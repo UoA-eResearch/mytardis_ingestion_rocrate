@@ -11,6 +11,7 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
     Dataset,
     Experiment,
     MyTardisContextObject,
+    User
 )
 
 
@@ -42,7 +43,7 @@ class Participant(MyTardisContextObject):  # type: ignore
     raw_data: Dict[str, Any]
     date_of_birth: Optional[str] = None
     nhi_number: Optional[str] = None
-    pubkey_fingerprints: Optional[list[str]] = None
+    recipients: Optional[User] = None
 
 
 @dataclass(kw_only=True)
