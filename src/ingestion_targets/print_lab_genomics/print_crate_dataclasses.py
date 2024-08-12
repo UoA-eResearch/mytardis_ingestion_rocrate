@@ -11,7 +11,7 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
     Dataset,
     Experiment,
     MyTardisContextObject,
-    User
+    User,
 )
 
 
