@@ -25,6 +25,7 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
 from slugify import slugify
 
 import src.ingestion_targets.print_lab_genomics.consts as profile_consts
+from src.ingestion_targets.print_lab_genomics.ICD11API import ICD_11_Api_Agent
 from src.cli.mytardisconfig import SchemaConfig
 from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
     ExtractionDataset,
@@ -70,9 +71,10 @@ class PrintLabExtractor:
             self.api_agent, namespaces, pubkey_fingerprints
         )
         self.collect_all = collect_all
+        self.ICD_11_agent = ICD_11_Api_Agent()
 
-    def datasheet_to_dataframe(
-        self, input_data_source: Any, sheet_name: str
+    def datasheet_to_dataframes(
+        self, input_data_source: Any
     ) -> pd.DataFrame:
         """Read the contents of an XLSX datasheet into a pandas dataframe
         invoking the chosen encryptor
@@ -91,12 +93,12 @@ class PrintLabExtractor:
         if not isinstance(input_data_source, Path) or not is_xslx(input_data_source):
             raise ValueError("Print lab genomics file must be an excel file")
         worksheet_file = pd.ExcelFile(input_data_source, engine="openpyxl")
-        parsed_df: Dict[str, pd.DataFrame] = pd.read_excel(
+        parsed_dfs: Dict[str, pd.DataFrame] = pd.read_excel(
             worksheet_file,
             engine="openpyxl",
-            sheet_name=sheet_name,
+            sheet_name=None,
         )
-        return parsed_df
+        return parsed_dfs
 
     def _index_acls(
         self,
@@ -175,6 +177,18 @@ class PrintLabExtractor:
         }
         return projects
 
+    def _parse_medical_condition(self, row: pd.Series, code_title: str,text_title:str, code_source:str="https://icd.who.int/en") -> None|MedicalCondition:
+        if not pd.notna(row[code_title]):
+            return None
+        condtion =  MedicalCondition(code=row[code_title], code_type=code_title, code_source=code_source, code_text=None)
+        condtion = self.ICD_11_agent.update_medial_entity_from_ICD11(condtion)
+        if condtion.code_text is not None:
+            row[text_title] = condtion.code_text
+        else:
+            condtion.code_text=row[text_title] if pd.notna(row[text_title]) else None
+        return condtion
+
+
     def _parse_experiments(
         self,
         experiments_sheet: pd.DataFrame,
@@ -186,44 +200,13 @@ class PrintLabExtractor:
             row.dropna()
             participant = particpants_dict[row["Participant"]]
             disease = []
-            if pd.notna(row["Disease type ICD11 code"]):
-                disease.append(
-                    MedicalCondition(  # REPLACE WITH LOOKUPS FOR IDC11
-                        code=(
-                            row["Disease type ICD11 code"]
-                            if pd.notna(row["Disease type ICD11 code"])
-                            else None
-                        ),
-                        code_text=(
-                            row["Disease type text from ICD11"]
-                            if pd.notna(row["Disease type text from ICD11"])
-                            else None
-                        ),
-                        code_type="Disease type ICD11 code",
-                        code_source=Path("https://icd.who.int/en"),
-                    )
-                )
-            if pd.notna(row["Histological diagnosis detail code from ICD11"]):
-                disease.append(
-                    MedicalCondition(  # REPLACE WITH LOOKUPS FOR IDC11
-                        code=(
-                            row["Histological diagnosis detail code from ICD11"]
-                            if pd.notna(
-                                row["Histological diagnosis detail code from ICD11"]
-                            )
-                            else None
-                        ),
-                        code_text=(
-                            row["Histological diagnosis detail text from ICD11"]
-                            if pd.notna(
-                                row["Histological diagnosis detail text from ICD11"]
-                            )
-                            else None
-                        ),
-                        code_type="Histological diagnosis detail code from ICD11",
-                        code_source=Path("https://icd.who.int/en"),
-                    )
-                )
+            condition = self._parse_medical_condition(row=row,code_title="Disease type ICD11 code",text_title="Disease type text from ICD11")
+            if condition is not None:
+                disease.append(condition)
+            condition = self._parse_medical_condition(row=row,code_title="Histological diagnosis detail code from ICD11",text_title="Histological diagnosis detail text from ICD11")
+            if condition is not None:
+                disease.append(condition)
+            anatomical_site = self._parse_medical_condition(row=row,code_title="Sample anatomical site ICD11 code",text_title="Sample anatomical site text from ICD11")
             new_experiment = SampleExperiment(
                 name=row["Sample name"],
                 description=row["Other sample information"],
@@ -237,22 +220,17 @@ class PrintLabExtractor:
                 additional_property=None,
                 gender=participant.gender,
                 associated_disease=disease,
-                body_location=MedicalCondition(  # REPLACE WITH LOOKUPS FOR IDC11
-                    code=row["Sample anatomical site ICD11 code"],
-                    code_text=row["Histological diagnosis detail code from ICD11"],
-                    code_type="Sample anatomical site ICD11 code",
-                    code_source=Path("https://icd.who.int/en"),
-                ),
+                body_location=anatomical_site,
                 tissue_processing_method=row["Tissue processing"],
                 analyate=row["Analyte"],
                 portion=row["Portion"],
                 additional_properties={},
                 schema_type="DataCatalog",
             )
-            metadata_raw = participant.raw_data
-            metadata_raw.update(row)
+            metadata = row.to_dict()
+            metadata.update(participant.raw_data)
             metadata_dict = self.metadata_handler.create_metadata_from_schema(
-                input_metadata=metadata_raw,
+                input_metadata=metadata,
                 mt_object=MtObject.EXPERIMENT,
                 collect_all=self.collect_all,
                 parent=new_experiment,
@@ -416,23 +394,15 @@ class PrintLabExtractor:
         self.collected_metadata = []
         self.collected_acls = []
         self.users = []
-        users_df = self.datasheet_to_dataframe(input_data_source, "Users")
-        self.users = self.parse_users(users_df)
-        project_df = self.datasheet_to_dataframe(input_data_source, "Projects")
-        projects = self._parse_projects(projects_sheet=project_df)
-        participants_df = self.datasheet_to_dataframe(input_data_source, "Participants")
-        participants = self._parse_participants(participants_df)
-        acl_df = self.datasheet_to_dataframe(input_data_source, "Groups")
-        acls = self._index_acls(acl_df)
-        experiments_df = self.datasheet_to_dataframe(
-            input_data_source=input_data_source,
-            sheet_name="Samples",
-        )
+        data_df = self.datasheet_to_dataframes(input_data_source,)
+        self.users = self.parse_users(data_df["Users"])
+        projects = self._parse_projects(projects_sheet=data_df["Projects"])
+        participants = self._parse_participants(data_df["Participants"])
+        acls = self._index_acls(data_df["Groups"])
         experiments = self._parse_experiments(
-            experiments_df, participants, acls, projects
+           data_df["Samples"], participants, acls, projects
         )
-        dataset_df = self.datasheet_to_dataframe(input_data_source, "Datasets")
-        datasets = self._parse_datasets(dataset_df, experiments)
+        datasets = self._parse_datasets(data_df["Datasets"], experiments)
         crate_manifest.add_projects(
             {project.id: project for project in projects.values()}
         )
@@ -440,8 +410,7 @@ class PrintLabExtractor:
             {experiment.id: experiment for experiment in experiments.values()}
         )
         crate_manifest.add_datasets(datasets)
-        datafile_df = self.datasheet_to_dataframe(input_data_source, "Files")
-        crate_manifest.add_datafiles(self._parse_datafiles(datafile_df, datasets))
+        crate_manifest.add_datafiles(self._parse_datafiles(data_df["Files"], datasets))
         crate_manifest.add_acls(self.collected_acls)
         for metadata in self.collected_metadata:
             if metadata.sensitive:

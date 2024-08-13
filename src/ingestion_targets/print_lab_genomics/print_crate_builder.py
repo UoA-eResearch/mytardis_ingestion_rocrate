@@ -75,14 +75,15 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         Returns:
             ContextEntity: a context entity representing the medical condition
         """
-        identifier = slugify(f"{medical_condition.code_type}-{medical_condition.code}")
+        identifier = medical_condition.identifier
+        print("What is the identifier", medical_condition.code_text)
         if condition := self.crate.dereference(identifier):
             return condition
         properties: Dict[str, str | list[str] | dict[str, Any]] = {
             "@type": "MedicalCondition",
             "name": medical_condition.code,
             "code_type": medical_condition.code_type,
-            "code_source": medical_condition.code_source.as_posix(),
+            "code_source": medical_condition.code_source,
         }
         medical_condition_obj = ContextEntity(
             self.crate,
