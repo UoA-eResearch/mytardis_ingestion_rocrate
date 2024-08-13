@@ -24,7 +24,7 @@ class MedicalCondition(BaseObject):  # type: ignore
     code: str
     code_type: str
     code_text: str
-    code_source: Path
+    code_source: str
     schema_type = "MedicalCondition"
 
     def __post_init__(self) -> None:
