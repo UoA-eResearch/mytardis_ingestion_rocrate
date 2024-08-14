@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class PrintLabExtractor: #pylint: disable = too-many-instance-attributes
+class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
     """An extractor that takes and XLS datasheet
     as defined by the Print Genomics Lab into a Dataframe
     Encryption of strings occurs during extraction
@@ -73,7 +73,9 @@ class PrintLabExtractor: #pylint: disable = too-many-instance-attributes
             self.api_agent, namespaces, pubkey_fingerprints
         )
         self.collect_all = collect_all
-        self.ICD_11_agent: ICD_11_Api_Agent = ICD_11_Api_Agent()#pylint: disable = invalid-name
+        self.ICD_11_agent: ICD_11_Api_Agent = (  # pylint: disable = invalid-name
+            ICD_11_Api_Agent()
+        )
 
     def datasheet_to_dataframes(self, input_data_source: Any) -> pd.DataFrame:
         """Read the contents of an XLSX datasheet into a pandas dataframe
