@@ -1,9 +1,8 @@
-
-#pylint: disable = invalid-name
+# pylint: disable = invalid-name
 """Classes for requesting data from the ICD11 API
 """
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 import requests
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -16,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class ICD11_Auth(BaseSettings):
-    """Authorization settings for the ICD-11 API
-    """
+    """Authorization settings for the ICD-11 API"""
+
     ICD11client_id: Optional[str] = None
     ICD11client_secret: Optional[str] = None
     model_config = SettingsConfigDict(
@@ -26,8 +25,8 @@ class ICD11_Auth(BaseSettings):
 
 
 class ICD_11_Api_Agent:
-    """Agent for requesting data from the ICD-11 API
-    """
+    """Agent for requesting data from the ICD-11 API"""
+
     token: str
     auth_details: ICD11_Auth
 
@@ -44,8 +43,7 @@ class ICD_11_Api_Agent:
         }
 
     def request_token(self) -> None:
-        """Request the OAUTH2 token from the ICD-11 and store it on this agent
-        """
+        """Request the OAUTH2 token from the ICD-11 and store it on this agent"""
         # get the OAUTH2 token
         token_endpoint = "https://icdaccessmanagement.who.int/connect/token"
         scope = "icdapi_access"
@@ -66,23 +64,23 @@ class ICD_11_Api_Agent:
             )
             self.token = ""
 
-    def request_ICD11_data(
-        self,
-        code: str,
-        linearizationname:str) -> Any:
+    def request_ICD11_data(self, code: str, linearizationname: str) -> Any:
         """
         Request data from the ICD-11 based on the ICD-11 code in a specific linearization
         """
 
-        if self.token is "":
+        if self.token == "":
             return None
-        code_request = f"https://id.who.int/icd/release/11/{self.releaseId}/{linearizationname}/codeinfo/{code}?flexiblemode=false&convertToTerminalCodes=false"""#pylint: disable = line-too-long
-        # request based on code
+        code_request = f"https://id.who.int/icd/release/11/{self.releaseId}/{linearizationname}/codeinfo/{code}?flexiblemode=false&convertToTerminalCodes=false"  # pylint: disable = line-too-long
         try:
-            r = requests.get(code_request, headers=self.headers, verify=True, timeout=25)
+            r = requests.get(
+                code_request, headers=self.headers, verify=True, timeout=25
+            )
             # request based on entity id
             if r.status_code == 200:
-                r = requests.get(r.json()["stemId"], headers=self.headers, verify=True, timeout=5)
+                r = requests.get(
+                    r.json()["stemId"], headers=self.headers, verify=True, timeout=5
+                )
                 return r.json()
 
             logger.error("bad response for code:%s , response: %s", code, r)
@@ -90,6 +88,7 @@ class ICD_11_Api_Agent:
         except requests.RequestException as e:
             logger.error("bad ICD11 API response %s", e)
             return None
+
     # make request
     def update_medial_entity_from_ICD11(
         self, medical_condition: MedicalCondition
@@ -104,8 +103,8 @@ class ICD_11_Api_Agent:
         """
         try:
             ICD11_data = self.request_ICD11_data(
-                medical_condition.code,
-                self.default_linearizationname)
+                medical_condition.code, self.default_linearizationname
+            )
             if ICD11_data is None:
                 logger.warning(
                     """Information could not be retreived from ICD-11 API for code %s. 
