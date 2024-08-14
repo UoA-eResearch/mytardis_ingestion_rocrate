@@ -3,7 +3,6 @@ Extend existing RO-Crate MyTardis dataclasses
 """
 
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
