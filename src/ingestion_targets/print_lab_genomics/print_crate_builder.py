@@ -59,7 +59,8 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         if participant.recipients:
             recipients = [
                 self.crate.dereference(user.roc_id) or self.add_user(user)
-                for user in participant.recipients if user
+                for user in participant.recipients
+                if user
             ]
             sensitive_data.append_to("recipients", recipients)
         return self.crate.add(sensitive_data).id

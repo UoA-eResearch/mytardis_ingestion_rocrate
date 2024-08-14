@@ -25,8 +25,8 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
 from slugify import slugify
 
 import src.ingestion_targets.print_lab_genomics.consts as profile_consts
-from src.ingestion_targets.print_lab_genomics.ICD11API import ICD_11_Api_Agent
 from src.cli.mytardisconfig import SchemaConfig
+from src.ingestion_targets.print_lab_genomics.ICD11_API_agent import ICD_11_Api_Agent
 from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
     ExtractionDataset,
     MedicalCondition,
@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
 
-class PrintLabExtractor:
+class PrintLabExtractor: #pylint: disable = too-many-instance-attributes
     """An extractor that takes and XLS datasheet
     as defined by the Print Genomics Lab into a Dataframe
     Encryption of strings occurs during extraction
@@ -66,16 +66,16 @@ class PrintLabExtractor:
     ) -> None:
         self.api_agent = api_agent
         self.pubkey_fingerprints = pubkey_fingerprints
-        namespaces = load_optional_schemas(namespaces=profile_consts.NAMESPACES, schemas=schemas)
+        namespaces = load_optional_schemas(
+            namespaces=profile_consts.NAMESPACES, schemas=schemas
+        )
         self.metadata_handler = MetadataHanlder(
             self.api_agent, namespaces, pubkey_fingerprints
         )
         self.collect_all = collect_all
-        self.ICD_11_agent = ICD_11_Api_Agent()
+        self.ICD_11_agent: ICD_11_Api_Agent = ICD_11_Api_Agent()#pylint: disable = invalid-name
 
-    def datasheet_to_dataframes(
-        self, input_data_source: Any
-    ) -> pd.DataFrame:
+    def datasheet_to_dataframes(self, input_data_source: Any) -> pd.DataFrame:
         """Read the contents of an XLSX datasheet into a pandas dataframe
         invoking the chosen encryptor
 
@@ -177,17 +177,27 @@ class PrintLabExtractor:
         }
         return projects
 
-    def _parse_medical_condition(self, row: pd.Series, code_title: str,text_title:str, code_source:str="https://icd.who.int/en") -> None|MedicalCondition:
+    def _parse_medical_condition(
+        self,
+        row: pd.Series,
+        code_title: str,
+        text_title: str,
+        code_source: str = "https://icd.who.int/en",
+    ) -> None | MedicalCondition:
         if not pd.notna(row[code_title]):
             return None
-        condtion =  MedicalCondition(code=row[code_title], code_type=code_title, code_source=code_source, code_text=None)
+        condtion = MedicalCondition(
+            code=row[code_title],
+            code_type=code_title,
+            code_source=code_source,
+            code_text="",
+        )
         condtion = self.ICD_11_agent.update_medial_entity_from_ICD11(condtion)
         if condtion.code_text is not None:
             row[text_title] = condtion.code_text
         else:
-            condtion.code_text=row[text_title] if pd.notna(row[text_title]) else None
+            condtion.code_text = row[text_title] if pd.notna(row[text_title]) else None
         return condtion
-
 
     def _parse_experiments(
         self,
@@ -200,13 +210,25 @@ class PrintLabExtractor:
             row.dropna()
             participant = particpants_dict[row["Participant"]]
             disease = []
-            condition = self._parse_medical_condition(row=row,code_title="Disease type ICD11 code",text_title="Disease type text from ICD11")
+            condition = self._parse_medical_condition(
+                row=row,
+                code_title="Disease type ICD11 code",
+                text_title="Disease type text from ICD11",
+            )
             if condition is not None:
                 disease.append(condition)
-            condition = self._parse_medical_condition(row=row,code_title="Histological diagnosis detail code from ICD11",text_title="Histological diagnosis detail text from ICD11")
+            condition = self._parse_medical_condition(
+                row=row,
+                code_title="Histological diagnosis detail code from ICD11",
+                text_title="Histological diagnosis detail text from ICD11",
+            )
             if condition is not None:
                 disease.append(condition)
-            anatomical_site = self._parse_medical_condition(row=row,code_title="Sample anatomical site ICD11 code",text_title="Sample anatomical site text from ICD11")
+            anatomical_site = self._parse_medical_condition(
+                row=row,
+                code_title="Sample anatomical site ICD11 code",
+                text_title="Sample anatomical site text from ICD11",
+            )
             new_experiment = SampleExperiment(
                 name=row["Sample name"],
                 description=row["Other sample information"],
@@ -363,6 +385,7 @@ class PrintLabExtractor:
         Returns:
             List[User]: users to be added to the dataframe
         """
+
         def parse_user(row: Dict[str, Any]) -> User:
             identifier = slugify(f'{row["UPI"]}')
             new_user = User(
@@ -394,13 +417,15 @@ class PrintLabExtractor:
         self.collected_metadata = []
         self.collected_acls = []
         self.users = []
-        data_df = self.datasheet_to_dataframes(input_data_source,)
+        data_df = self.datasheet_to_dataframes(
+            input_data_source,
+        )
         self.users = self.parse_users(data_df["Users"])
         projects = self._parse_projects(projects_sheet=data_df["Projects"])
         participants = self._parse_participants(data_df["Participants"])
         acls = self._index_acls(data_df["Groups"])
         experiments = self._parse_experiments(
-           data_df["Samples"], participants, acls, projects
+            data_df["Samples"], participants, acls, projects
         )
         datasets = self._parse_datasets(data_df["Datasets"], experiments)
         crate_manifest.add_projects(
