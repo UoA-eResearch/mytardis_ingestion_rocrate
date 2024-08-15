@@ -30,13 +30,6 @@ class AuthConfig(BaseModel, AuthBase):
         username and api key is used. The class functions to format the HTTP(S)
         header into an appropriate form for the MyTardis authentication module.
 
-    UOA = Organisation(
-        identifiers=["https://ror.org/03b94tp07"],
-        name="The University of Auckland | Waipapa Taumata Rau",
-        url="https://auckland.ac.nz",
-        location="Auckland, New Zealand",
-        research_org=True,
-    )
 
         Attributes:
             username: str
