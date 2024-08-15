@@ -79,9 +79,13 @@ class ConnectionConfig(
         """Appends the API stub to the configured hostname and returns it"""
         return urljoin(self.hostname, self._api_stub)
 
+
 class PubKeyConfig(BaseModel):
+    """Class for holding public keys and names loaded from env configs"""
+
     key: Optional[str] = None
     name: Optional[str] = None
+
 
 class MyTardisEnvConfig(BaseSettings):
     """Reads a MyTardis config file to fill out API Keys and Default namespaces
@@ -99,7 +103,7 @@ class MyTardisEnvConfig(BaseSettings):
     auth: AuthConfig
     connection: ConnectionConfig
     default_schema: SchemaConfig
-    mytardis_pubkey : PubKeyConfig
+    mytardis_pubkey: PubKeyConfig
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

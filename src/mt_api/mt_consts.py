@@ -4,7 +4,8 @@
 import enum
 
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
-    Organisation, User
+    Organisation,
+    User,
 )
 
 UOA = Organisation(
@@ -21,9 +22,10 @@ MY_TARDIS_USER = User(
     email="",
     mt_identifiers=["my_tardis_ingestion"],
     affiliation=UOA,
-    schema_type=["Person","User","MyTardisUser"],
-    pubkey_fingerprints=[]
+    schema_type=["Person", "User", "MyTardisUser"],
+    pubkey_fingerprints=[],
 )
+
 
 class MtObject(enum.Enum):
     """Enum for mytardis object types"""
