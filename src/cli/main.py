@@ -218,6 +218,7 @@ def print_lab(
         env_config = MyTardisEnvConfig(_env_prefix=env_prefix)  # type: ignore
         mt_user = mt_user if mt_user else env_config.auth.username
         mt_api_key = mt_api_key if mt_api_key else env_config.auth.api_key
+    logger.debug("env config reading pubkey as %s", env_config.mytardis_pubkey)
     logger.info("Loading MyTardis API agent")
     if mt_user and mt_api_key:
         auth_config = AuthConfig(username=mt_user, api_key=mt_api_key)
@@ -233,7 +234,7 @@ def print_lab(
         api_agent=api_agent,
         schemas=env_config.default_schema if env_config else None,
         collect_all=collect_all if collect_all else False,
-        pubkey_fingerprints=pubkey_fingerprints,
+        pubkey_fingerprints=[env_config.mytardis_pubkey.key],
     )
     logger.info("extracting crate metadata")
     crate_manifest = extractor.extract(input_metadata)

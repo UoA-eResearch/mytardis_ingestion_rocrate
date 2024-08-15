@@ -38,7 +38,7 @@ from src.metadata_extraction.metadata_extraction import (
     load_optional_schemas,
 )
 from src.mt_api.apiconfigs import MyTardisRestAgent
-from src.mt_api.mt_consts import UOA, MtObject
+from src.mt_api.mt_consts import UOA, MtObject, MY_TARDIS_USER
 from src.utils.file_utils import is_xslx
 
 logger = logging.getLogger(__name__)
@@ -55,7 +55,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
     collect_all: bool
     collected_acls: List[ACL] = []
     collected_metadata: List[MTMetadata] = []
-    users: List[User] = []
+    users: List[User] = [MY_TARDIS_USER]
 
     def __init__(
         self,
@@ -65,17 +65,18 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
         pubkey_fingerprints: Optional[List[str]],
     ) -> None:
         self.api_agent = api_agent
-        self.pubkey_fingerprints = pubkey_fingerprints
         namespaces = load_optional_schemas(
             namespaces=profile_consts.NAMESPACES, schemas=schemas
         )
         self.metadata_handler = MetadataHanlder(
-            self.api_agent, namespaces, pubkey_fingerprints
+            self.api_agent, namespaces
         )
         self.collect_all = collect_all
         self.ICD_11_agent: ICD_11_Api_Agent = (  # pylint: disable = invalid-name
             ICD_11_Api_Agent()
         )
+        if pubkey_fingerprints:
+            MY_TARDIS_USER.pubkey_fingerprints = pubkey_fingerprints
 
     def datasheet_to_dataframes(self, input_data_source: Any) -> pd.DataFrame:
         """Read the contents of an XLSX datasheet into a pandas dataframe
@@ -418,11 +419,12 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
         crate_manifest = CrateManifest()
         self.collected_metadata = []
         self.collected_acls = []
-        self.users = []
+        self.users = [MY_TARDIS_USER]
+        
         data_df = self.datasheet_to_dataframes(
             input_data_source,
         )
-        self.users = self.parse_users(data_df["Users"])
+        self.users.extend(self.parse_users(data_df["Users"]))
         projects = self._parse_projects(projects_sheet=data_df["Projects"])
         participants = self._parse_participants(data_df["Participants"])
         acls = self._index_acls(data_df["Groups"])
@@ -441,6 +443,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
         crate_manifest.add_acls(self.collected_acls)
         for metadata in self.collected_metadata:
             if metadata.sensitive:
+                logger.debug("adding recipents %s", self.users)
                 metadata.recipients = self.users
         crate_manifest.add_metadata(self.collected_metadata)
         return crate_manifest

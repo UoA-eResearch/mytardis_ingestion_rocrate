@@ -77,7 +77,6 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
             ContextEntity: a context entity representing the medical condition
         """
         identifier = medical_condition.identifier
-        print("What is the identifier", medical_condition.code_text)
         if condition := self.crate.dereference(identifier):
             return condition
         properties: Dict[str, str | list[str] | dict[str, Any]] = {

@@ -67,12 +67,10 @@ class MetadataHanlder:
         self,
         api_agent: MyTardisRestAgent,
         schema_namespaces: Dict[MtObject, str],
-        pubkey_fingerprints: Optional[List[str]],
     ):
         self.api_agent = api_agent
         self.schema_namespaces = schema_namespaces
         self.request_metadata_dicts(schema_namespaces)
-        self.pubkey_fingerprints = pubkey_fingerprints
 
     def request_metadata_schema(self, schema_namespace: str) -> Dict[Any, Any]:
         """Requests a metadata schema from the MyTardis API based on namespace
