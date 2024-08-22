@@ -23,6 +23,8 @@ mytardis-rocrate-builder = {git = "https://github.com/JLoveUOA/mytardis_rocrate_
 ro-crate-py = {git = "https://github.com/UoA-eResearch/ro-crate-py.git",  branch = "encrypted-metadata"}
 openpyxl = "^3.1.5"
 click = "^8.1.7"
+faker = "^27.4.0"
+factory-boy = "^3.3.1"
 
 
 [tool.poetry.group.dev.dependencies]

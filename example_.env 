@@ -1,0 +1,47 @@
+#This is and example for a .env configuration file. The file should be called '.env' and should be located in the same directory as the calling script.
+
+# General
+
+GENERAL__DEFAULT_INSTITUTION=https://ror.org/03b94tp07
+
+GENERAL__SOURCE_DIRECTORY=src
+
+#Auth, prefix with AUTH__
+
+AUTH__USERNAME=
+
+AUTH__API_KEY=
+
+# Connection, prefix with CONNECTION__ 
+
+CONNECTION__HOSTNAME=https://test-instruments.nectar.auckland.ac.nz//
+
+#CONNECTION__PROXY__HTTP=
+
+#CONNECTION__PROXY__HTTPS=
+
+# Storage, prefix with STORAGE__
+
+STORAGE__ACTIVE_STORES=
+
+STORAGE__ARCHIVES=
+
+# Schema
+
+DEFAULT_SCHEMA__PROJECT=http://print.lab.mockup/project/v1
+
+DEFAULT_SCHEMA__EXPERIMENT=http://print.lab.mockup/experiment/as_sample/v1
+
+DEFAULT_SCHEMA__DATASET=http://print.lab.mockup/dataset/as_sample/v1
+
+DEFAULT_SCHEMA__DATAFILE=http://print.lab.mockup/datafile/as_sample/v1
+
+#MY TARDIS GPG INFO
+mytardis_pubkey__key=
+
+mytardis_pubkey__name="Ingestion Node Test"
+
+#IDS API INFORMATION - https://icd.who.int/icdapi
+ICD11client_id=
+
+ICD11CLIENT_SECRET=
