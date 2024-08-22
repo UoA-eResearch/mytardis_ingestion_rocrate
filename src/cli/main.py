@@ -21,8 +21,8 @@ from mytardis_rocrate_builder.rocrate_writer import (
     archive_crate,
     bagit_crate,
     bulk_encrypt_file,
+    receive_keys_for_crate,
     write_crate,
-    receive_keys_for_crate
 )
 from rocrate.rocrate import ROCrate
 from slugify import slugify
@@ -191,8 +191,7 @@ def abi(
     default=False,
     help="Bulk encrypt the entire crate or archive",
 )
-def print_lab(
-    input_metadata: Path,
+def print_lab(  # pylint: disable=too-many-statements
     output: Path,
     pubkey_fingerprints: list[str],
     log_file: Path,
@@ -213,12 +212,12 @@ def print_lab(
     """
     init_logging(file_name=str(log_file), level=logging.DEBUG)
     logger = logging.getLogger(__name__)
-
     env_config = None
     if (Path(env_prefix) / ".env").exists():
         env_config = MyTardisEnvConfig(_env_prefix=env_prefix)  # type: ignore
         mt_user = mt_user if mt_user else env_config.auth.username
         mt_api_key = mt_api_key if mt_api_key else env_config.auth.api_key
+        pubkey_fingerprints.append(env_config.mytardis_pubkey.key)
     logger.info("Loading MyTardis API agent")
     if mt_user and mt_api_key:
         auth_config = AuthConfig(username=mt_user, api_key=mt_api_key)
