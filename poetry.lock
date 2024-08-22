@@ -794,6 +794,38 @@ files = [
 ]
 
 [[package]]
+name = "factory-boy"
+version = "3.3.1"
+description = "A versatile test fixtures replacement based on thoughtbot's factory_bot for Ruby."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "factory_boy-3.3.1-py2.py3-none-any.whl", hash = "sha256:7b1113c49736e1e9995bc2a18f4dbf2c52cf0f841103517010b1d825712ce3ca"},
+    {file = "factory_boy-3.3.1.tar.gz", hash = "sha256:8317aa5289cdfc45f9cae570feb07a6177316c82e34d14df3c2e1f22f26abef0"},
+]
+
+[package.dependencies]
+Faker = ">=0.7.0"
+
+[package.extras]
+dev = ["Django", "Pillow", "SQLAlchemy", "coverage", "flake8", "isort", "mongoengine", "mongomock", "mypy", "tox", "wheel (>=0.32.0)", "zest.releaser[recommended]"]
+doc = ["Sphinx", "sphinx-rtd-theme", "sphinxcontrib-spelling"]
+
+[[package]]
+name = "faker"
+version = "27.4.0"
+description = "Faker is a Python package that generates fake data for you."
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "Faker-27.4.0-py3-none-any.whl", hash = "sha256:1c44d4bdcad7237516c9a829b6a0bcb031c6a4cb0506207c480c79f74d8922bf"},
+    {file = "faker-27.4.0.tar.gz", hash = "sha256:4ce108fc96053bbba3abf848e3a2885f05faa938deb987f97e4420deaec541c4"},
+]
+
+[package.dependencies]
+python-dateutil = ">=2.4"
+
+[[package]]
 name = "filelock"
 version = "3.12.4"
 description = "A platform independent file lock."
@@ -2461,13 +2493,13 @@ files = [
 
 [[package]]
 name = "safety"
-version = "3.2.5"
+version = "3.2.6"
 description = "Checks installed dependencies for known vulnerabilities and licenses."
 optional = false
 python-versions = ">=3.7"
 files = [
-    {file = "safety-3.2.5-py3-none-any.whl", hash = "sha256:eb30e0dff10214f9c119f31927bb16799fab27678c8ccb6d8c78f3bcc4f3da29"},
-    {file = "safety-3.2.5.tar.gz", hash = "sha256:656df7b01eb400ddd003190947224183981216bf24ddf4142b819545b9ae5521"},
+    {file = "safety-3.2.6-py3-none-any.whl", hash = "sha256:fcd87f8c1882a72c26aef77b1e2b0f373800fb76df1b5f44ebeba9bff4e37b5e"},
+    {file = "safety-3.2.6.tar.gz", hash = "sha256:6a361e362d582f1ac52a179f1ae0fd1b5acbe05d37b1144fdeae792573201f9f"},
 ]
 
 [package.dependencies]
@@ -2483,7 +2515,7 @@ pydantic = ">=1.10.12"
 requests = "*"
 rich = "*"
 "ruamel.yaml" = ">=0.17.21"
-safety-schemas = ">=0.0.3"
+safety-schemas = ">=0.0.4"
 setuptools = ">=65.5.1"
 typer = "*"
 typing-extensions = ">=4.7.1"
@@ -2933,4 +2965,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<=3.12.4"
-content-hash = "b15617e4f06226d4932c19f341afb929d2ea6c820dad576e5937bc54cb694ab5"
+content-hash = "7c2d466a8344e5615dbe057798cb052cdd7bd73dcd60d07ef7119e822c37aa6c"
