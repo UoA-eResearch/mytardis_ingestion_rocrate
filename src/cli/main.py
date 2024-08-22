@@ -22,6 +22,7 @@ from mytardis_rocrate_builder.rocrate_writer import (
     bagit_crate,
     bulk_encrypt_file,
     write_crate,
+    receive_keys_for_crate
 )
 from rocrate.rocrate import ROCrate
 from slugify import slugify
@@ -276,6 +277,8 @@ def print_lab(
         crate = ROCrate(  # pylint: disable=unexpected-keyword-arg
             gpg_binary=gpg_binary, exclude=exclude
         )
+        receive_keys_for_crate(crate.gpg_binary, crate_contents=manifest)
+
         crate.source = source_path if duplicate_directory else None
         builder = PrintLabROBuilder(crate)
         write_crate(

@@ -9,17 +9,16 @@ As these scripts are under active development currently to install do the follow
 ```sh
 #clone this repo
 
-git clone git@github.com:UoA-eResearch/my_tardis_ro_crate.git
+git clone https://github.com/UoA-eResearch/mytardis_ingestion_rocrate
 
 cd my_tardis_ro_crate
 
-#setup the poetry enviroment
+#setup the poetry environment
 poetry config virtualenvs.in-project true
-poetry lock
 poetry install
 ```
 
-once installed run `poetry shell` to activate the enviroment.
+Once installed, run `poetry shell` to activate the environment.
 Any command is then run using the `ro_crate_builder` CLI such as `ro_crate_builder --help`
 
 
@@ -33,7 +32,7 @@ to generate an RO-Crate for a collection of ABI Music datasets run:
 ```bash
 ro_crate_builder abi -i /root_of_abi_directory
 ```
-The root directory must contain a tree of directories with apropriate `project.json`, `experiment.json` and `dataset.json` files.
+The root directory must contain a tree of directories with appropriate `project.json`, `experiment.json` and `dataset.json` files.
 This will generate an RO-Crate for every dataset found and package each as a bagit (so that all files are moved into a `data/` directory)
 
 to generate a Print Lab RO-Crate run
@@ -42,22 +41,24 @@ to generate a Print Lab RO-Crate run
 ro_crate_builder print-lab -i /print_lab_dir/sampledata.xls -o /output_crate_location
 ```
 
-where sampledata is a sheet of data regarding your samples with labels matching a mytardis schema.
+where sampledata is a sheet of data regarding your samples with labels matching a MyTardis schema.
 with optional parameters:
 
 - `-a [tar.gz|tar|zip]` archive the final crate as a specific format
 - `--bag_crate true|false` package the crate as a bagit (default true)
-- `--collect-all` collect all metadata even if it does not appear in a given schema.
+- `--bulk_encrypt` bulk encrypt the entire output file to pubkey fingerprints and MyTardis User (only available with the `-a` `tar` and `tar.gz` options)
+- `--split_datasets` create an individual RO-Crate for each dataset in the input data
+- `--pubkey_fingerprints [gpg pubkey fingerprint]` encrypt any output file to these fingerprints when using `--bulk_encrypt`
 
 ### Ingestion .env configs
-The RO-Crate builder scripts will use a a `.env` config file used for [ingestion](https://github.com/UoA-eResearch/mytardis_ingestion) for API authentication and default schema config. It will look for those by default in the current directory, an alternative directory can be provided with the `--env_prefix` parameter.
+The RO-Crate builder scripts will use an `.env` config file used for [ingestion](https://github.com/UoA-eResearch/mytardis_ingestion) for API authentication and default schema config. It will look for those by default in the current directory; an alternative directory can be provided with the `--env_prefix` parameter.
 
 the following values can be overwritten via CLI inputs:
 - `--mt_hostname` hostname for MyTardis API
 - `--mt_api_key` API key for MyTardis API
 - `--mt_user` username for MyTardis API
 
-the following values may only be provided via the env file, and descibe the MyTardis schemas that define metadata for their associated objects:
+the following values may only be provided via the env file, and describe the MyTardis schemas that define metadata for their associated objects:
 ```shell
 DEFAULT_SCHEMA__PROJECT=[MyTardis schema namespace]
 
@@ -66,6 +67,17 @@ DEFAULT_SCHEMA__EXPERIMENT=[MyTardis schema namespace]
 DEFAULT_SCHEMA__DATASET=[MyTardis schema namespace]
 
 DEFAULT_SCHEMA__DATAFILE=[MyTardis schema namespace]
+
+mytardis_pubkey__key=[gpg public key fingerprint]
+
+mytardis_pubkey__name=[string]
+```
+The following values may be specified via a .env file which allows for API updating of ICD-11 values.
+
+```shell
+ICD11client_id=[ICD-11 id]
+
+ICD11CLIENT_SECRET=[ICD-11 secret]
 ```
 
 ### Metadata collection
@@ -88,67 +100,63 @@ There is usually one MTmetadata object per piece of unique metadata on a MyTardi
 ```json
 {
    "@id": {
-       "type": "string",
-       "description" : "unique ID in the RO-Crate"
-    },
+   	"type": "string",
+   	"description" : "unique ID in the RO-Crate"
+	},
    "@type": "MyTardis-Metadata_field",
    "name": {
-       "type": "string",
-       "description" : "name of the metadata in MyTardis"
+   	"type": "string",
+   	"description" : "name of the metadata in MyTardis"
    },
    "value": {
-       "description" : "Metadata value in my tardis"
-    },
-   "mt-type": {
-       "type": "string",
-       "description" : "Metadata type as recorded in MyTardis",
-       "default": "STRING"
-    },
+   	"description" : "Metadata value in my tardis"
+	},
+   "myTardis-type": {
+   	"type": "string",
+   	"description" : "Metadata type as recorded in MyTardis",
+   	"default": "STRING"
+	},
+	"mytardis-schema":{
+    	"type":"string",
+    	"description":"The schema of this metadata in MyTardis"
+	}
    "sensitive": {
-       "type": "bool",
-       "description" : "Is this metadata marked as sensitive in MyTardis, used to encrypt metadata",
-       "default": True
-    },
-    "Parents": {
-       "type": "array",
-       "items" : {
-        "type": "string"
-       },
-       "description" : "The ID of any entity this metadata is associated with in the crate",
-    },
-    "required": [ "@id", "@type", "name","value","mt-type" ],
+   	"type": "bool",
+   	"description" : "Is this metadata marked as sensitive in MyTardis, used to encrypt metadata",
+   	"default": True
+	},
+	"Parents": {
+   	"type": "array",
+   	"items" : {
+    	"type": "string"
+   	},
+   	"description" : "The ID of any entity this metadata is associated with in the crate",
+	},
+	"required": [ "@id", "@type", "name","value","myTardis-type","mytardis-schema ],
 }
 ```
 for example:
 ```json
 {
-    "@id": "#BAM_Analysis code",
-    "@type": "my_tardis_metadata",
-    "myTardis-type": "STRING",
-    "name": "Analysis code",
-    "sensitive": false,
-    "value": "vs2",
-    "parents":[
-        "#BAM",
-        "#BAM_sorted"
-        ]
+	"@id": "#BAM_Analysis code",
+	"@type": "my_tardis_metadata",
+	"myTardis-type": "STRING",
+	"name": "Analysis code",
+	"sensitive": false,
+	"value": "vs2",
+	"mytardis-schema": "http://print.lab.mockup/project/v1"
+	"parents":[
+    	"#BAM",
+    	"#BAM_sorted"
+    	]
 }
 ```
 ## Encryption
 MyTardis RO-Crates employ encryption of RO-Crate metadata provided by [UoA's RO-Crate Fork](https://github.com/UoA-eResearch/ro-crate-py/tree/encrypted-metadata).
 
-In order to use this encryption provide the script with a comma seperated list of gpg public key fingerprints using the `--pubkey_fingerprints` parameter, and the path of your gpg binary using the `gpg_binary` parameter (optional - defaults to OS standard location)
-```sh
- ro_crate_builder print-lab -i /print_lab_dir/sampledata.xls -o /output_crate_location \
-  --pubkey_fingerprints F523D60AED2D218D9EE1135B0DF7C73A2578B8E3,3630FBB4ED664C8B690AD951A1CA576366F78539 \
-  --gpg_binary /path/to/gpg2
-```
-
 All metadata marked as sensitive in MyTardis will be read into a PGP encrypted block encrypted against the keys provided to the script.
 
-These encrypted blocks are found in the `"@encrypted"` entity at the root of any ro-crate-metadata.json file.
-
-If no keys or binary are provided then sensitive metadata will not be read in to the RO-Crate.
+If no keys or binary are provided then sensitive metadata will not be read into the RO-Crate.
 
 ## Requirements
 Mandatory:
@@ -158,19 +166,9 @@ Mandatory:
 Optional:
 - a valid [GnuPG](https://www.gnupg.org/download/) binary (required for encryption)
 - MyTardis API Key (required for user lookup in MyTardis)
-- PassPy with UoA LDAP key (required for user lookup in LADP)
 
 
 ### The Art of Remembering
 Forked from project:
 * RO-Crate-ABI-Music
 * (CeR Hackday project 2021: The Art of Remembering)
-
-
-
-
-
-
-
-
-

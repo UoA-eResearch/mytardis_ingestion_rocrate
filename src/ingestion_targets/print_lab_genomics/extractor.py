@@ -395,7 +395,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
                 email=row["Email"],
                 affiliation=UOA,
                 full_name=row["Name"],
-                pubkey_fingerprints=row["Pubkey"],
+                pubkey_fingerprints=[row["Pubkey"]],
                 mt_identifiers=[identifier],
             )
             if pd.notna(row["Identifier"]):
