@@ -192,7 +192,7 @@ def abi(
     help="Bulk encrypt the entire crate or archive",
 )
 def print_lab(  # pylint: disable=too-many-statements
-    input_metadata:Path,
+    input_metadata: Path,
     output: Path,
     pubkey_fingerprints: list[str],
     log_file: Path,
