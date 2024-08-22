@@ -37,7 +37,7 @@ DEFAULT_SCHEMA__DATASET=http://print.lab.mockup/dataset/as_sample/v1
 DEFAULT_SCHEMA__DATAFILE=http://print.lab.mockup/datafile/as_sample/v1
 
 #MY TARDIS GPG INFO
-mytardis_pubkey__key=
+mytardis_pubkey__key=C0626AEA19335E5587944C94EE7395E1CBF7668B
 
 mytardis_pubkey__name="Ingestion Node Test"
 
