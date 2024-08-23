@@ -19,7 +19,7 @@ pydantic = "^2.6.3"
 backoff = "^2.2.1"
 requests = "^2.31.0"
 pydantic-settings = "^2.2.1"
-mytardis-rocrate-builder = {git = "https://github.com/JLoveUOA/mytardis_rocrate_builder", branch="IDS-834-refactor-metadata-so-that-recipents-must-be-users"}
+mytardis-rocrate-builder = {git = "https://github.com/JLoveUOA/mytardis_rocrate_builder"}
 ro-crate-py = {git = "https://github.com/UoA-eResearch/ro-crate-py.git",  branch = "encrypted-metadata"}
 openpyxl = "^3.1.5"
 click = "^8.1.7"

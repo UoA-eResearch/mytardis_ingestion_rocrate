@@ -219,6 +219,7 @@ def print_lab(  # pylint: disable=too-many-statements
         mt_user = mt_user if mt_user else env_config.auth.username
         mt_api_key = mt_api_key if mt_api_key else env_config.auth.api_key
         if env_config.mytardis_pubkey.key:
+            pubkey_fingerprints = list(pubkey_fingerprints)
             pubkey_fingerprints.append(env_config.mytardis_pubkey.key)
     logger.info("Loading MyTardis API agent")
     if mt_user and mt_api_key:
