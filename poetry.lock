@@ -1590,8 +1590,8 @@ validators = "^0.28.3"
 [package.source]
 type = "git"
 url = "https://github.com/JLoveUOA/mytardis_rocrate_builder"
-reference = "IDS-834-refactor-metadata-so-that-recipents-must-be-users"
-resolved_reference = "8389253359f387d9ceb93913790977e3cf693a71"
+reference = "HEAD"
+resolved_reference = "9e3bbfbe84b1782a559ed7db7791c287e35ac03f"
 
 [[package]]
 name = "numpy"
@@ -2668,17 +2668,17 @@ files = [
 
 [[package]]
 name = "stevedore"
-version = "5.2.0"
+version = "5.3.0"
 description = "Manage dynamic plugins for Python applications"
 optional = false
 python-versions = ">=3.8"
 files = [
-    {file = "stevedore-5.2.0-py3-none-any.whl", hash = "sha256:1c15d95766ca0569cad14cb6272d4d31dae66b011a929d7c18219c176ea1b5c9"},
-    {file = "stevedore-5.2.0.tar.gz", hash = "sha256:46b93ca40e1114cea93d738a6c1e365396981bb6bb78c27045b7587c9473544d"},
+    {file = "stevedore-5.3.0-py3-none-any.whl", hash = "sha256:1efd34ca08f474dad08d9b19e934a22c68bb6fe416926479ba29e5013bcc8f78"},
+    {file = "stevedore-5.3.0.tar.gz", hash = "sha256:9a64265f4060312828151c204efbe9b7a9852a0d9228756344dbc7e4023e375a"},
 ]
 
 [package.dependencies]
-pbr = ">=2.0.0,<2.1.0 || >2.1.0"
+pbr = ">=2.0.0"
 
 [[package]]
 name = "text-unidecode"
@@ -2965,4 +2965,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.11,<=3.12.4"
-content-hash = "7c2d466a8344e5615dbe057798cb052cdd7bd73dcd60d07ef7119e822c37aa6c"
+content-hash = "5e56657df007847650ebaf719a80ebb55bd2142c4d615255a9f7059622302b39"

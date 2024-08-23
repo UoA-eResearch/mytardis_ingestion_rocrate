@@ -205,7 +205,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
         experiments_sheet: pd.DataFrame,
         particpants_dict: Dict[str, Participant],
         acls: Dict[str, Dict[str, Any]],
-        projcets: Dict[str, Project],
+        projects: Dict[str, Project],
     ) -> Dict[str, Experiment]:
         def parse_experiment(row: pd.Series) -> Experiment:
             row.dropna()
@@ -238,7 +238,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
                 date_modified=None,
                 contributors=None,
                 mytardis_classification="",
-                projects=[projcets.get(slugify(f'{row["Project"]}'))],
+                projects=[projects.get(slugify(f'{row["Project"]}'))],
                 participant=participant,
                 additional_property=None,
                 gender=participant.gender,
