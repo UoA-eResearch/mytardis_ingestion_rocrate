@@ -198,7 +198,7 @@ def process_raw_dataset(
         False,
         identifiers[0],
     )
-    updated_dates :List[datetime] = []
+    updated_dates: List[datetime] = []
 
     if slugify(json_dict["Basename"]["Sample"]) not in experiment_id:
         logger.warning(
