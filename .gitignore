@@ -17,3 +17,4 @@ test_crate*
 test*
 .env
 .vscode/*
+.hypothesis/*
