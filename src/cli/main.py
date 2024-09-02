@@ -241,6 +241,7 @@ def print_lab(  # pylint: disable=too-many-statements
             if env_config and env_config.mytardis_pubkey.key
             else []
         ),
+        ICD_11_agent = ICD_11_Api_Agent()
     )
     logger.info("extracting crate metadata")
     crate_manifest = extractor.extract(input_metadata)
