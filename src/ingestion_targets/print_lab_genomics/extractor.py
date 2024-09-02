@@ -76,19 +76,17 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
             MY_TARDIS_USER.pubkey_fingerprints = pubkey_fingerprints
 
     def datasheet_to_dataframes(self, input_data_source: Any) -> pd.DataFrame:
-        """Read the contents of an XLSX datasheet into a pandas dataframe
-        invoking the chosen encryptor
+        """Read the contents of an XLSX datasheet into a pandas dataframes
 
         Args:
             input_data_source (Any): path to a valid xlsx file
-            sheet_name (str): name of the sheet to parse
             sensitive_fields (List[str]): sensitive fields within the sheet
 
         Raises:
             ValueError: if invalid or incorrect formatted sheet is provided do not read in
 
         Returns:
-            pd.DataFrame: pandas dataframe of the chosen sheet
+            pd.DataFrame: pandas dataframe of spreadsheet
         """
         if not isinstance(input_data_source, Path) or not is_xslx(input_data_source):
             raise ValueError("Print lab genomics file must be an excel file")
@@ -275,6 +273,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
         particpant_sheet: pd.DataFrame,
     ) -> Dict[str, Dataset]:
         def parse_participant(row: pd.Series) -> Participant:
+            row.dropna()
             new_participant = Participant(
                 name=row["Participant: Code"],
                 description="",
@@ -311,6 +310,8 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
         experiments: Dict[str, Experiment],
     ) -> Dict[str, ExtractionDataset]:
         def parse_dataset(row: pd.Series) -> ExtractionDataset:
+            row.dropna()
+            instrument_description = "_".join([component for component in [row["Instrument"], row["Center"]] if component is not None])
             new_dataset = ExtractionDataset(
                 name=row["Dataset Name"],
                 description=row["Dataset Name"],
@@ -325,7 +326,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
                         mt_identifiers=None,
                         manager_group=Group(name="facility manager group"),
                     ),
-                    description="_".join([row["Instrument"], row["Center"]]),
+                    description=instrument_description,
                     mt_identifiers=None,
                 ),
                 additional_properties={},
