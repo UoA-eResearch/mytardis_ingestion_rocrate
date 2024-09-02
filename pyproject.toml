@@ -25,6 +25,7 @@ openpyxl = "^3.1.5"
 click = "^8.1.7"
 faker = "^27.4.0"
 factory-boy = "^3.3.1"
+hypothesis = "^6.111.2"
 
 
 [tool.poetry.group.dev.dependencies]

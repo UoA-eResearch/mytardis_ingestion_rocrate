@@ -54,7 +54,7 @@ class ICD_11_Api_Agent:
             "scope": scope,
             "grant_type": grant_type,
         }
-        r = requests.post(token_endpoint, data=payload, verify=True, timeout=60)
+        r = requests.post(token_endpoint, data=payload, verify=True, timeout=5)
         if r.status_code == 200:
             self.token = r.json().get("access_token")
         else:
@@ -74,7 +74,7 @@ class ICD_11_Api_Agent:
         code_request = f"https://id.who.int/icd/release/11/{self.releaseId}/{linearizationname}/codeinfo/{code}?flexiblemode=false&convertToTerminalCodes=false"  # pylint: disable = line-too-long
         try:
             r = requests.get(
-                code_request, headers=self.headers, verify=True, timeout=25
+                code_request, headers=self.headers, verify=True, timeout=5
             )
             # request based on entity id
             if r.status_code == 200:

@@ -56,13 +56,14 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
     collected_acls: List[ACL] = []
     collected_metadata: List[MTMetadata] = []
     users: List[User] = [MY_TARDIS_USER]
-
+    ICD_11_agent: ICD_11_Api_Agent
     def __init__(
         self,
         api_agent: MyTardisRestAgent,
         schemas: SchemaConfig | None,
         collect_all: bool,
         pubkey_fingerprints: Optional[List[str]],
+        ICD_11_agent = ICD_11_Api_Agent
     ) -> None:
         self.api_agent = api_agent
         namespaces = load_optional_schemas(
@@ -70,9 +71,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
         )
         self.metadata_handler = MetadataHanlder(self.api_agent, namespaces)
         self.collect_all = collect_all
-        self.ICD_11_agent: ICD_11_Api_Agent = (  # pylint: disable = invalid-name
-            ICD_11_Api_Agent()
-        )
+        self.ICD_11_agent: ICD_11_Api_Agent = ICD_11_agent  # pylint: disable = invalid-name
         if pubkey_fingerprints:
             MY_TARDIS_USER.pubkey_fingerprints = pubkey_fingerprints
 
