@@ -208,6 +208,10 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
             row.dropna()
             participant = particpants_dict[row["Participant"]]
             disease = []
+            projects = projects.get(slugify(f'{row["Project"]}'))
+            if projects is None:
+                logger.error("Samples should all have a matching project, no project found for %s",row["Sample name"])
+                raise ValueError()
             condition = self._parse_medical_condition(
                 row=row,
                 code_title="Disease type ICD11 code",
@@ -235,7 +239,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
                 date_modified=None,
                 contributors=None,
                 mytardis_classification="",
-                projects=[projects.get(slugify(f'{row["Project"]}'))],
+                projects=[projects],
                 participant=participant,
                 additional_property=None,
                 gender=participant.gender,
