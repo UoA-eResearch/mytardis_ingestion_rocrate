@@ -107,7 +107,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
             for row in acls_sheet.to_dict("index").values()
         }
 
-    def parse_acls(
+    def _parse_acls(
         self,
         indexed_acls: Dict[str, Dict[str, Any]],
         acls_to_read: list[str],
@@ -208,8 +208,8 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
             row.dropna()
             participant = particpants_dict[row["Participant"]]
             disease = []
-            projects = projects.get(slugify(f'{row["Project"]}'))
-            if projects is None:
+            project_entity = projects.get(slugify(f'{row["Project"]}'))
+            if project_entity is None:
                 logger.error("Samples should all have a matching project, no project found for %s",row["Sample name"])
                 raise ValueError()
             condition = self._parse_medical_condition(
@@ -239,7 +239,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
                 date_modified=None,
                 contributors=None,
                 mytardis_classification="",
-                projects=[projects],
+                projects=[project_entity],
                 participant=participant,
                 additional_property=None,
                 gender=participant.gender,
@@ -259,7 +259,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
                 collect_all=self.collect_all,
                 parent=new_experiment,
             )
-            acl_data = self.parse_acls(acls, str(row["Groups"]).split(), new_experiment)
+            acl_data = self._parse_acls(acls, str(row["Groups"]).split(","), new_experiment)
             self.collected_acls.extend(acl_data)
             self.collected_metadata.extend(metadata_dict.values())
             return new_experiment
@@ -378,7 +378,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
         datafiles: List[Datafile] = files_sheet.apply(parse_datafile, axis=1).to_list()
         return datafiles
 
-    def parse_users(
+    def _parse_users(
         self,
         users_sheet: pd.DataFrame,
     ) -> List[User]:
@@ -426,7 +426,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
         data_df = self.datasheet_to_dataframes(
             input_data_source,
         )
-        self.users.extend(self.parse_users(data_df["Users"]))
+        self.users.extend(self._parse_users(data_df["Users"]))
         projects = self._parse_projects(projects_sheet=data_df["Projects"])
         participants = self._parse_participants(data_df["Participants"])
         acls = self._index_acls(data_df["Groups"])
