@@ -1,5 +1,8 @@
 # pylint: disable = redefined-outer-name, invalid-name, protected-access
 """Tests for the Print Lab data extractor functions """
+from pathlib import Path
+from typing import Any, Dict
+
 import pandas as pd
 from mock import MagicMock
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import Person
@@ -254,3 +257,80 @@ def test_faked_project_extraction(
     for project in projects.values():
         project_entity = test_print_lab_builder.add_project(project=project)
         assert project_entity is not None
+
+
+def test_full_extraction(#pylint: disable=too-many-arguments, too-many-locals
+    test_print_lab_data: Path,
+    test_print_lab_builder: PrintLabROBuilder,
+    print_lab_project_json: Dict[str, Any],
+    print_lab_experiment_json: Dict[str, Any],
+    print_lab_dataset_json: Dict[str, Any],
+    print_lab_datafile_json: Dict[str, Any],
+    print_lab_acl_json: Dict[str, Any],
+) -> None:
+    """Test extraction from a spreadsheet into RO-Crate dataclasses
+
+    Args:
+        test_print_lab_data (Path): the location of the ingestion data
+        test_print_lab_builder (PrintLabROBuilder):
+            RO-Crate data for print lab data
+        print_lab_project_json (Dict[str, Any]):
+        print_lab_experiment_json (Dict[str, Any]):
+        print_lab_dataset_json (Dict[str, Any]):
+        print_lab_datafile_json (Dict[str, Any]):
+        print_lab_acl_json (Dict[str, Any]):
+            Expected ro-crate classes from spreadsheet
+    Returns:
+        _type_: _description_
+    """
+    MyTardisRestAgent = MagicMock()
+
+    def x(s: str) -> Person:
+        return Person(
+            name=s,
+            identifier=s,
+            schema_type=s,
+            email=s,
+            mt_identifiers=s,
+            affiliation=UOA,
+            full_name=s,
+        )
+
+    MyTardisRestAgent.return_value.create_person_object = x
+    ICD_11_Api_Agent = MagicMock()
+
+    def mc(medical_condition: MedicalCondition) -> MedicalCondition:
+        return medical_condition
+
+    ICD_11_Api_Agent.return_value.update_medial_entity_from_ICD11 = mc
+    extractor = PrintLabExtractor(
+        api_agent=MyTardisRestAgent(),
+        schemas=None,
+        collect_all=False,
+        pubkey_fingerprints=None,
+        icd_11_agent=ICD_11_Api_Agent(),
+    )
+    manifest = extractor.extract(test_print_lab_data)
+    builder = test_print_lab_builder
+    crate_projects = [
+        test_print_lab_builder.add_project(project)
+        for project in manifest.projects.values()
+    ]
+    assert crate_projects[0].as_jsonld() == print_lab_project_json
+    crate_experiments = [
+        builder.add_experiment(experiment)
+        for experiment in manifest.experiments.values()
+    ]
+    assert crate_experiments[0].as_jsonld() == print_lab_experiment_json
+    crate_datasets = [
+        builder.add_dataset(dataset) for dataset in manifest.datasets.values()
+    ]
+    assert crate_datasets[0].as_jsonld() == print_lab_dataset_json
+    crate_datafiles = [
+        builder.add_datafile(datafile) for datafile in manifest.datafiles
+    ]
+    assert crate_datafiles[0].as_jsonld() == print_lab_datafile_json
+    # crate_metadata = [builder.add_metadata(metadata) for metadata in manifest.metadata]
+    # assert crate_metadata[0].as_jsonld() == {}
+    crate_acls = [builder.add_acl(acl) for acl in manifest.acls]
+    assert crate_acls[0].as_jsonld() == print_lab_acl_json
