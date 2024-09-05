@@ -1,6 +1,0 @@
-{
-    "experiment_name": "The sample name",
-    "experiment_description": "A short description of what the sample is",
-    "projects": ["A project name or preferably an identifier which the sample is part of.","This is a list so a sample can be associated with multiple projects."],
-    "experiment_ids": ["A list of strings identifying a sample"]
-}

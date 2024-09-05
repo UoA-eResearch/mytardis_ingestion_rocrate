@@ -1,7 +1,9 @@
 # pylint: disable = missing-function-docstring, redefined-outer-name
 """Conftest for RO-Crate format data extractors"""
+import pathlib
 import random
-from typing import Dict, List
+import shutil
+from typing import Any, Dict, List
 
 import pandas as pd
 from faker import Faker
@@ -11,6 +13,9 @@ from rocrate.rocrate import ROCrate
 from src.ingestion_targets.print_lab_genomics.print_crate_builder import (
     PrintLabROBuilder,
 )
+
+THIS_DIR = pathlib.Path(__file__).absolute().parent
+TEST_DATA_NAME = "examples_for_test"
 
 
 @fixture
@@ -285,3 +290,95 @@ def faked_datafiles(faker: Faker, n_rows: int) -> pd.DataFrame:
         ],
     }
     return pd.DataFrame(datafiles_data)
+
+
+# pytest's default tmpdir returns a py.path object
+@fixture
+def tmpdir(tmpdir: pathlib.Path) -> pathlib.Path:
+    return pathlib.Path(tmpdir)
+
+
+@fixture
+def test_data_dir(tmpdir: pathlib.Path) -> pathlib.Path:
+    d = tmpdir / TEST_DATA_NAME
+    shutil.copytree(THIS_DIR / TEST_DATA_NAME, d)
+    return d
+
+
+@fixture
+def test_print_lab_data(test_data_dir: pathlib.Path) -> pathlib.Path:
+    return test_data_dir / "print_lab_test/sampledata.xlsx"
+
+
+@fixture
+def print_lab_project_json() -> Dict[str, Any]:
+    return {
+        "@id": "#c3a02949-204b-580c-be49-1350e3f1df9d",
+        "@type": "Project",
+        "contributors": [],
+        "description": "network-16",
+        "mt_identifiers": ["16", "16"],
+        "mytardis_classification": "DataClassification.SENSITIVE",
+        "name": "16",
+        "principal_investigator": [{"@id": "#5e43439e-820b-56d3-82ea-59015f4ae1a3"}],
+    }
+
+
+@fixture
+def print_lab_experiment_json() -> Dict[str, Any]:
+    return {
+        "@id": "#ebbd7daf-16e8-5c5f-8213-cad4c9078aeb",
+        "@type": "DataCatalog",
+        "analyate": "D",
+        "approved": False,
+        "associated_disease": ["#2C10.1", "#XH8E54"],
+        "body_location": "#XA8LA4",
+        "description": "This sample sequenced in Korea",
+        "gender": "Male",
+        "name": "00001-016-C0001-01-2C10.1-D-01",
+        "participant": "#20ed40c3-c5e9-5ece-b280-c34cb79169b2",
+        "project": [{"@id": "#c3a02949-204b-580c-be49-1350e3f1df9d"}],
+        "tissue_processing_method": "FFPE",
+    }
+
+
+@fixture
+def print_lab_dataset_json() -> Dict[str, Any]:
+    return {
+        "@id": "BAM/",
+        "@type": "Dataset",
+        "description": "Bam",
+        "includedInDataCatalog": [{"@id": "#ebbd7daf-16e8-5c5f-8213-cad4c9078aeb"}],
+        "instrument": [{"@id": "#Macrogen Illumina HiSeq"}],
+        "mt_identifiers": ["BAM"],
+        "mytardis_classification": "DataClassification.SENSITIVE",
+        "name": "Bam",
+    }
+
+
+@fixture
+def print_lab_datafile_json() -> Dict[str, Any]:
+    return {
+        "@id": "BAM/aligned.bam",
+        "@type": "File",
+        "datafileVersion": 1,
+        "dataset": [{"@id": "BAM/"}],
+        "description": "alginment data from human genome",
+        "mytardis_classification": "DataClassification.SENSITIVE",
+        "name": "BAM/aligned.bam",
+    }
+
+
+@fixture
+def print_lab_acl_json() -> Dict[str, Any]:
+    return {
+        "@id": "#b005c3c4-2386-57e1-a0c0-825e2dd4dce4",
+        "@type": "DigitalDocumentPermission",
+        "grantee": [{"@id": "#ea82c06f-2825-529d-88c0-75d65ad3876d"}],
+        "grantee_type": "Audiance",
+        "my_tardis_can_download": True,
+        "mytardis_owner": False,
+        "mytardis_see_sensitive": False,
+        "permission_type": "ReadPermission",
+        "subjectOf": [{"@id": "#ebbd7daf-16e8-5c5f-8213-cad4c9078aeb"}],
+    }
