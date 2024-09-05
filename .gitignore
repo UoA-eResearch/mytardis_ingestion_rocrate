@@ -14,7 +14,7 @@ hackday-ro-crate/*
 test_crate*
 *.tar.*
 *.log
-test*
+test_outputs/*
 .env
 .vscode/*
 .hypothesis/*

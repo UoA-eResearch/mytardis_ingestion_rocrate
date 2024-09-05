@@ -14,7 +14,7 @@ from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
 logger = logging.getLogger(__name__)
 
 
-class ICD11_Auth(BaseSettings):
+class ICD11Auth(BaseSettings):
     """Authorization settings for the ICD-11 API"""
 
     ICD11client_id: Optional[str] = None
@@ -24,16 +24,16 @@ class ICD11_Auth(BaseSettings):
     )
 
 
-class ICD_11_Api_Agent:
+class ICD11ApiAgent:
     """Agent for requesting data from the ICD-11 API"""
 
     token: str
-    auth_details: ICD11_Auth
+    auth_details: ICD11Auth
 
     def __init__(self) -> None:
         self.default_linearizationname = "mms"
         self.releaseId = "2024-01"
-        self.auth_details = ICD11_Auth()
+        self.auth_details = ICD11Auth()
         self.request_token()
         self.headers = {
             "Authorization": "Bearer " + str(self.token),
@@ -73,9 +73,7 @@ class ICD_11_Api_Agent:
             return None
         code_request = f"https://id.who.int/icd/release/11/{self.releaseId}/{linearizationname}/codeinfo/{code}?flexiblemode=false&convertToTerminalCodes=false"  # pylint: disable = line-too-long
         try:
-            r = requests.get(
-                code_request, headers=self.headers, verify=True, timeout=5
-            )
+            r = requests.get(code_request, headers=self.headers, verify=True, timeout=5)
             # request based on entity id
             if r.status_code == 200:
                 r = requests.get(
@@ -107,7 +105,7 @@ class ICD_11_Api_Agent:
             )
             if ICD11_data is None:
                 logger.warning(
-                    """Information could not be retreived from ICD-11 API for code %s. 
+                    """Information could not be retreived from ICD-11 API for code %s.
                     Data will not be updated""",
                     medical_condition.code,
                 )

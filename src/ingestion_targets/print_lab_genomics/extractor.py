@@ -26,7 +26,7 @@ from slugify import slugify
 
 import src.ingestion_targets.print_lab_genomics.consts as profile_consts
 from src.cli.mytardisconfig import SchemaConfig
-from src.ingestion_targets.print_lab_genomics.ICD11_API_agent import ICD_11_Api_Agent
+from src.ingestion_targets.print_lab_genomics.ICD11_API_agent import ICD11ApiAgent
 from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
     ExtractionDataset,
     MedicalCondition,
@@ -56,14 +56,15 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
     collected_acls: List[ACL] = []
     collected_metadata: List[MTMetadata] = []
     users: List[User] = [MY_TARDIS_USER]
-    ICD_11_agent: ICD_11_Api_Agent
-    def __init__(
+    icd_11_agent: ICD11ApiAgent
+
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         api_agent: MyTardisRestAgent,
         schemas: SchemaConfig | None,
         collect_all: bool,
         pubkey_fingerprints: Optional[List[str]],
-        ICD_11_agent = ICD_11_Api_Agent
+        icd_11_agent=ICD11ApiAgent,
     ) -> None:
         self.api_agent = api_agent
         namespaces = load_optional_schemas(
@@ -71,7 +72,9 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
         )
         self.metadata_handler = MetadataHanlder(self.api_agent, namespaces)
         self.collect_all = collect_all
-        self.ICD_11_agent: ICD_11_Api_Agent = ICD_11_agent  # pylint: disable = invalid-name
+        self.icd_11_agent: ICD11ApiAgent = (
+            icd_11_agent  # pylint: disable = invalid-name
+        )
         if pubkey_fingerprints:
             MY_TARDIS_USER.pubkey_fingerprints = pubkey_fingerprints
 
@@ -190,7 +193,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
             code_source=code_source,
             code_text="",
         )
-        condtion = self.ICD_11_agent.update_medial_entity_from_ICD11(condtion)
+        condtion = self.icd_11_agent.update_medial_entity_from_ICD11(condtion)
         if condtion.code_text is not None:
             row[text_title] = condtion.code_text
         else:
@@ -210,7 +213,10 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
             disease = []
             project_entity = projects.get(slugify(f'{row["Project"]}'))
             if project_entity is None:
-                logger.error("Samples should all have a matching project, no project found for %s",row["Sample name"])
+                logger.error(
+                    "Samples should all have a matching project, no project found for %s",
+                    row["Sample name"],
+                )
                 raise ValueError()
             condition = self._parse_medical_condition(
                 row=row,
@@ -259,7 +265,9 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
                 collect_all=self.collect_all,
                 parent=new_experiment,
             )
-            acl_data = self._parse_acls(acls, str(row["Groups"]).split(","), new_experiment)
+            acl_data = self._parse_acls(
+                acls, str(row["Groups"]).split(","), new_experiment
+            )
             self.collected_acls.extend(acl_data)
             self.collected_metadata.extend(metadata_dict.values())
             return new_experiment
@@ -315,7 +323,13 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
     ) -> Dict[str, ExtractionDataset]:
         def parse_dataset(row: pd.Series) -> ExtractionDataset:
             row.dropna()
-            instrument_description = "_".join([component for component in [row["Instrument"], row["Center"]] if component is not None])
+            instrument_description = "_".join(
+                [
+                    component
+                    for component in [row["Instrument"], row["Center"]]
+                    if component is not None
+                ]
+            )
             new_dataset = ExtractionDataset(
                 name=row["Dataset Name"],
                 description=row["Dataset Name"],
