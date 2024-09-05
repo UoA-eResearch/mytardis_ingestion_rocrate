@@ -1,5 +1,0 @@
-{
-    "dataset_name": "A descriptive name for the dataset",
-    "dataset_ids": ["A list of strings for identifying the dataset uniquely"],
-    "experiments": ["A experiment/sample name or preferably an identifier which the sample is part of.","This is a list so a sample can be associated with multiple experiments (prob not relevant for most of your use cases)."]
-}
