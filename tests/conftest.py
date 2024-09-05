@@ -6,13 +6,22 @@ import shutil
 from typing import Any, Dict, List
 
 import pandas as pd
+import slugify
 from faker import Faker
+from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
+    MTMetadata,
+    Person,
+    Project,
+)
 from pytest import fixture
 from rocrate.rocrate import ROCrate
 
 from src.ingestion_targets.print_lab_genomics.print_crate_builder import (
     PrintLabROBuilder,
 )
+from src.metadata_extraction.metadata_extraction import MetadataSchema
+from src.mt_api.apiconfigs import AuthConfig
+from src.mt_api.mt_consts import UOA, MtObject
 
 THIS_DIR = pathlib.Path(__file__).absolute().parent
 TEST_DATA_NAME = "examples_for_test"
@@ -203,6 +212,7 @@ def faked_projects(faker: Faker, n_rows: int) -> pd.DataFrame:
             random.choice([faker.url(), None]) for _ in range(n_rows)
         ],
         "description": [random.choice([faker.sentence(), None]) for _ in range(n_rows)],
+        "Patient Consent Designation": [faker.word() for _ in range(n_rows)],
     }
     return pd.DataFrame(projects_data)
 
@@ -382,3 +392,235 @@ def print_lab_acl_json() -> Dict[str, Any]:
         "permission_type": "ReadPermission",
         "subjectOf": [{"@id": "#ebbd7daf-16e8-5c5f-8213-cad4c9078aeb"}],
     }
+
+
+@fixture
+def test_schema() -> Dict[str, Any]:
+    return {
+        "Ethics Approval Designation": {
+            "choices": "",
+            "comparison_type": 1,
+            "data_type": 4,
+            "full_name": "Ethics Approval Designation",
+            "id": 198,
+            "immutable": False,
+            "is_searchable": False,
+            "name": "Ethics Approval Designation",
+            "order": 9999,
+            "resource_uri": "/api/v1/parametername/198/",
+            "schema": "/api/v1/schema/18/",
+            "sensitive": False,
+            "units": "",
+        },
+        "Ethics Approval ID": {
+            "choices": "",
+            "comparison_type": 1,
+            "data_type": 2,
+            "full_name": "Ethics Approval ID",
+            "id": 197,
+            "immutable": False,
+            "is_searchable": False,
+            "name": "Ethics Approval ID",
+            "order": 9999,
+            "resource_uri": "/api/v1/parametername/197/",
+            "schema": "/api/v1/schema/18/",
+            "sensitive": False,
+            "units": "",
+        },
+        "Patient Consent Designation": {
+            "choices": "",
+            "comparison_type": 1,
+            "data_type": 4,
+            "full_name": "Patient Consent Designation",
+            "id": 199,
+            "immutable": False,
+            "is_searchable": False,
+            "name": "Patient Consent Designation",
+            "order": 9999,
+            "resource_uri": "/api/v1/parametername/199/",
+            "schema": "/api/v1/schema/18/",
+            "sensitive": True,
+            "units": "",
+        },
+        "Project code": {
+            "choices": "",
+            "comparison_type": 1,
+            "data_type": 2,
+            "full_name": "Project code",
+            "id": 196,
+            "immutable": False,
+            "is_searchable": False,
+            "name": "Project code",
+            "order": 9999,
+            "resource_uri": "/api/v1/parametername/196/",
+            "schema": "/api/v1/schema/18/",
+            "sensitive": False,
+            "units": "",
+        },
+    }
+
+
+@fixture
+def test_schema_object(
+    test_schema: Dict[str, Any], test_schema_namespace: str
+) -> MetadataSchema:
+    return MetadataSchema(
+        schema=test_schema, url=test_schema_namespace, mt_type=MtObject.PROJECT
+    )
+
+
+@fixture
+def test_schema_namespace() -> str:
+    return "http://print.lab.mockup/project/v1"
+
+
+@fixture
+def test_metadata_response() -> Dict[str, Any]:
+    return {
+        "meta": {},
+        "objects": [
+            {
+                "parameter_names": [
+                    {
+                        "choices": "",
+                        "comparison_type": 1,
+                        "data_type": 4,
+                        "full_name": "Ethics Approval Designation",
+                        "id": 198,
+                        "immutable": False,
+                        "is_searchable": False,
+                        "name": "Ethics Approval Designation",
+                        "order": 9999,
+                        "resource_uri": "/api/v1/parametername/198/",
+                        "schema": "/api/v1/schema/18/",
+                        "sensitive": False,
+                        "units": "",
+                    },
+                    {
+                        "choices": "",
+                        "comparison_type": 1,
+                        "data_type": 2,
+                        "full_name": "Ethics Approval ID",
+                        "id": 197,
+                        "immutable": False,
+                        "is_searchable": False,
+                        "name": "Ethics Approval ID",
+                        "order": 9999,
+                        "resource_uri": "/api/v1/parametername/197/",
+                        "schema": "/api/v1/schema/18/",
+                        "sensitive": False,
+                        "units": "",
+                    },
+                    {
+                        "choices": "",
+                        "comparison_type": 1,
+                        "data_type": 4,
+                        "full_name": "Patient Consent Designation",
+                        "id": 199,
+                        "immutable": False,
+                        "is_searchable": False,
+                        "name": "Patient Consent Designation",
+                        "order": 9999,
+                        "resource_uri": "/api/v1/parametername/199/",
+                        "schema": "/api/v1/schema/18/",
+                        "sensitive": True,
+                        "units": "",
+                    },
+                    {
+                        "choices": "",
+                        "comparison_type": 1,
+                        "data_type": 2,
+                        "full_name": "Project code",
+                        "id": 196,
+                        "immutable": False,
+                        "is_searchable": False,
+                        "name": "Project code",
+                        "order": 9999,
+                        "resource_uri": "/api/v1/parametername/196/",
+                        "schema": "/api/v1/schema/18/",
+                        "sensitive": False,
+                        "units": "",
+                    },
+                ],
+            }
+        ],
+    }
+
+
+@fixture
+def username() -> str:
+    return "upi000"
+
+
+@fixture
+def api_key() -> str:
+    return "test_api_key"
+
+
+@fixture
+def auth(
+    username: str,
+    api_key: str,
+) -> AuthConfig:
+    return AuthConfig(username=username, api_key=api_key)
+
+
+# @fixture
+# def test_metadata_schema() -> MetadataSchema:
+#     return MetadataSchema()
+
+#     schema: Dict[str, Dict[str, Any]]
+#     url: str
+#     mt_type: Optional[MtObject] = None
+
+
+@fixture
+def faked_projects_row(faked_projects: pd.DataFrame) -> pd.Series:
+    return faked_projects.iloc[0]
+
+
+# ID is based on parent so make a consistent parent object for test metadata
+@fixture
+def test_parent_project(faked_projects_row: pd.Series) -> Project:
+    row = faked_projects_row
+    return Project(
+        name=slugify.slugify(f'{row["Project code"]}'),
+        description=slugify.slugify(f'{row["Project name"]}-{row["Project code"]}'),
+        principal_investigator=Person(
+            name="person", email="email", affiliation=UOA, mt_identifiers=[]
+        ),
+    )
+
+
+@fixture
+def test_output_metadata(
+    faked_projects_row: pd.Series,
+    test_schema_namespace: str,
+    test_parent_project: Project,
+) -> MTMetadata:
+    return MTMetadata(
+        name="Project code",
+        value=faked_projects_row["Project code"],
+        mt_type="STRING",
+        mt_schema=test_schema_namespace,
+        sensitive=False,
+        parent=test_parent_project,
+        recipients=None,
+    )
+
+
+@fixture
+def test_output_sensitive_metadata(
+    faked_projects_row: pd.Series,
+    test_schema_namespace: str,
+    test_parent_project: Project,
+)  -> MTMetadata:
+    return MTMetadata(
+        name="Patient Consent Designation",
+        value=faked_projects_row["Patient Consent Designation"],
+        mt_type="LINK",
+        mt_schema=test_schema_namespace,
+        sensitive=True,
+        parent=test_parent_project,
+        recipients=None,
+    )
