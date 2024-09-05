@@ -259,7 +259,7 @@ def test_faked_project_extraction(
         assert project_entity is not None
 
 
-def test_full_extraction(#pylint: disable=too-many-arguments, too-many-locals
+def test_full_extraction(  # pylint: disable=too-many-arguments, too-many-locals
     test_print_lab_data: Path,
     test_print_lab_builder: PrintLabROBuilder,
     print_lab_project_json: Dict[str, Any],
