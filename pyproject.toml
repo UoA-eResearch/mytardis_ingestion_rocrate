@@ -7,7 +7,7 @@ readme = "README.md"
 packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
-python = ">=3.11,<=3.12.5"
+python = ">=3.10,<=3.12.5"
 python-slugify = "^8.0.1"
 pylint = "^3.1.0"
 mypy = "^1.8.0"
