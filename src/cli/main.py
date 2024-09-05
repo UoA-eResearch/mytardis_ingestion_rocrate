@@ -30,6 +30,7 @@ from slugify import slugify
 from src.cli.mytardisconfig import MyTardisEnvConfig
 from src.ingestion_targets.abi_music.crate_builder import ABICrateBuilder
 from src.ingestion_targets.print_lab_genomics.extractor import PrintLabExtractor
+from src.ingestion_targets.print_lab_genomics.ICD11_API_agent import ICD11ApiAgent
 from src.ingestion_targets.print_lab_genomics.print_crate_builder import (
     PrintLabROBuilder,
 )
@@ -241,7 +242,7 @@ def print_lab(  # pylint: disable=too-many-statements
             if env_config and env_config.mytardis_pubkey.key
             else []
         ),
-        ICD_11_agent = ICD_11_Api_Agent()
+        icd_11_agent=ICD11ApiAgent(),
     )
     logger.info("extracting crate metadata")
     crate_manifest = extractor.extract(input_metadata)
