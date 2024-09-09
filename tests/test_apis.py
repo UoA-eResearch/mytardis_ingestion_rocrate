@@ -209,36 +209,3 @@ def test_update_medical_entity(
             assert updated_medical_condition == test_updated_medical_condition
 
 
-# def test_mytardis_rest_agent_fail(
-#     test_metadata_response: Dict[str, Any],
-#     auth: AuthConfig,
-# ) -> None:
-#     mt_rest_agent = MyTardisRestAgent(auth, CONNECTION__HOSTNAME, None, False)
-#     schema_stub = "schema/?namespace="
-#     responses.add(
-#         responses.GET,
-#         mt_rest_agent.api_template + schema_stub + test_schema_namespace,
-#         status=200,
-#         json=test_metadata_response,
-#     )
-
-#     datafiles, meta = mt_client.get("/dataset_file")
-
-#     mytardis_api_request()
-#     assert isinstance(datafiles, list)
-#     assert is_list_of(datafiles, IngestedDatafile)
-#     assert len(datafiles) == 1
-#     assert datafiles[0].resource_uri == URI("/api/v1/dataset_file/0/")
-#     assert datafiles[0].filename == "test_filename.txt"
-
-#     assert isinstance(meta, GetResponseMeta)
-#     assert meta.total_count == 1
-
-## test with no auth
-
-
-## test icd-11 get token
-
-## test ICD-11 get item
-
-## test update medical condition
