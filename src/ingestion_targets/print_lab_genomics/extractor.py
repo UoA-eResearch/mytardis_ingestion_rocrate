@@ -4,6 +4,7 @@ Into dataclasses that can be built into an RO-Crate.
 """
 
 import logging
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -43,6 +44,7 @@ from src.utils.file_utils import is_xslx
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+cwd = os.getcwd()
 
 
 class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
@@ -64,7 +66,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
         schemas: SchemaConfig | None,
         collect_all: bool,
         pubkey_fingerprints: Optional[List[str]],
-        icd_11_agent=ICD11ApiAgent,
+        icd_11_agent: ICD11ApiAgent,
     ) -> None:
         self.api_agent = api_agent
         namespaces = load_optional_schemas(
@@ -459,7 +461,6 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
         crate_manifest.add_acls(self.collected_acls)
         for metadata in self.collected_metadata:
             if metadata.sensitive:
-                logger.debug("adding recipents %s", self.users)
                 metadata.recipients = self.users
         crate_manifest.add_metadata(self.collected_metadata)
         return crate_manifest
