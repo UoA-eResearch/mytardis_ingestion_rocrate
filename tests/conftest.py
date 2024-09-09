@@ -19,6 +19,9 @@ from rocrate.rocrate import ROCrate
 from src.ingestion_targets.print_lab_genomics.print_crate_builder import (
     PrintLabROBuilder,
 )
+from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
+    MedicalCondition,
+)
 from src.metadata_extraction.metadata_extraction import MetadataSchema
 from src.mt_api.apiconfigs import AuthConfig
 from src.mt_api.mt_consts import UOA, MtObject
@@ -614,7 +617,7 @@ def test_output_sensitive_metadata(
     faked_projects_row: pd.Series,
     test_schema_namespace: str,
     test_parent_project: Project,
-)  -> MTMetadata:
+) -> MTMetadata:
     return MTMetadata(
         name="Patient Consent Designation",
         value=faked_projects_row["Patient Consent Designation"],
@@ -623,4 +626,52 @@ def test_output_sensitive_metadata(
         sensitive=True,
         parent=test_parent_project,
         recipients=None,
+    )
+
+
+@fixture
+def test_icd_11_code() -> str:
+    return "ABC.123"
+
+
+@fixture
+def test_icd_11_text() -> str:
+    return "Andromeda Strain"
+
+
+@fixture
+def test_icd_11_source() -> str:
+    return "Andromeda Galaxy"
+
+
+@fixture
+def test_icd11_condition(
+    test_icd_11_code: str, test_icd_11_source: str, test_icd_11_text: str
+) -> Dict[str, Any]:
+    return {
+        "@id": test_icd_11_code,
+        "title": {"@value": test_icd_11_text},
+        "source": test_icd_11_source,
+    }
+
+
+@fixture
+def test_medical_condition(test_icd_11_code: str) -> MedicalCondition:
+    return MedicalCondition(
+        code=test_icd_11_code,
+        code_type="ICD11 code",
+        code_text="unfilled code text",
+        code_source="unfilled code source",
+    )
+
+
+@fixture
+def test_updated_medical_condition(
+    test_icd_11_code: str, test_icd_11_source: str, test_icd_11_text: str
+) -> MedicalCondition:
+    return MedicalCondition(
+        code=test_icd_11_code,
+        code_type="ICD11 code",
+        code_text=test_icd_11_text,
+        code_source=test_icd_11_source,
     )

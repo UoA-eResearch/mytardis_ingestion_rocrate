@@ -1,4 +1,4 @@
-#pylint: disable=too-many-arguments
+# pylint: disable=too-many-arguments
 """Tests For metadata construction
 """
 from typing import Any, Dict
