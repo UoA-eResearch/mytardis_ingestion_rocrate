@@ -245,6 +245,7 @@ def print_lab(  # pylint: disable=too-many-statements
         icd_11_agent=ICD11ApiAgent(),
     )
     logger.info("extracting crate metadata")
+    os.chdir(input_metadata.parent)
     crate_manifest = extractor.extract(input_metadata)
     exclude = [(input_metadata / "sampledata.xlsx").as_posix()]
     source_path = input_metadata
@@ -274,7 +275,7 @@ def print_lab(  # pylint: disable=too-many-statements
                 "Archiving crate writing, temp crate to tmpdir: %s",
                 crate_destination.as_posix(),
             )
-            crate_destination.mkdir()
+            crate_destination.mkdir(parents=True)
         logger.info("writing crate %s", source_path)
 
         logger.info("Initalizing crate")
