@@ -34,7 +34,7 @@ class ICD11ApiAgent:
         self.default_linearizationname = "mms"
         self.releaseId = "2024-01"
         self.auth_details = ICD11Auth()
-        self.request_token()
+        self._request_token()
         self.headers = {
             "Authorization": "Bearer " + str(self.token),
             "Accept": "application/json",
@@ -42,7 +42,7 @@ class ICD11ApiAgent:
             "API-Version": "v2",
         }
 
-    def request_token(self) -> None:
+    def _request_token(self) -> None:
         """Request the OAUTH2 token from the ICD-11 and store it on this agent"""
         # get the OAUTH2 token
         token_endpoint = "https://icdaccessmanagement.who.int/connect/token"
@@ -64,7 +64,7 @@ class ICD11ApiAgent:
             )
             self.token = ""
 
-    def request_ICD11_data(self, code: str, linearizationname: str) -> Any:
+    def _request_ICD11_data(self, code: str, linearizationname: str) -> Any:
         """
         Request data from the ICD-11 based on the ICD-11 code in a specific linearization
         """
@@ -100,7 +100,7 @@ class ICD11ApiAgent:
             MedicalCondition: the Medical condition with any relevant ICD-11 data
         """
         try:
-            ICD11_data = self.request_ICD11_data(
+            ICD11_data = self._request_ICD11_data(
                 medical_condition.code, self.default_linearizationname
             )
             if ICD11_data is None:
