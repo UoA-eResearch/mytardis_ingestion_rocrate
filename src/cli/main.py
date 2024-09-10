@@ -212,6 +212,7 @@ def print_lab(  # pylint: disable=too-many-statements
     """
     Create an RO-Crate based on a Print Lab metadata file
     """
+    output = Path(os.path.abspath(output))
     init_logging(file_name=str(log_file), level=logging.DEBUG)
     logger = logging.getLogger(__name__)
     env_config = None
