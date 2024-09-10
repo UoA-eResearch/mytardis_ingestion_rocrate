@@ -4,7 +4,7 @@ import pathlib
 import random
 import shutil
 from typing import Any, Dict, List
-
+from sys import platform
 import pandas as pd
 import slugify
 from faker import Faker
@@ -12,6 +12,7 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
     MTMetadata,
     Person,
     Project,
+    User
 )
 from pytest import fixture
 from rocrate.rocrate import ROCrate
@@ -21,18 +22,28 @@ from src.ingestion_targets.print_lab_genomics.print_crate_builder import (
 )
 from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
     MedicalCondition,
+    Participant,
+    SampleExperiment,
+    ExtractionDataset
 )
 from src.metadata_extraction.metadata_extraction import MetadataSchema
 from src.mt_api.apiconfigs import AuthConfig
 from src.mt_api.mt_consts import UOA, MtObject
+from datetime import datetime
+from gnupg import GPG, GenKey
+
+from rocrate.model import ContextEntity as ROContextEntity
 
 THIS_DIR = pathlib.Path(__file__).absolute().parent
 TEST_DATA_NAME = "examples_for_test"
 
+@fixture(name=crate)
+def test_ro_crate() -> ROCrate:
+    return ROCrate()
 
 @fixture
-def test_print_lab_builder() -> PrintLabROBuilder:
-    crate = ROCrate()
+def test_print_lab_builder(crate) -> PrintLabROBuilder:
+    crate = crate
     return PrintLabROBuilder(crate)
 
 
@@ -62,7 +73,7 @@ def fake_national_health_index(faker: Faker) -> str | None:
     return random.choice(
         [
             faker.bothify(text="???####", letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
-            faker.bothify(text="???##?#", letters="ABCDEFGHIJKLMNOPQRSTUVWXYZ"),
+            faker.bothify(text="???##?#", letters="ABCDEFGHIJKLMNOPQRSTUVWXYZÆ"),
             None,
         ]
     )
@@ -664,7 +675,6 @@ def test_medical_condition(test_icd_11_code: str) -> MedicalCondition:
         code_source="unfilled code source",
     )
 
-
 @fixture
 def test_updated_medical_condition(
     test_icd_11_code: str, test_icd_11_source: str, test_icd_11_text: str
@@ -675,3 +685,89 @@ def test_updated_medical_condition(
         code_text=test_icd_11_text,
         code_source=test_icd_11_source,
     )
+
+@fixture
+def test_RO_crate_medical_conditon(crate:ROCrate, test_medical_condition:MedicalCondition) -> ROContextEntity:
+    return ROContextEntity(
+        crate,
+        identifier=test_medical_condition,
+        properties={
+            "@type": "MedicalCondition",
+            "name": test_medical_condition.code,
+            "code_type": test_medical_condition.code_type,
+            "code_source": test_medical_condition.code_source,
+            "code_text": test_medical_condition.code_text
+        }
+    )
+
+@fixture
+def test_date_of_birth() -> str:
+    return datetime.today.isoformat()
+
+
+@fixture
+def test_nhi(faker) -> str:
+    return fake_national_health_index(faker)
+
+@fixture
+def test_gpg_binary_location() -> str:
+    if platform in ["linux", "linux2"]:
+        # linux
+        return "/usr/bin/gpg"
+    elif platform == "darwin":
+        # OS X
+        return "/opt/homebrew/bin/gpg"
+    elif platform == "win32":
+        # Windows
+        return "C:\\Program Files (x86)\\GnuPG\\bin\\gpg.exe"
+    raise NotImplementedError(
+        "Unknown OS, please define where the gpg executable binary can be located"
+    )
+    return ""
+
+
+@fixture()
+def test_gpg_object(test_gpg_binary_location):
+    gpg = GPG(test_gpg_binary_location)
+    return gpg
+
+@fixture
+def test_passphrase():
+    return "JosiahCarberry1929/13/09"
+
+
+@fixture
+def test_gpg_key(test_gpg_object: GPG, test_passphrase: str) -> GenKey:
+    key_input = test_gpg_object.gen_key_input(
+        key_type="RSA",
+        key_length=1024,
+        Passphrase=test_passphrase,
+        key_usage="sign encrypt",
+    )
+    key = test_gpg_object.gen_key(key_input)
+    yield key
+    test_gpg_object.delete_keys(key.fingerprint, True, passphrase=test_passphrase)
+    test_gpg_object.delete_keys(key.fingerprint, passphrase=test_passphrase)
+    
+
+
+@fixture
+def test_user() -> User:
+    return User(name="test_user",
+    email="test@email.com",
+    pubkey_fingerprints=test_gpg_key.fingerprint)
+
+@fixture
+def test_participant( test_date_of_birth: str, test_nhi:str) -> Participant:
+    return Participant(
+        gender="test_gender",
+        ethnicity="test_ethnicity",
+        project="test_project",
+        raw_data= {"ignore_me":"do_not_ingest!"},
+        date_of_birth= datetime.today.isoformat(),
+        nhi_number=test_nhi,
+        recipients= None
+    )
+
+# @fixture
+# def RO_Participant()
