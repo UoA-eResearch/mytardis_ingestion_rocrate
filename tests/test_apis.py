@@ -162,7 +162,7 @@ def test_request_idc11_data(
             status=200,
             json=test_icd11_condition,
         )
-        icd_11_data = idc11_agent._request_ICD11_data(
+        icd_11_data = idc11_agent.request_ICD11_data(
             test_icd_11_code, idc11_agent.default_linearizationname
         )
         assert icd_11_data == test_icd11_condition
@@ -175,7 +175,7 @@ def test_request_idc11_data(
             status=400,
             json={},
         )
-        icd_11_data = idc11_agent._request_ICD11_data(
+        icd_11_data = idc11_agent.request_ICD11_data(
             test_icd_11_code, idc11_agent.default_linearizationname
         )
         assert icd_11_data is None
@@ -207,5 +207,3 @@ def test_update_medical_entity(
                 test_medical_condition
             )
             assert updated_medical_condition == test_updated_medical_condition
-
-

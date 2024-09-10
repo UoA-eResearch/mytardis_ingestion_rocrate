@@ -64,7 +64,7 @@ class ICD11ApiAgent:
             )
             self.token = ""
 
-    def _request_ICD11_data(self, code: str, linearizationname: str) -> Any:
+    def request_ICD11_data(self, code: str, linearizationname: str) -> Any:
         """
         Request data from the ICD-11 based on the ICD-11 code in a specific linearization
         """
@@ -100,7 +100,7 @@ class ICD11ApiAgent:
             MedicalCondition: the Medical condition with any relevant ICD-11 data
         """
         try:
-            ICD11_data = self._request_ICD11_data(
+            ICD11_data = self.request_ICD11_data(
                 medical_condition.code, self.default_linearizationname
             )
             if ICD11_data is None:
