@@ -33,11 +33,12 @@ from datetime import datetime
 from gnupg import GPG, GenKey
 
 from rocrate.model import ContextEntity as ROContextEntity
+from rocrate.model import EncryptedContextEntity as ROEncryptedContextEntity
 
 THIS_DIR = pathlib.Path(__file__).absolute().parent
 TEST_DATA_NAME = "examples_for_test"
 
-@fixture(name=crate)
+@fixture(name="crate")
 def test_ro_crate() -> ROCrate:
     return ROCrate()
 
@@ -690,19 +691,19 @@ def test_updated_medical_condition(
 def test_RO_crate_medical_conditon(crate:ROCrate, test_medical_condition:MedicalCondition) -> ROContextEntity:
     return ROContextEntity(
         crate,
-        identifier=test_medical_condition,
+        identifier=test_medical_condition.id,
         properties={
             "@type": "MedicalCondition",
             "name": test_medical_condition.code,
             "code_type": test_medical_condition.code_type,
             "code_source": test_medical_condition.code_source,
-            "code_text": test_medical_condition.code_text
+            "code_text": [test_medical_condition.code_text]
         }
     )
 
 @fixture
 def test_date_of_birth() -> str:
-    return datetime.today.isoformat()
+    return datetime.today().isoformat()
 
 
 @fixture
@@ -752,22 +753,57 @@ def test_gpg_key(test_gpg_object: GPG, test_passphrase: str) -> GenKey:
 
 
 @fixture
-def test_user() -> User:
+def test_user(test_gpg_key: GenKey) -> User:
     return User(name="test_user",
     email="test@email.com",
-    pubkey_fingerprints=test_gpg_key.fingerprint)
+    pubkey_fingerprints=[test_gpg_key.fingerprint],
+    affiliation=UOA,
+    mt_identifiers=[])
 
 @fixture
-def test_participant( test_date_of_birth: str, test_nhi:str) -> Participant:
+def test_participant( test_date_of_birth: str, test_nhi:str, test_user: User) -> Participant:
     return Participant(
+        name="test_name",
         gender="test_gender",
         ethnicity="test_ethnicity",
         project="test_project",
         raw_data= {"ignore_me":"do_not_ingest!"},
-        date_of_birth= datetime.today.isoformat(),
+        date_of_birth= test_date_of_birth,
         nhi_number=test_nhi,
-        recipients= None
+        recipients= [test_user],
+        description="test_participant_description",
     )
 
-# @fixture
-# def RO_Participant()
+@fixture
+def ro_participant_sensitive(test_participant:Participant, test_user:User, crate:ROCrate) -> ROEncryptedContextEntity:
+    sensitive_data =  ROEncryptedContextEntity(
+        crate=crate,
+        identifier=slugify.slugify(f"{test_participant.id}-sensitive"),
+        properties={
+            "@type": "MedicalEntity",
+            "name": test_participant.name,
+            "NHI number": test_participant.nhi_number or "N/A",
+            "date_of_birth": test_participant.date_of_birth,
+            "parents": [test_participant.id]
+        }
+    )
+    sensitive_data.append_to("recipients", test_user)
+    return sensitive_data
+
+@fixture
+def test_RO_Participant(test_participant:Participant, crate:ROCrate, ro_participant_sensitive:ROEncryptedContextEntity) -> ROContextEntity:
+    return ROContextEntity(
+        crate=crate,
+        identifier=test_participant.id,
+        properties={
+            "@type": ["Person", "MedicalEntity", "Patient"],
+            "name": test_participant.name,
+            "description": test_participant.description,
+            "project": test_participant.project,
+            "gender": test_participant.gender,
+            "ethnicity": test_participant.ethnicity,
+            "sensitive": [{"@id":ro_participant_sensitive.id},],
+            'mytardis_classification': 'DataClassification.SENSITIVE'
+        }
+    )
+
