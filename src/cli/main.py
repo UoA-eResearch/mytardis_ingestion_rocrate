@@ -206,11 +206,11 @@ def abi(
     help="replace default temporary file location",
 )
 @click.option(
-    "--seperate_manifests",
+    "--separate_manifests",
     type=bool,
     is_flag=True,
     default=False,
-    help="generate a seperate copy of any file manifest before output",
+    help="generate a separate copy of any file manifest before output",
 )
 def print_lab(  # pylint: disable=too-many-statements,too-many-branches
     input_metadata: Path,
@@ -230,7 +230,7 @@ def print_lab(  # pylint: disable=too-many-statements,too-many-branches
     split_datasets: Optional[bool],
     dry_run: Optional[bool],
     tmp_dir: Optional[Path],
-    seperate_manifests: Optional[bool],
+    separate_manifests: Optional[bool],
 ) -> None:
     """
     Create an RO-Crate based on a Print Lab metadata file
@@ -327,7 +327,7 @@ def print_lab(  # pylint: disable=too-many-statements,too-many-branches
                 crate_destination,
                 crate_destination,
                 True,
-                seperate_manifests,
+                separate_manifests,
             )
             logger.info("Bulk Encrypting RO-Crate")
             target = (
@@ -343,7 +343,7 @@ def print_lab(  # pylint: disable=too-many-statements,too-many-branches
             )
         else:
             archive_crate(
-                archive_type, final_output, crate_destination, True, seperate_manifests
+                archive_type, final_output, crate_destination, True, separate_manifests
             )
 
 
