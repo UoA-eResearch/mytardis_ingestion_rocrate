@@ -192,7 +192,27 @@ def abi(
     default=False,
     help="Bulk encrypt the entire crate or archive",
 )
-def print_lab(  # pylint: disable=too-many-statements
+@click.option(
+    "--dry-run",
+    "-d",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="only generate metadata",
+)
+@click.option(
+    "--tmp_dir",
+    type=Path,
+    help="replace default temporary file location",
+)
+@click.option(
+    "--seperate_manifests",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="generate a seperate copy of any file manifest before output",
+)
+def print_lab(  # pylint: disable=too-many-statements,too-many-branches
     input_metadata: Path,
     output: Path,
     pubkey_fingerprints: list[str],
@@ -208,10 +228,15 @@ def print_lab(  # pylint: disable=too-many-statements
     duplicate_directory: Optional[bool],
     bulk_encrypt: Optional[bool],
     split_datasets: Optional[bool],
+    dry_run: Optional[bool],
+    tmp_dir: Optional[Path],
+    seperate_manifests: Optional[bool],
 ) -> None:
     """
     Create an RO-Crate based on a Print Lab metadata file
     """
+    if tmp_dir:
+        tempfile.tempdir = str(tmp_dir)
     output = Path(os.path.abspath(output))
     init_logging(file_name=str(log_file), level=logging.DEBUG)
     logger = logging.getLogger(__name__)
@@ -292,12 +317,18 @@ def print_lab(  # pylint: disable=too-many-statements
             crate_source=crate.source,
             crate_destination=crate_destination,
             crate_contents=manifest,
-            meta_only=False,
+            meta_only=dry_run,
         )
         if bag_crate:
             bagit_crate(crate_destination, mt_user or "")
         if bulk_encrypt:
-            archive_crate(archive_type, crate_destination, crate_destination, True)
+            archive_crate(
+                archive_type,
+                crate_destination,
+                crate_destination,
+                True,
+                seperate_manifests,
+            )
             logger.info("Bulk Encrypting RO-Crate")
             target = (
                 crate_destination.with_suffix("." + archive_type)
@@ -311,7 +342,9 @@ def print_lab(  # pylint: disable=too-many-statements
                 output_path=final_output,
             )
         else:
-            archive_crate(archive_type, final_output, crate_destination, True)
+            archive_crate(
+                archive_type, final_output, crate_destination, True, seperate_manifests
+            )
 
 
 def make_output_dir(output: Path, manifest_id: str) -> Path:
