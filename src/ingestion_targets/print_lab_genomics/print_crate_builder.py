@@ -63,7 +63,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 if user
             ]
             sensitive_data.append_to("recipients", recipients)
-        return self.crate.add(sensitive_data).id
+        return self.crate.add(sensitive_data)
 
     def add_medical_condition(
         self, medical_condition: MedicalCondition
@@ -138,18 +138,18 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
             participant_obj.append_to("recipients", recipients)
             return self.crate.add(participant_obj)
 
-        if participant.recipients and (
-            participant.date_of_birth or participant.nhi_number
-        ):
-            properties["sensitive"] = self._add_participant_sensitve(
-                participant, str(participant.id)
-            )
-
         participant_obj = ContextEntity(
             self.crate,
             identifier,
             properties=properties,
         )
+        if participant.recipients and (
+            participant.date_of_birth or participant.nhi_number
+        ):
+            participant_obj.append_to(
+                "sensitive",
+                self._add_participant_sensitve(participant, str(participant.id)),
+            )
         return self.crate.add(participant_obj)
 
     def add_experiment(self, experiment: Experiment) -> ContextEntity:
