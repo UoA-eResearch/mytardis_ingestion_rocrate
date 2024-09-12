@@ -201,7 +201,7 @@ def test_update_medical_entity(
     with mock.patch.object(ICD11ApiAgent, "_request_token") as _request_token:
         idc11_agent = ICD11ApiAgent()
 
-        with mock.patch.object(idc11_agent, "_request_ICD11_data") as icd_return:
+        with mock.patch.object(idc11_agent, "request_ICD11_data") as icd_return:
             icd_return.return_value = test_icd11_condition
             updated_medical_condition = idc11_agent.update_medial_entity_from_ICD11(
                 test_medical_condition
