@@ -3,18 +3,24 @@
 import pathlib
 import random
 import shutil
-from typing import Any, Dict, List
+from datetime import datetime
 from sys import platform
+from typing import Any, Dict, List
+
 import pandas as pd
 import slugify
 from faker import Faker
+from gnupg import GPG, GenKey
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
+    License,
     MTMetadata,
     Person,
     Project,
-    User
+    User,
 )
 from pytest import fixture
+from rocrate.model import ContextEntity as ROContextEntity
+from rocrate.model import EncryptedContextEntity as ROEncryptedContextEntity
 from rocrate.rocrate import ROCrate
 
 from src.ingestion_targets.print_lab_genomics.print_crate_builder import (
@@ -24,27 +30,22 @@ from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
     MedicalCondition,
     Participant,
     SampleExperiment,
-    ExtractionDataset
 )
 from src.metadata_extraction.metadata_extraction import MetadataSchema
 from src.mt_api.apiconfigs import AuthConfig
 from src.mt_api.mt_consts import UOA, MtObject
-from datetime import datetime
-from gnupg import GPG, GenKey
-
-from rocrate.model import ContextEntity as ROContextEntity
-from rocrate.model import EncryptedContextEntity as ROEncryptedContextEntity
 
 THIS_DIR = pathlib.Path(__file__).absolute().parent
 TEST_DATA_NAME = "examples_for_test"
+
 
 @fixture(name="crate")
 def test_ro_crate() -> ROCrate:
     return ROCrate()
 
+
 @fixture
-def test_print_lab_builder(crate) -> PrintLabROBuilder:
-    crate = crate
+def test_print_lab_builder(crate: ROCrate) -> PrintLabROBuilder:
     return PrintLabROBuilder(crate)
 
 
@@ -356,14 +357,14 @@ def print_lab_experiment_json() -> Dict[str, Any]:
         "@type": "DataCatalog",
         "analyate": "D",
         "approved": False,
-        "associated_disease": ["#2C10.1", "#XH8E54"],
-        "body_location": "#XA8LA4",
+        "associated_disease": [{"@id": "#2C10.1"}, {"@id": "#XH8E54"}],
+        "body_location": [{"@id": "#XA8LA4"}],
         "description": "This sample sequenced in Korea",
         "gender": "Male",
         "name": "00001-016-C0001-01-2C10.1-D-01",
-        "participant": "#20ed40c3-c5e9-5ece-b280-c34cb79169b2",
+        "participant": [{"@id": "#20ed40c3-c5e9-5ece-b280-c34cb79169b2"}],
         "project": [{"@id": "#c3a02949-204b-580c-be49-1350e3f1df9d"}],
-        "tissue_processing_method": "FFPE",
+        "tissue_processing_method": ["FFPE"],
     }
 
 
@@ -580,13 +581,9 @@ def auth(
     return AuthConfig(username=username, api_key=api_key)
 
 
-# @fixture
-# def test_metadata_schema() -> MetadataSchema:
-#     return MetadataSchema()
-
-#     schema: Dict[str, Dict[str, Any]]
-#     url: str
-#     mt_type: Optional[MtObject] = None
+@fixture
+def test_person() -> Person:
+    return Person(name="person", email="email", affiliation=UOA, mt_identifiers=[])
 
 
 @fixture
@@ -596,14 +593,12 @@ def faked_projects_row(faked_projects: pd.DataFrame) -> pd.Series:
 
 # ID is based on parent so make a consistent parent object for test metadata
 @fixture
-def test_parent_project(faked_projects_row: pd.Series) -> Project:
+def test_parent_project(faked_projects_row: pd.Series, test_person: Person) -> Project:
     row = faked_projects_row
     return Project(
         name=slugify.slugify(f'{row["Project code"]}'),
         description=slugify.slugify(f'{row["Project name"]}-{row["Project code"]}'),
-        principal_investigator=Person(
-            name="person", email="email", affiliation=UOA, mt_identifiers=[]
-        ),
+        principal_investigator=test_person,
     )
 
 
@@ -676,6 +671,7 @@ def test_medical_condition(test_icd_11_code: str) -> MedicalCondition:
         code_source="unfilled code source",
     )
 
+
 @fixture
 def test_updated_medical_condition(
     test_icd_11_code: str, test_icd_11_source: str, test_icd_11_text: str
@@ -687,8 +683,11 @@ def test_updated_medical_condition(
         code_source=test_icd_11_source,
     )
 
+
 @fixture
-def test_RO_crate_medical_conditon(crate:ROCrate, test_medical_condition:MedicalCondition) -> ROContextEntity:
+def test_ro_crate_medical_conditon(
+    crate: ROCrate, test_medical_condition: MedicalCondition
+) -> ROContextEntity:
     return ROContextEntity(
         crate,
         identifier=test_medical_condition.id,
@@ -697,43 +696,45 @@ def test_RO_crate_medical_conditon(crate:ROCrate, test_medical_condition:Medical
             "name": test_medical_condition.code,
             "code_type": test_medical_condition.code_type,
             "code_source": test_medical_condition.code_source,
-            "code_text": [test_medical_condition.code_text]
-        }
+            "code_text": [test_medical_condition.code_text],
+        },
     )
+
 
 @fixture
 def test_date_of_birth() -> str:
-    return datetime.today().isoformat()
+    return datetime.min.isoformat()
 
 
 @fixture
-def test_nhi(faker) -> str:
+def test_nhi(faker: Faker) -> str | None:
     return fake_national_health_index(faker)
+
 
 @fixture
 def test_gpg_binary_location() -> str:
     if platform in ["linux", "linux2"]:
         # linux
         return "/usr/bin/gpg"
-    elif platform == "darwin":
+    if platform == "darwin":
         # OS X
         return "/opt/homebrew/bin/gpg"
-    elif platform == "win32":
+    if platform == "win32":
         # Windows
         return "C:\\Program Files (x86)\\GnuPG\\bin\\gpg.exe"
     raise NotImplementedError(
         "Unknown OS, please define where the gpg executable binary can be located"
     )
-    return ""
 
 
 @fixture()
-def test_gpg_object(test_gpg_binary_location):
+def test_gpg_object(test_gpg_binary_location: str) -> GPG:
     gpg = GPG(test_gpg_binary_location)
     return gpg
 
+
 @fixture
-def test_passphrase():
+def test_passphrase() -> str:
     return "JosiahCarberry1929/13/09"
 
 
@@ -749,34 +750,41 @@ def test_gpg_key(test_gpg_object: GPG, test_passphrase: str) -> GenKey:
     yield key
     test_gpg_object.delete_keys(key.fingerprint, True, passphrase=test_passphrase)
     test_gpg_object.delete_keys(key.fingerprint, passphrase=test_passphrase)
-    
 
 
 @fixture
 def test_user(test_gpg_key: GenKey) -> User:
-    return User(name="test_user",
-    email="test@email.com",
-    pubkey_fingerprints=[test_gpg_key.fingerprint],
-    affiliation=UOA,
-    mt_identifiers=[])
+    return User(
+        name="test_user",
+        email="test@email.com",
+        pubkey_fingerprints=[test_gpg_key.fingerprint],
+        affiliation=UOA,
+        mt_identifiers=[],
+    )
+
 
 @fixture
-def test_participant( test_date_of_birth: str, test_nhi:str, test_user: User) -> Participant:
+def test_participant(
+    test_date_of_birth: str, test_nhi: str, test_user: User
+) -> Participant:
     return Participant(
         name="test_name",
         gender="test_gender",
         ethnicity="test_ethnicity",
         project="test_project",
-        raw_data= {"ignore_me":"do_not_ingest!"},
-        date_of_birth= test_date_of_birth,
+        raw_data={"ignore_me": "do_not_ingest!"},
+        date_of_birth=test_date_of_birth,
         nhi_number=test_nhi,
-        recipients= [test_user],
+        recipients=[test_user],
         description="test_participant_description",
     )
 
+
 @fixture
-def ro_participant_sensitive(test_participant:Participant, test_user:User, crate:ROCrate) -> ROEncryptedContextEntity:
-    sensitive_data =  ROEncryptedContextEntity(
+def ro_participant_sensitive(
+    test_participant: Participant, test_user: User, crate: ROCrate
+) -> ROEncryptedContextEntity:
+    sensitive_data = ROEncryptedContextEntity(
         crate=crate,
         identifier=slugify.slugify(f"{test_participant.id}-sensitive"),
         properties={
@@ -784,14 +792,19 @@ def ro_participant_sensitive(test_participant:Participant, test_user:User, crate
             "name": test_participant.name,
             "NHI number": test_participant.nhi_number or "N/A",
             "date_of_birth": test_participant.date_of_birth,
-            "parents": [test_participant.id]
-        }
+            "parents": [test_participant.id],
+        },
     )
     sensitive_data.append_to("recipients", test_user)
     return sensitive_data
 
+
 @fixture
-def test_RO_Participant(test_participant:Participant, crate:ROCrate, ro_participant_sensitive:ROEncryptedContextEntity) -> ROContextEntity:
+def test_ro_participant(
+    test_participant: Participant,
+    crate: ROCrate,
+    ro_participant_sensitive: ROEncryptedContextEntity,
+) -> ROContextEntity:
     return ROContextEntity(
         crate=crate,
         identifier=test_participant.id,
@@ -802,8 +815,78 @@ def test_RO_Participant(test_participant:Participant, crate:ROCrate, ro_particip
             "project": test_participant.project,
             "gender": test_participant.gender,
             "ethnicity": test_participant.ethnicity,
-            "sensitive": [{"@id":ro_participant_sensitive.id},],
-            'mytardis_classification': 'DataClassification.SENSITIVE'
-        }
+            "sensitive": [
+                {"@id": ro_participant_sensitive.id},
+            ],
+            "mytardis_classification": "DataClassification.SENSITIVE",
+        },
     )
 
+
+@fixture
+def test_sample_experiment(
+    test_parent_project: Project,
+    test_user: User,
+    test_person: Person,
+    test_medical_condition: MedicalCondition,
+    test_participant: Participant,
+) -> SampleExperiment:
+    return SampleExperiment(
+        name="experiment_name",
+        description="experiment description",
+        mt_identifiers=["experiment"],
+        date_created=datetime.min,
+        date_modified=[datetime.min],
+        additional_properties={"test_extra": "test_value"},
+        contributors=[
+            test_person,
+        ],
+        mytardis_classification="DataClassification.SENSITIVE",
+        projects=[test_parent_project],
+        created_by=test_user,
+        sd_license=License(
+            url="www.google.com", name="test_lisence", description="lisence description"
+        ),
+        gender="test_gender",
+        associated_disease=[test_medical_condition],
+        body_location=test_medical_condition,
+        tissue_processing_method="test_proessing_method",
+        participant=test_participant,
+        analyate="A",
+        portion="most of it",
+        schema_type=["DataCatalog", "BioSample"],
+    )
+
+
+@fixture
+def test_ro_sample_experiment(
+    test_sample_experiment: SampleExperiment,
+    crate: ROCrate,
+    test_medical_condition: MedicalCondition,
+) -> ROContextEntity:
+    return ROContextEntity(
+        crate=crate,
+        identifier="#d57cc164-f72d-5a96-b3e4-5ef1b81623b7",
+        properties={
+            "@type": "DataCatalog",
+            "analyate": test_sample_experiment.analyate,
+            "approved": test_sample_experiment.approved,
+            "associated_disease": [{"@id": test_medical_condition.roc_id}],
+            "body_location": [{"@id": test_medical_condition.roc_id}],
+            "createdBy": [{"@id": test_sample_experiment.created_by.roc_id}],
+            "dateCreated": test_sample_experiment.date_created.isoformat(),
+            "dateModified": [test_sample_experiment.date_created.isoformat()],
+            "datePublished": test_sample_experiment.date_created.isoformat(),
+            "description": test_sample_experiment.description,
+            "gender": test_sample_experiment.gender,
+            "mytardis_classification": "DataClassification.SENSITIVE",
+            "name": test_sample_experiment.name,
+            "participant": [{"@id": test_sample_experiment.participant.roc_id}],
+            "project": [{"@id": test_sample_experiment.projects[0].roc_id}],
+            "sdLicense": [{"@id": test_sample_experiment.sd_license.roc_id}],
+            "test_extra": "test_value",
+            "tissue_processing_method": [
+                test_sample_experiment.tissue_processing_method
+            ],
+        },
+    )

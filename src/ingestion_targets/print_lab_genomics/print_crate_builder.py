@@ -76,7 +76,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         Returns:
             ContextEntity: a context entity representing the medical condition
         """
-        identifier = medical_condition.identifier
+        identifier = medical_condition.roc_id
         if condition := self.crate.dereference(identifier):
             return condition
         properties: Dict[str, str | list[str] | dict[str, Any]] = {
@@ -110,7 +110,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 now stored in the RO-Crate
         """
 
-        identifier = participant.id
+        identifier = participant.roc_id
         if participant_obj := self.crate.dereference(identifier):
             return participant_obj
         properties: Dict[str, str | list[str] | dict[str, Any]] = {
@@ -162,37 +162,14 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
             return super().add_experiment(experiment)
         properties: Dict[str, str | list[str] | dict[str, Any]] = {
             "@type": "DataCatalog",
-            "participant": (
-                self.add_participant(experiment.participant).id
-                if experiment.participant
-                else ""
-            ),
             "gender": experiment.gender if experiment.gender else "",
             "name": experiment.name,
-            "associated_disease": (
-                [
-                    self.add_medical_condition(condition).id
-                    for condition in experiment.associated_disease
-                ]
-                if experiment.associated_disease
-                else []
-            ),
-            "body_location": (
-                self.add_medical_condition(experiment.body_location).id
-                if experiment.body_location
-                else ""
-            ),
-            "tissue_processing_method": (
-                experiment.tissue_processing_method
-                if experiment.tissue_processing_method
-                else ""
-            ),
             "analyate": experiment.analyate if experiment.analyate else "",
             "description": experiment.description,
         }
         projects = []
         for project in experiment.projects:
-            if crate_project := self.crate.dereference("#" + str(project.id)):
+            if crate_project := self.crate.dereference(project.roc_id):
                 projects.append(crate_project)
             else:
                 projects.append(self.add_project(project))
@@ -200,6 +177,26 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
             experiment=experiment, properties=properties, projects=projects
         )
 
+        associated_diseases = (
+            [
+                self.add_medical_condition(condition)
+                for condition in experiment.associated_disease
+            ]
+            if experiment.associated_disease
+            else []
+        )
+        experiment_obj.append_to("associated_disease", associated_diseases)
+        body_location = (
+            self.add_medical_condition(experiment.body_location)
+            if experiment.body_location
+            else None
+        )
+        experiment_obj.append_to(
+            "tissue_processing_method", experiment.tissue_processing_method
+        )
+        experiment_obj.append_to("body_location", body_location)
+        participant = self.add_participant(experiment.participant)
+        experiment_obj.append_to("participant", participant)
         return self.crate.add(experiment_obj)
 
     def add_dataset(self, dataset: Dataset) -> ContextEntity:

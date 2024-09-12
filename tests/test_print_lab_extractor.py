@@ -98,9 +98,16 @@ def test_faked_dataset_extraction(
         dataset_sheet=faked_datasets, experiments=experiment_dict
     )
     assert len(datasets) == faked_datasets.shape[0]
+    test_print_lab_builder.crate.source = Path("crate_soruce")
     for dataset in datasets.values():
         dataset_entity = test_print_lab_builder.add_dataset(dataset)
         assert dataset_entity
+        # datasets only differ from default datasets on crate_children field
+        if dataset.copy_unlisted:
+            assert (
+                Path(dataset_entity.source).as_posix()
+                == (dataset_entity.crate.source / dataset.directory).as_posix()
+            )
 
 
 def test_faked_datafie_extraction(
@@ -146,6 +153,7 @@ def mocked_project_class() -> MagicMock:
     """
     Project = MagicMock()
     Project.return_value.id = "mocked project"
+    Project.return_value.roc_id = "#mocked project"
     Project.return_value.principal_investigator.id = "doctor_hotel"
     Project.return_value.principal_investigator.affiliation.id = "Doctor Hotel's Hotel"
     Project.return_value.institution.id = "Doctor Hotel's Hotel"
@@ -181,7 +189,7 @@ def test_faked_samples_extraction(  # pylint: disable=too-many-locals
     ICD_11_Api_Agent.return_value.update_medial_entity_from_ICD11 = x
     Participant = MagicMock()
     Participant.return_value.id = "doctor_house"
-
+    Participant.return_value.roc_id = "#doctor_house"
     # mock project fields (RO-crate ids can't be mocks)
     Project = mocked_project_class
 

@@ -68,7 +68,7 @@ class SampleExperiment(
     participant: Participant
     analyate: Optional[str]
     portion: Optional[str]
-    schema_type = "DataCatalog"
+    schema_type = ["DataCatalog", "BioSample"]
 
 
 @dataclass(kw_only=True)
