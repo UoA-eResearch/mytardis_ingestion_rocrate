@@ -33,7 +33,7 @@ jobs:
       run: poetry run python -m black --check --diff .
 
     - name: pytest - run the tests
-       run: poetry run python -m pytest -v --cov=src/ tests/
+      run: poetry run python -m pytest -vv
 
     - name: pylint - static code analysis
       run: poetry run python -m pylint --rcfile .pylintrc src/
