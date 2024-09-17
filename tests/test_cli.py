@@ -40,6 +40,7 @@ runner = CliRunner()
         )
     ),
 )
+@patch("mytardis_rocrate_builder.rocrate_writer.receive_keys_for_crate", MagicMock())
 def test_print_lab_cli(  # pylint: disable=too-many-arguments
     mock_rest_auth_request: MagicMock,
     mock_rest_no_auth_request: MagicMock,
