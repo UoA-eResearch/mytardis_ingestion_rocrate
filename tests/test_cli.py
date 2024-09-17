@@ -9,8 +9,9 @@ from mock import MagicMock, patch
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import Person
 from pytest import mark
 from requests import Response
-from src.mt_api.mt_consts import UOA, MY_TARDIS_USER
+
 from src.cli.main import print_lab
+from src.mt_api.mt_consts import MY_TARDIS_USER, UOA
 
 runner = CliRunner()
 
@@ -84,7 +85,7 @@ def test_print_lab_cli(  # pylint: disable=too-many-arguments
         args.append("--duplicate_directory")
     if split_datasets:
         args.append("--split_datasets")
-    MY_TARDIS_USER.pubkey_fingerprints =[test_gpg_key.fingerprint]
+    MY_TARDIS_USER.pubkey_fingerprints = [test_gpg_key.fingerprint]
     response = runner.invoke(print_lab, args=args)
     # assert response.stdout == ""
     assert response.exit_code == 0
