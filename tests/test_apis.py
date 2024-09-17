@@ -139,10 +139,10 @@ def test_request_idc11_data(
     ICD11Auth = MagicMock()
     ICD11Auth.ICD11client_id.return_value = "test_client_id"
     ICD11Auth.ICD11client_secret.return_value = "test_client_secret"
-    ICD11ApiAgent.token = "Return_token"
     with mock.patch.object(ICD11ApiAgent, "_request_token") as _request_token:
 
         idc11_agent = ICD11ApiAgent()
+        idc11_agent.token = "Return_token"
         assert idc11_agent.token == "Return_token"
 
         code_request = f"https://id.who.int/icd/release/11/{idc11_agent.releaseId}/{idc11_agent.default_linearizationname}/codeinfo/{test_icd_11_code}?flexiblemode=false&convertToTerminalCodes=false"  # pylint: disable = line-too-long

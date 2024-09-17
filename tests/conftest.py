@@ -332,6 +332,19 @@ def test_data_dir(tmpdir: pathlib.Path) -> pathlib.Path:
 
 
 @fixture
+def test_log_file(tmpdir: pathlib.Path) -> pathlib.Path:
+    d = tmpdir / "logfile.txt"
+    return d
+
+
+@fixture
+def test_output_dir(tmpdir: pathlib.Path) -> pathlib.Path:
+    d = tmpdir / "output"
+    d.mkdir(parents=True)
+    return d
+
+
+@fixture
 def test_print_lab_data(test_data_dir: pathlib.Path) -> pathlib.Path:
     return test_data_dir / "print_lab_test/sampledata.xlsx"
 
