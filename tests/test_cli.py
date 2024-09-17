@@ -1,5 +1,6 @@
 """Test the click CLI application
 """
+
 from pathlib import Path
 
 from click.testing import CliRunner
@@ -39,7 +40,7 @@ runner = CliRunner()
         )
     ),
 )
-def test_print_lab_cli(#pylint: disable=too-many-arguments
+def test_print_lab_cli(  # pylint: disable=too-many-arguments
     mock_rest_auth_request: MagicMock,
     mock_rest_no_auth_request: MagicMock,
     mock_icd11_agent: MagicMock,
@@ -74,7 +75,7 @@ def test_print_lab_cli(#pylint: disable=too-many-arguments
         "--output",
         str(test_output_dir),
         "--gpg_binary",
-        test_gpg_binary_location
+        test_gpg_binary_location,
     ]
     if archive_type:
         args.extend(["-a", archive_type])
