@@ -6,6 +6,7 @@ from typing import Any, Optional
 
 import requests
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from requests.exceptions import RequestException
 
 from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
     MedicalCondition,
@@ -34,6 +35,7 @@ class ICD11ApiAgent:
         self.default_linearizationname = "mms"
         self.releaseId = "2024-01"
         self.auth_details = ICD11Auth()
+        self.token = ""
         self._request_token()
         self.headers = {
             "Authorization": "Bearer " + str(self.token),
@@ -54,15 +56,21 @@ class ICD11ApiAgent:
             "scope": scope,
             "grant_type": grant_type,
         }
-        r = requests.post(token_endpoint, data=payload, verify=True, timeout=5)
-        if r.status_code == 200:
-            self.token = r.json().get("access_token")
-        else:
+        try:
+            r = requests.post(token_endpoint, data=payload, verify=True, timeout=5)
+            if r.status_code == 200:
+                self.token = r.json().get("access_token")
+                return
+
             logger.error(
                 "Bad Token response from ICD-11, data will not be updated via API.\n %r",
                 r,
             )
-            self.token = ""
+        except RequestException as e:
+            logger.error(
+                "Connection error from ICD-11, data will not be updated via API.\n %r",
+                e,
+            )
 
     def request_ICD11_data(self, code: str, linearizationname: str) -> Any:
         """
