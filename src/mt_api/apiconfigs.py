@@ -25,26 +25,19 @@ logger = logging.getLogger(__name__)
 class AuthConfig(BaseModel, AuthBase):
     """Attaches HTTP headers for Tastypie API key Authentication to the given
 
-        Because this ingestion script will sit inside the private network and will
-        act as the primary source for uploading to myTardis, authentication via a
-        username and api key is used. The class functions to format the HTTP(S)
-        header into an appropriate form for the MyTardis authentication module.
+    Because this ingestion script will sit inside the private network and will
+    act as the primary source for uploading to myTardis, authentication via a
+    username and api key is used. The class functions to format the HTTP(S)
+    header into an appropriate form for the MyTardis authentication module.
 
-    UOA = Organisation(
-        identifiers=["https://ror.org/03b94tp07"],
-        name="The University of Auckland | Waipapa Taumata Rau",
-        url="https://auckland.ac.nz",
-        location="Auckland, New Zealand",
-        research_org=True,
-    )
 
-        Attributes:
-            username: str
-                A MyTardis specific username. For the UoA instance this is usually a
-                UPI
-            api_key: str
-                The API key generated through MyTardis that identifies the user with
-                username
+    Attributes:
+        username: str
+            A MyTardis specific username. For the UoA instance this is usually a
+            UPI
+        api_key: str
+            The API key generated through MyTardis that identifies the user with
+            username
     """
 
     username: str
@@ -231,7 +224,7 @@ class MyTardisRestAgent:  # pylint: disable=R0903, R0913
                 "bad API response getting person data for %s. Error: %s.", upi, e
             )
 
-        return Person(name=name, email=email, affiliation=UOA, identifiers=[upi])
+        return Person(name=name, email=email, affiliation=UOA, mt_identifiers=[upi])
 
     def no_auth_request(
         self,

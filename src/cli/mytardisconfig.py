@@ -80,6 +80,13 @@ class ConnectionConfig(
         return urljoin(self.hostname, self._api_stub)
 
 
+class PubKeyConfig(BaseModel):
+    """Class for holding public keys and names loaded from env configs"""
+
+    key: Optional[str] = None
+    name: Optional[str] = None
+
+
 class MyTardisEnvConfig(BaseSettings):
     """Reads a MyTardis config file to fill out API Keys and Default namespaces
 
@@ -91,13 +98,12 @@ class MyTardisEnvConfig(BaseSettings):
             instance of Pydantic connection model
         default_schema : SchemaConfig
             instance of Pydantic schema model, used to fill namespaces
-        archive: TimeOffsetConfig
-            instance of Pydantic time offset model
     """
 
     auth: AuthConfig
     connection: ConnectionConfig
     default_schema: SchemaConfig
+    mytardis_pubkey: PubKeyConfig
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

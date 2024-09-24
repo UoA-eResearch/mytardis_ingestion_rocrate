@@ -1,9 +1,13 @@
 """Metadata conversion and generation"""
 
 import logging
-from typing import Any, Dict
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
 
-from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import MTMetadata
+from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
+    MTMetadata,
+    MyTardisContextObject,
+)
 from requests.exceptions import RequestException
 
 from src.cli.mytardisconfig import SchemaConfig
@@ -22,6 +26,15 @@ MT_METADATA_TYPE = {
     "default": "STRING",
 }
 logger = logging.getLogger(__name__)
+
+
+@dataclass(kw_only=True)
+class MetadataSchema:
+    """A class for holding bundled information about a metadata schema"""
+
+    schema: Dict[str, Dict[str, Any]]
+    url: str
+    mt_type: Optional[MtObject] = None
 
 
 def get_metadata_type(type_enum: int) -> str:
@@ -47,11 +60,16 @@ class MetadataHanlder:
 
     api_agent: MyTardisRestAgent
     metadata_schemas: Dict[MtObject, Dict[Any, Any]]
+    metadata_collected: Dict[str, MTMetadata] = {}
+    pubkey_fingerprints: Optional[List[str]] = None
 
     def __init__(
-        self, api_agent: MyTardisRestAgent, schema_namespaces: Dict[MtObject, str]
+        self,
+        api_agent: MyTardisRestAgent,
+        schema_namespaces: Dict[MtObject, str],
     ):
         self.api_agent = api_agent
+        self.schema_namespaces = schema_namespaces
         self.request_metadata_dicts(schema_namespaces)
 
     def request_metadata_schema(self, schema_namespace: str) -> Dict[Any, Any]:
@@ -122,12 +140,44 @@ class MetadataHanlder:
             return {}
         return all_schema_objects
 
+    def create_metadata_from_schema(
+        self,
+        input_metadata: Dict[str, Any],
+        mt_object: MtObject,
+        collect_all: bool,
+        parent: MyTardisContextObject,
+    ) -> Dict[str, MTMetadata]:
+        """Create a new metadata object from schemas
+
+        Args:
+            input_metadata (Dict[str, Any]): input metadata to be read in
+            mt_object (MtObject): what kind of mytardis object is this
+            collect_all (bool): collect all metadata from this object
+            parent (MyTardisContextObject): what parent should we associate this metadata with
+
+        Returns:
+            Dict[str, MTMetadata]: all the metadata collected
+        """
+        metadata_schema = MetadataSchema(
+            schema=self.get_mtobj_schema(mt_object),
+            url=self.schema_namespaces.get(mt_object) or "",
+            mt_type=mt_object,
+        )
+        metadata_dict = create_metadata_objects(
+            input_metadata=input_metadata,
+            metadata_schema=metadata_schema,
+            collect_all=collect_all,
+            parent=parent,
+        )
+        self.metadata_collected.update(metadata_dict)
+        return metadata_dict
+
 
 def create_metadata_objects(
     input_metadata: Dict[str, Any],
-    metadata_schema: Dict[str, Dict[str, Any]],
+    metadata_schema: MetadataSchema,
     collect_all: bool = False,
-    parent_id: str | int | float | None = None,
+    parent: Optional[MyTardisContextObject] = None,
 ) -> Dict[str, MTMetadata]:
     """Create RO-Crate metadata objects from an input dictionary and a schema for lookup
 
@@ -140,20 +190,22 @@ def create_metadata_objects(
     """
     metadata_dict: Dict[str, MTMetadata] = {}
     for meta_key, meta_value in input_metadata.items():
-        if (meta_key and meta_value) and (collect_all or meta_key in metadata_schema):
+        if (meta_key and meta_value) and (
+            collect_all or meta_key in metadata_schema.schema
+        ):
             # if we have metadata and the info to store it
             metadata_type = 2
             metadata_sensitive = False
-            if metadata_object := metadata_schema.get(meta_key):
+            if metadata_object := metadata_schema.schema.get(meta_key):
                 metadata_type = metadata_object.get("data_type")  # type: ignore
                 metadata_sensitive = bool(metadata_object.get("sensitive"))
             metadata_dict[meta_key] = MTMetadata(
-                ro_crate_id=meta_key,
                 name=meta_key,
                 value=str(meta_value),  # if metadata_type == 2 else meta_value,
                 mt_type=get_metadata_type(int(metadata_type)),
-                sensitive=metadata_sensitive is True,
-                parents=[str(parent_id)] if parent_id else None,
+                mt_schema=metadata_schema.url,
+                sensitive=metadata_sensitive,
+                parent=parent if parent else None,
             )
     return metadata_dict
 

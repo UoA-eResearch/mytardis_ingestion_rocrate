@@ -202,9 +202,9 @@
             "identifier":true,
             "sensitive":true
         },
-        "Sex": {
+        "gender": {
             "type" : "string",
-            "input_name": "Sex",
+            "input_name": "gender",
             "metadata":true,
             "identifier":false,
             "sensitive":false

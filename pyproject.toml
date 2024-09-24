@@ -7,30 +7,28 @@ readme = "README.md"
 packages = [{include = "src"}]
 
 [tool.poetry.dependencies]
-python = ">=3.11,<3.12"
-passpy = "^1.0.2"
-ldap3 = "^2.9.1"
-python-gnupg = "^0.5.1"
+python = ">=3.10,<=3.12.5"
 python-slugify = "^8.0.1"
-pytest-icdiff = "^0.8"
-pytest-deadfixtures = "^2.2.1"
-bagit = "^1.8.1"
 pylint = "^3.1.0"
 mypy = "^1.8.0"
-pytest = "^8.0.2"
 slugify = "^0.0.1"
-typer = "^0.9.0"
-logging = "^0.4.9.6"
 pandas = "^2.2.1"
-openpyxl = "^3.1.2"
 xlrd = "^2.0.1"
 pydantic = "^2.6.3"
 backoff = "^2.2.1"
 requests = "^2.31.0"
-build = "^1.1.1"
 pydantic-settings = "^2.2.1"
-ro-crate-py = {git = "https://github.com/UoA-eResearch/ro-crate-py.git",  branch = "encrypted-metadata"}
 mytardis-rocrate-builder = {git = "https://github.com/JLoveUOA/mytardis_rocrate_builder"}
+ro-crate-py = {git = "https://github.com/UoA-eResearch/ro-crate-py.git",  branch = "encrypted-metadata"}
+openpyxl = "^3.1.5"
+click = "^8.1.7"
+pre-commit = "^3.8.0"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.0.2"
+faker = "^27.4.0"
+responses = "^0.25.3"
+
 
 [tool.poetry.group.dev.dependencies]
 pylint = "^3.1.0"
@@ -39,32 +37,13 @@ flake8-bandit = "^4.1.1"
 flake8-mypy = "^17.8.0"
 flake8-isort = "^6.1.0"
 flake8-black = "^0.3.6"
-interrogate = "^1.5.0"
 coverage = {extras = ["toml"], version = "^7.3.1"}
 toml = "^0.10.2"
 types-python-slugify = "^8.0.0.3"
+deptry = "^0.16.2"
 
 [tool.isort]
 profile = "black"
-
-[tool.interrogate]
-ignore-init-method = true
-ignore-init-module = true
-ignore-magic = false
-ignore-semiprivate = false
-ignore-private = false
-ignore-property-decorators = false
-ignore-module = true
-ignore-nested-functions = false
-ignore-nested-classes = true
-ignore-setters = false
-exclude = ["tests", "docs", "build"]
-ignore-regex = ["^get$", "^mock_.*", ".*BaseClass.*", "^test$"]
-verbose = 2
-quiet = false
-whitelist-regex = []
-color = true
-fail-under = 50
 
 [tool.mypy]
 files = [

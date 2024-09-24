@@ -5,7 +5,10 @@ import logging
 from typing import Any, Dict
 
 from mytardis_rocrate_builder.rocrate_builder import ROBuilder
-from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import Experiment
+from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
+    Dataset,
+    Experiment,
+)
 from rocrate.model.contextentity import ContextEntity
 from rocrate.model.encryptedcontextentity import (  # pylint: disable=import-error, no-name-in-module
     EncryptedContextEntity,
@@ -13,6 +16,7 @@ from rocrate.model.encryptedcontextentity import (  # pylint: disable=import-err
 from slugify import slugify
 
 from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
+    ExtractionDataset,
     MedicalCondition,
     Participant,
     SampleExperiment,
@@ -51,9 +55,15 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 "date_of_birth": participant.date_of_birth,
                 "parents": [participant_id],
             },
-            pubkey_fingerprints=[],
         )
-        return self.crate.add(sensitive_data).id
+        if participant.recipients:
+            recipients = [
+                self.crate.dereference(user.roc_id) or self.add_user(user)
+                for user in participant.recipients
+                if user
+            ]
+            sensitive_data.append_to("recipients", recipients)
+        return self.crate.add(sensitive_data)
 
     def add_medical_condition(
         self, medical_condition: MedicalCondition
@@ -66,21 +76,22 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         Returns:
             ContextEntity: a context entity representing the medical condition
         """
-        identifier = slugify(f"{medical_condition.code_type}-{medical_condition.name}")
+        identifier = medical_condition.roc_id
         if condition := self.crate.dereference(identifier):
             return condition
         properties: Dict[str, str | list[str] | dict[str, Any]] = {
             "@type": "MedicalCondition",
-            "name": medical_condition.name,
+            "name": medical_condition.code,
             "code_type": medical_condition.code_type,
-            "code_source": medical_condition.code_source.as_posix(),
-            "code_text": medical_condition.code_text,
+            "code_source": medical_condition.code_source,
         }
         medical_condition_obj = ContextEntity(
             self.crate,
             identifier,
             properties=properties,
         )
+        if medical_condition.code_text:
+            medical_condition_obj.append_to("code_text", medical_condition.code_text)
         self.crate.add(medical_condition_obj)
         return medical_condition_obj
 
@@ -98,7 +109,8 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
             ContextEntity: A (poteintally encryped) context entity for this participant.
                 now stored in the RO-Crate
         """
-        identifier = participant.id
+
+        identifier = participant.roc_id
         if participant_obj := self.crate.dereference(identifier):
             return participant_obj
         properties: Dict[str, str | list[str] | dict[str, Any]] = {
@@ -106,32 +118,39 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
             "name": participant.name,
             "description": participant.description,
             "project": participant.project,
-            "sex": participant.sex,
+            "gender": participant.gender,
             "ethnicity": participant.ethnicity,
         }
 
         properties = self._update_properties(
             data_object=participant, properties=properties
         )
-        if self.crate.pubkey_fingerprints and (
-            participant.date_of_birth or participant.nhi_number
-        ):
-            properties["sensitive"] = self._add_participant_sensitve(
-                participant, str(participant.id)
-            )
-        if sensitive:
+        if sensitive and participant.recipients:
             participant_obj = EncryptedContextEntity(
                 self.crate,
                 identifier,
                 properties=properties,
             )
-            return self._add_identifiers(participant, participant_obj)
+            recipients = [
+                self.crate.dereference(participant.user.rocid) or self.add_user(user)
+                for user in participant.recipients
+            ]
+            participant_obj.append_to("recipients", recipients)
+            return self.crate.add(participant_obj)
+
         participant_obj = ContextEntity(
             self.crate,
             identifier,
             properties=properties,
         )
-        return self._add_identifiers(participant, participant_obj)
+        if participant.recipients and (
+            participant.date_of_birth or participant.nhi_number
+        ):
+            participant_obj.append_to(
+                "sensitive",
+                self._add_participant_sensitve(participant, str(participant.id)),
+            )
+        return self.crate.add(participant_obj)
 
     def add_experiment(self, experiment: Experiment) -> ContextEntity:
         """Add a sample experiment to the RO crate
@@ -139,42 +158,58 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         Args:
             experiment (Experiment): The experiment to be added to the crate
         """
-        # Note that this is being created as a data catalog object as there are no better
-        # fits
         if not isinstance(experiment, SampleExperiment):
             return super().add_experiment(experiment)
         properties: Dict[str, str | list[str] | dict[str, Any]] = {
             "@type": "DataCatalog",
-            "participant": (
-                self.add_participant(experiment.participant).id
-                if experiment.participant
-                else ""
-            ),
-            "sex": experiment.sex if experiment.sex else "",
+            "gender": experiment.gender if experiment.gender else "",
             "name": experiment.name,
-            "associated_disease": (
-                [
-                    self.add_medical_condition(condition).id
-                    for condition in experiment.associated_disease
-                ]
-                if experiment.associated_disease
-                else []
-            ),
-            "project": experiment.projects,
-            "body_location": (
-                self.add_medical_condition(experiment.body_location).id
-                if experiment.body_location
-                else ""
-            ),
-            "tissue_processing_method": (
-                experiment.tissue_processing_method
-                if experiment.tissue_processing_method
-                else ""
-            ),
             "analyate": experiment.analyate if experiment.analyate else "",
             "description": experiment.description,
         }
+        projects = []
+        for project in experiment.projects:
+            if crate_project := self.crate.dereference(project.roc_id):
+                projects.append(crate_project)
+            else:
+                projects.append(self.add_project(project))
         experiment_obj = self._update_experiment_meta(
-            experiment=experiment, properties=properties
+            experiment=experiment, properties=properties, projects=projects
         )
-        return self._add_identifiers(experiment, experiment_obj)
+
+        associated_diseases = (
+            [
+                self.add_medical_condition(condition)
+                for condition in experiment.associated_disease
+            ]
+            if experiment.associated_disease
+            else []
+        )
+        experiment_obj.append_to("associated_disease", associated_diseases)
+        body_location = (
+            self.add_medical_condition(experiment.body_location)
+            if experiment.body_location
+            else None
+        )
+        experiment_obj.append_to(
+            "tissue_processing_method", experiment.tissue_processing_method
+        )
+        experiment_obj.append_to("body_location", body_location)
+        participant = self.add_participant(experiment.participant)
+        experiment_obj.append_to("participant", participant)
+        return self.crate.add(experiment_obj)
+
+    def add_dataset(self, dataset: Dataset) -> ContextEntity:
+        """Add a dataset to the RO-Crate accounting for if unlisted cildren should be added"""
+        datset_entity = super().add_dataset(dataset)
+        if not isinstance(dataset, ExtractionDataset):
+            return datset_entity
+        if (
+            dataset.copy_unlisted
+        ):  # update source so dataset directory and all children are added
+            datset_entity.source = (
+                self.crate.source / dataset.directory
+                if self.crate.source
+                else dataset.directory
+            )
+        return datset_entity

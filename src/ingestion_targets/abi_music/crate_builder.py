@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Optional
 
-from mytardis_rocrate_builder.rocrate_dataclasses.data_class_utils import CrateManifest
+from mytardis_rocrate_builder.rocrate_dataclasses.crate_manifest import CrateManifest
 
 import src.ingestion_targets.abi_music.consts as profile_consts
 from src.cli.mytardisconfig import SchemaConfig
