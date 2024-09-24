@@ -8,8 +8,7 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
 
 from src.mt_api.mt_consts import UOA
 
-
-#default MyTardis user, overwritten by values in env
+# default MyTardis user, overwritten by values in env
 MY_TARDIS_TEST_USER = User(
     identifier="MyTardis",
     name="MyTardisUser",
