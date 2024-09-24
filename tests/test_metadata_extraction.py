@@ -79,7 +79,7 @@ def test_create_metadata_objects(
 
 
 @responses.activate
-def test_create_metadata_from_schema(
+def test_create_metadata_from_schema(  # pylint: disable:too-many-positional-arguments
     auth: AuthConfig,
     test_parent_project: Project,
     test_metadata_response: Dict[str, Any],

@@ -63,7 +63,7 @@ def test_ingestion_project() -> pd.DataFrame:
 
 
 def fake_upi(faker: Faker) -> str:
-    return faker.bothify(text="???###", letters="abcdefghijklmnopqrstuvwxyz")
+    return faker.bothify(text="????###", letters="abcdefghijklmnopqrstuvwxyz")
 
 
 def fake_icd11(faker: Faker) -> str:

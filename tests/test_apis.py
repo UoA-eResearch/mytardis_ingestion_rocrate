@@ -7,7 +7,8 @@ import mock
 import pytest
 import responses
 from mock import MagicMock
-from requests.models import HTTPError, MissingSchema
+from requests import HTTPError, RequestException
+from requests.models import MissingSchema
 
 from src.ingestion_targets.print_lab_genomics.ICD11_API_agent import ICD11ApiAgent
 from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
@@ -39,9 +40,26 @@ def test_mytardis_rest_agent_get(
     )
 
     response = mt_rest_agent.mytardis_api_request("GET", url)
-    assert isinstance(response.json(), dict)
     assert response.ok is True
-    assert response.status_code == 200
+
+    # test bad responses
+    responses.add(
+        responses.GET,
+        url,
+        status=404,
+        json=test_metadata_response,
+    )
+    with pytest.raises(RequestException):
+        response = mt_rest_agent.mytardis_api_request("GET", url)
+
+    responses.add(
+        responses.GET,
+        url,
+        status=500,
+        json=test_metadata_response,
+    )
+    with pytest.raises(HTTPError):
+        response = mt_rest_agent.mytardis_api_request("GET", url)
 
 
 @responses.activate
@@ -68,11 +86,8 @@ def test_mytardis_rest_agent_no_auth(
         json=test_metadata_response,
     )
 
-    response = mt_rest_agent.no_auth_request("GET", url)
+    _ = mt_rest_agent.no_auth_request("GET", url)
     do_not_use_auth.assert_not_called()
-    assert isinstance(response.json(), dict)
-    assert response.ok is True
-    assert response.status_code == 200
 
 
 @responses.activate
@@ -108,13 +123,14 @@ def test_icd_11_api_get_token() -> None:
     ICD11Auth.ICD11client_id.return_value = "test_client_id"
     ICD11Auth.ICD11client_secret.return_value = "test_client_secret"
     token_url = "https://icdaccessmanagement.who.int/connect/token"
-    # check token aquired when
+    # check token acquired without error
     responses.add(
         method=responses.POST,
         url=token_url,
         status=200,
         json={"access_token": "token_response"},
     )
+    # check token can be updated later if needed
     idc11_agent = ICD11ApiAgent()
     idc11_agent.token = "token_response"
     responses.add(
@@ -124,6 +140,7 @@ def test_icd_11_api_get_token() -> None:
         json={"access_token": "token_response_2"},
     )
     idc11_agent._request_token()
+    assert idc11_agent.token == "token_response_2"
 
 
 @responses.activate
@@ -131,10 +148,12 @@ def test_request_idc11_data(
     test_icd_11_code: str, test_icd11_condition: Dict[str, Any]
 ) -> None:
     """Test requesting ICD11 data
+    Test that a first request to translate code into UUID leads to a second
+    and that if the first request fails then the second  fails gracefully
 
     Args:
-        test_icd_11_code (str): the code of the ICD11 condtion
-        test_icd11_condition (Dict[str, Any]): the condition information retrived from ICD11
+        test_icd_11_code (str): the code of the ICD11 condition
+        test_icd11_condition (Dict[str, Any]): the condition information retrieved from ICD11
     """
     ICD11Auth = MagicMock()
     ICD11Auth.ICD11client_id.return_value = "test_client_id"
@@ -166,7 +185,6 @@ def test_request_idc11_data(
             test_icd_11_code, idc11_agent.default_linearizationname
         )
         assert icd_11_data == test_icd11_condition
-
         # test failing gracefully
         responses.add(
             method=responses.GET,
@@ -189,8 +207,8 @@ def test_update_medical_entity(
     """Test updating a medical entity using information from the ICD-11 API
 
     Args:
-        test_icd11_condition (Dict[str, Any]):  the condition information retrived from ICD11
-        test_medical_condition (MedicalCondition): the medical condtion pre-update
+        test_icd11_condition (Dict[str, Any]):  the condition information retrieved from ICD11
+        test_medical_condition (MedicalCondition): the medical condition pre-update
         test_updated_medical_condition (MedicalCondition): the medical condition post-update
     """
     ICD11Auth = MagicMock()

@@ -11,7 +11,6 @@ python = ">=3.10,<=3.12.5"
 python-slugify = "^8.0.1"
 pylint = "^3.1.0"
 mypy = "^1.8.0"
-pytest = "^8.0.2"
 slugify = "^0.0.1"
 pandas = "^2.2.1"
 xlrd = "^2.0.1"
@@ -23,10 +22,11 @@ mytardis-rocrate-builder = {git = "https://github.com/JLoveUOA/mytardis_rocrate_
 ro-crate-py = {git = "https://github.com/UoA-eResearch/ro-crate-py.git",  branch = "encrypted-metadata"}
 openpyxl = "^3.1.5"
 click = "^8.1.7"
-faker = "^27.4.0"
-factory-boy = "^3.3.1"
-hypothesis = "^6.111.2"
 pre-commit = "^3.8.0"
+
+[tool.poetry.group.test.dependencies]
+pytest = "^8.0.2"
+faker = "^27.4.0"
 responses = "^0.25.3"
 
 

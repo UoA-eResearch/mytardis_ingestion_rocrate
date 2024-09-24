@@ -102,7 +102,7 @@ def cli() -> None:
 @OPTION_MT_USER
 @OPTION_MT_APIKEY
 @OPTION_COLLECT_ALL
-def abi(
+def abi(  # pylint: disable=too-many-positional-arguments
     input_metadata: Path,
     log_file: Path,
     env_prefix: str,
@@ -211,7 +211,7 @@ def abi(
     default=False,
     help="generate a separate copy of any file manifest before output",
 )
-def print_lab(  # pylint: disable=too-many-statements,too-many-branches
+def print_lab(  # pylint: disable=too-many-positional-arguments,too-many-branches,too-many-statements
     input_metadata: Path,
     output: Path,
     pubkey_fingerprints: list[str],
