@@ -25,15 +25,9 @@ Any command is then run using the `ro_crate_builder` CLI such as `ro_crate_build
 ## RO-Crate Generation for MyTardis Ingestions
 the defined input formats for RO-Crate generation are:
 
-- ABI Music Microscope data
-- Print Lab sample files
 
-to generate an RO-Crate for a collection of ABI Music datasets run:
-```bash
-ro_crate_builder abi -i /root_of_abi_directory
-```
-The root directory must contain a tree of directories with appropriate `project.json`, `experiment.json` and `dataset.json` files.
-This will generate an RO-Crate for every dataset found and package each as a bagit (so that all files are moved into a `data/` directory)
+- Print Lab sample files
+- ~~ABI Music Microscope data~~ (Updates required for ABI crate builder to reflect changes in MyTardis metadata)
 
 to generate a Print Lab RO-Crate run
 
@@ -42,16 +36,26 @@ ro_crate_builder print-lab -i /print_lab_dir/sampledata.xls -o /output_crate_loc
 ```
 
 where sampledata is a sheet of data regarding your samples with labels matching a MyTardis schema.
-with optional parameters:
+an example can be found [here](tests/examples_for_test/print_lab_test/sampledata.xlsx).
 
-- `-a [tar.gz|tar|zip]` archive the final crate as a specific format
+The `ro_crate_builder print-lab` command has the following optional parameters:
+
+
 - `--bag_crate true|false` package the crate as a bagit (default true)
-- `--bulk_encrypt` bulk encrypt the entire output file to pubkey fingerprints and MyTardis User (only available with the `-a` `tar` and `tar.gz` options)
 - `--split_datasets` create an individual RO-Crate for each dataset in the input data
+- `-a [tar.gz|tar|zip]` archive the final crate as a specific format
+- `--bulk_encrypt` bulk encrypt the entire output file to supplied pubkey fingerprints and MyTardis User (only available with the `-a` `tar` and `tar.gz` options)
 - `--pubkey_fingerprints [gpg pubkey fingerprint]` encrypt any output file to these fingerprints when using `--bulk_encrypt`
+- `--dry-run` generate metadata without moving or archiving any of the data itself
+- `--tmp_dir [path/to/dir]` use a different temporary directory than the system default when archiving and encrypting
+- `--separate_manifests` create a directory with a copy of the RO-Crate and the bagit manifest outside of any archive
+
+use `--help` for a full list of options.
 
 ### Ingestion .env configs
 The RO-Crate builder scripts will use an `.env` config file used for [ingestion](https://github.com/UoA-eResearch/mytardis_ingestion) for API authentication and default schema config. It will look for those by default in the current directory; an alternative directory can be provided with the `--env_prefix` parameter.
+
+An example .env file can be found [here](<example_.env >).
 
 the following values can be overwritten via CLI inputs:
 - `--mt_hostname` hostname for MyTardis API
@@ -72,6 +76,8 @@ mytardis_pubkey__key=[gpg public key fingerprint]
 
 mytardis_pubkey__name=[string]
 ```
+the `mytardis_pubkey__key` and `mytardis_pubkey__name` values will be used to encrypt any metadata for the MyTardis server ingesting the data.
+
 The following values may be specified via a .env file which allows for API updating of ICD-11 values.
 
 ```shell
