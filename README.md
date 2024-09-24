@@ -27,7 +27,7 @@ the defined input formats for RO-Crate generation are:
 
 
 - Print Lab sample files
-- ~~ABI Music Microscope data~~ (Updates required for ABI crate builder to reflect changes in MyTardis metadata)
+- ~~ABI Music Microscope data~~ (Updates required for ABI crate builder to reflect changes in MyTardis UUID assignment)
 
 to generate a Print Lab RO-Crate run
 
@@ -48,7 +48,7 @@ The `ro_crate_builder print-lab` command has the following optional parameters:
 - `--pubkey_fingerprints [gpg pubkey fingerprint]` encrypt any output file to these fingerprints when using `--bulk_encrypt`
 - `--dry-run` generate metadata without moving or archiving any of the data itself
 - `--tmp_dir [path/to/dir]` use a different temporary directory than the system default when archiving and encrypting
-- `--separate_manifests` create a directory with a copy of the RO-Crate and the bagit manifest outside of any archive
+- `--separate_manifests` create a directory with a copy of the ro_crate_metadata.json and the bagit manifests outside of any archive
 
 use `--help` for a full list of options.
 
@@ -162,16 +162,17 @@ MyTardis RO-Crates employ encryption of RO-Crate metadata provided by [UoA's RO-
 
 All metadata marked as sensitive in MyTardis will be read into a PGP encrypted block encrypted against the keys provided to the script.
 
-If no keys or binary are provided then sensitive metadata will not be read into the RO-Crate.
+If no keys or binary are provided then sensitive metadata will not be read into the RO-Crate (usually resulting in an error if a key is expected but not found).
 
 ## Requirements
 Mandatory:
 - [poetry](https://python-poetry.org/docs/)
-- [python3](https://www.python.org/downloads/) (version >=3.11)
+- [python3](https://www.python.org/downloads/) (version >=3.10,<=3.12.5)
 
 Optional:
 - a valid [GnuPG](https://www.gnupg.org/download/) binary (required for encryption)
 - MyTardis API Key (required for user lookup in MyTardis)
+- ICD11 API ID and secret (required for ICD-11 code lookup)
 
 
 ### The Art of Remembering
