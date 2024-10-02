@@ -240,13 +240,13 @@ def print_lab(  # pylint: disable=too-many-positional-arguments,too-many-branche
     init_logging(file_name=str(log_file), level=logging.DEBUG)
     logger = logging.getLogger(__name__)
     env_config = None
-    if (Path(env_prefix) / ".env").exists():
-        env_config = MyTardisEnvConfig(_env_prefix=env_prefix)  # type: ignore
-        mt_user = mt_user if mt_user else env_config.auth.username
-        mt_api_key = mt_api_key if mt_api_key else env_config.auth.api_key
-        if env_config.mytardis_pubkey.key:
-            pubkey_fingerprints = list(pubkey_fingerprints)
-            pubkey_fingerprints.append(env_config.mytardis_pubkey.key)
+    # if (Path(env_prefix) / ".env").exists():
+    env_config = MyTardisEnvConfig(_env_prefix=env_prefix)  # type: ignore
+    mt_user = mt_user if mt_user else env_config.auth.username
+    mt_api_key = mt_api_key if mt_api_key else env_config.auth.api_key
+    if env_config.mytardis_pubkey.key:
+        pubkey_fingerprints = list(pubkey_fingerprints)
+        pubkey_fingerprints.append(env_config.mytardis_pubkey.key)
     logger.info("Loading MyTardis API agent")
     if mt_user and mt_api_key:
         auth_config = AuthConfig(username=mt_user, api_key=mt_api_key)
