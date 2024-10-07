@@ -47,6 +47,9 @@ OPTION_INPUT_PATH = click.option(
     type=click.Path(exists=True, file_okay=True, dir_okay=True, path_type=Path),
     default=os.getcwd(),
 )
+OPTION_OUTPUT_PATH = click.option(
+    "-o", "--output", type=Path, default=None, help="output location for RO-Crate(s)"
+)
 OPTION_HOSTNAME = click.option(
     "--mt_hostname",
     type=str,
@@ -85,8 +88,25 @@ OPTION_ENV_PREFIX = click.option(
     "--env_prefix",
     type=str,
     default="",
-    help="""enviroment file prefix for loading MyTardis API and Schemas config,
+    help="""environment file prefix for loading MyTardis API and Schemas config,
     Config options are overwritten by CLI arguments.""",
+)
+
+OPTION_SPLIT_DATASETS = click.option(
+    "--split_datasets",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="Split into individual RO-Crates for each dataset",
+)
+
+OPTION_DRY_RUN = click.option(
+    "--dry-run",
+    "-d",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="only generate metadata without moving or copying files",
 )
 
 
@@ -97,20 +117,26 @@ def cli() -> None:
 
 @click.command()
 @OPTION_INPUT_PATH
+@OPTION_OUTPUT_PATH
 @OPTION_LOG
 @OPTION_ENV_PREFIX
 @OPTION_HOSTNAME
 @OPTION_MT_USER
 @OPTION_MT_APIKEY
 @OPTION_COLLECT_ALL
+@OPTION_SPLIT_DATASETS
+@OPTION_DRY_RUN
 def abi(  # pylint: disable=too-many-positional-arguments
     input_metadata: Path,
+    output: Path,
     log_file: Path,
     env_prefix: str,
     mt_hostname: Optional[str],
     mt_user: Optional[str],
     mt_api_key: Optional[str],
     collect_all: Optional[bool] = False,
+    split_datasets : bool = True,
+    dry_run: Optional[bool] = False
 ) -> None:
     """
     Create RO-Crates by dataset from ABI-music filestructure.
@@ -138,14 +164,32 @@ def abi(  # pylint: disable=too-many-positional-arguments
     extractor = ABICrateExtractor(
         api_agent, env_config.default_schema if env_config else None
     )
-    extractor.extract_crates(input_metadata, bool(collect_all))
-
+    crate_manifest = extractor.extract_crates(input_metadata, bool(collect_all))
+    crate_manifests = split_manifests(split_datasets, crate_manifest)
+    exclude: list[str] = []
+    source_path = input_metadata
+    if Path(input_metadata).is_file():
+        source_path = Path(input_metadata).parent
+        exclude.append(input_metadata.name)
+    write_and_archive_manifests(
+        crate_manifests= crate_manifests,
+        crate_builder=ROBuilder,
+        source_path=source_path,
+        output=output,
+        archive_type=None,
+        gpg_binary=None,
+        exclude=exclude,
+        dry_run=dry_run,
+        duplicate_directory=True,
+        bag_crate=True,
+        bulk_encrypt=False,
+        separate_manifests=True,
+        pubkey_fingerprints=[]
+    )
 
 @click.command()
 @OPTION_INPUT_PATH
-@click.option(
-    "-o", "--output", type=Path, default=None, help="output location for RO-Crate(s)"
-)
+@OPTION_OUTPUT_PATH
 @click.option(
     "--pubkey_fingerprints",
     "-k",
@@ -185,21 +229,8 @@ def abi(  # pylint: disable=too-many-positional-arguments
     default=False,
     help="Bulk encrypt the entire crate or archive",
 )
-@click.option(
-    "--split_datasets",
-    type=bool,
-    is_flag=True,
-    default=False,
-    help="Bulk encrypt the entire crate or archive",
-)
-@click.option(
-    "--dry-run",
-    "-d",
-    type=bool,
-    is_flag=True,
-    default=False,
-    help="only generate metadata",
-)
+@OPTION_SPLIT_DATASETS
+@OPTION_DRY_RUN
 @click.option(
     "--tmp_dir",
     type=Path,
