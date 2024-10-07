@@ -108,7 +108,13 @@ OPTION_DRY_RUN = click.option(
     default=False,
     help="only generate metadata without moving or copying files",
 )
-
+OPTION_ARCHIVE_TYPE = click.option(
+    "-a",
+    "--archive_type",
+    type=str,
+    default=None,
+    help="Archive the RO-Crate in one of the following formats: [tar, tar.gz, zip]",
+)
 
 @click.group()
 def cli() -> None:
@@ -126,6 +132,7 @@ def cli() -> None:
 @OPTION_COLLECT_ALL
 @OPTION_SPLIT_DATASETS
 @OPTION_DRY_RUN
+@OPTION_ARCHIVE_TYPE
 def abi(  # pylint: disable=too-many-positional-arguments
     input_metadata: Path,
     output: Path,
@@ -136,7 +143,8 @@ def abi(  # pylint: disable=too-many-positional-arguments
     mt_api_key: Optional[str],
     collect_all: Optional[bool] = False,
     split_datasets : bool = True,
-    dry_run: Optional[bool] = False
+    dry_run: Optional[bool] = False,
+    archive_type: Optional[str] = None
 ) -> None:
     """
     Create RO-Crates by dataset from ABI-music filestructure.
@@ -176,11 +184,11 @@ def abi(  # pylint: disable=too-many-positional-arguments
         crate_builder=ROBuilder,
         source_path=source_path,
         output=output,
-        archive_type=None,
+        archive_type=archive_type,
         gpg_binary=None,
         exclude=exclude,
         dry_run=dry_run,
-        duplicate_directory=True,
+        duplicate_directory=False,
         bag_crate=True,
         bulk_encrypt=False,
         separate_manifests=True,
@@ -210,13 +218,7 @@ def abi(  # pylint: disable=too-many-positional-arguments
     default=True,
     help="Create a bagit manifest for the RO-Crate",
 )
-@click.option(
-    "-a",
-    "--archive_type",
-    type=str,
-    default=None,
-    help="Archive the RO-Crate in one of the following formats: [tar, tar.gz, zip]",
-)
+@OPTION_ARCHIVE_TYPE
 @click.option(
     "--gpg_binary", type=Path, default=None, help="binary for running gpg encryption"
 )
@@ -361,8 +363,8 @@ def write_and_archive_manifests(
     """
     logger = logging.getLogger(__name__)
     for manifest in crate_manifests:
-        logger.info("writing RO-Crate from %s", source_path)
         final_output = make_output_dir(output=output, manifest_id=manifest.identifier)
+        logger.info("writing RO-Crate from %s to %s", source_path, final_output)
         crate_destination = final_output
         if archive_type:
             tmp_crate_location = (  # pylint: disable=consider-using-with
@@ -432,6 +434,7 @@ def split_manifests(split_datasets: bool, crate_manifest:CrateManifest) -> List[
     """
     if not split_datasets:
         return [crate_manifest]
+    print("splitting datasets into %s datasets", crate_manifest.datasets.values())
     return [
         reduce_to_dataset(crate_manifest, dataset=dataset)
         for dataset in crate_manifest.datasets.values()
