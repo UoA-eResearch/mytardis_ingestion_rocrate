@@ -374,36 +374,36 @@ def parse_raw_data(  # pylint: disable=too-many-locals
                     parse_timestamp(data_dir.name()) if data_dir else None
                 )
 
-                crate_manifest.add_datasets([dataset])
-                if write_datasets and not dataset_dir.has_file("bagit.txt"):
-                    logging.info("Writing Crate for: %s", dataset_dir.name())
-                    projects = {
-                        project_id: crate_manifest.projects[project_id]
-                        for project_id in experiment.projects
-                        if crate_manifest.projects.get(project_id)
-                    }
-                    projects[str(project.id)] = project
-                    dataset_manifest = CrateManifest(
-                        projects={str(project.id): project},
-                        experiments={str(experiment.id): experiment},
-                        datasets=[dataset],
-                        datafiles=None,
-                    )
-                    dataset.directory = Path("./")
-                    dataset.id = "./"
-                    crate = ROCrate()
-                    crate.source = dataset_dir.path()
-                    builder = ROBuilder(crate)
-                    write_crate(
-                        builder=builder,
-                        crate_destination=dataset_dir.path(),
-                        crate_source=dataset_dir.path(),
-                        crate_contents=dataset_manifest,
-                    )
-                    logging.info("Bagging Crate for: %s", dataset_dir.name())
-                    bagit_crate(
-                        dataset_dir.path(),
-                        contact_name=project.principal_investigator.name,
-                    )
-                    dataset.directory = Path("data") / dataset.directory
+                crate_manifest.add_datasets({dataset.id:dataset})
+                # if write_datasets and not dataset_dir.has_file("bagit.txt"):
+                #     logging.info("Writing Crate for: %s", dataset_dir.name())
+                #     projects = {
+                #         project_id: crate_manifest.projects[project_id]
+                #         for project_id in experiment.projects
+                #         if crate_manifest.projects.get(project_id)
+                #     }
+                #     projects[str(project.id)] = project
+                #     dataset_manifest = CrateManifest(
+                #         projects={str(project.id): project},
+                #         experiments={str(experiment.id): experiment},
+                #         datasets=[dataset],
+                #         datafiles=None,
+                #     )
+                #     dataset.directory = Path("./")
+                #     dataset.id = "./"
+                #     crate = ROCrate()
+                #     crate.source = dataset_dir.path()
+                #     builder = ROBuilder(crate)
+                #     write_crate(
+                #         builder=builder,
+                #         crate_destination=dataset_dir.path(),
+                #         crate_source=dataset_dir.path(),
+                #         crate_contents=dataset_manifest,
+                #     )
+                #     logging.info("Bagging Crate for: %s", dataset_dir.name())
+                #     bagit_crate(
+                #         dataset_dir.path(),
+                #         contact_name=project.principal_investigator.name,
+                #     )
+                #     dataset.directory = Path("data") / dataset.directory
     return crate_manifest

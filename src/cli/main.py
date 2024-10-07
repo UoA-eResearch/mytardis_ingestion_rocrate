@@ -10,7 +10,7 @@ import logging
 import os
 import tempfile
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Type
 
 import click
 from mytardis_rocrate_builder.rocrate_dataclasses.crate_manifest import (
@@ -34,6 +34,7 @@ from src.ingestion_targets.print_lab_genomics.ICD11_API_agent import ICD11ApiAge
 from src.ingestion_targets.print_lab_genomics.print_crate_builder import (
     PrintLabROBuilder,
 )
+from mytardis_rocrate_builder.rocrate_builder import ROBuilder
 
 # from src.mt_api.api_consts import CONNECTION__HOSTNAME
 from src.mt_api.apiconfigs import AuthConfig, MyTardisRestAgent
@@ -226,7 +227,7 @@ def print_lab(  # pylint: disable=too-many-positional-arguments,too-many-branche
     gpg_binary: Optional[Path],
     duplicate_directory: Optional[bool],
     bulk_encrypt: Optional[bool],
-    split_datasets: Optional[bool],
+    split_datasets: bool,
     dry_run: Optional[bool],
     tmp_dir: Optional[Path],
     separate_manifests: Optional[bool],
@@ -277,14 +278,57 @@ def print_lab(  # pylint: disable=too-many-positional-arguments,too-many-branche
     if Path(input_metadata).is_file():
         source_path = Path(input_metadata).parent
         exclude.append(input_metadata.name)
-    crate_manifests: List[CrateManifest] = []
-    if split_datasets:
-        crate_manifests = [
-            reduce_to_dataset(crate_manifest, dataset=dataset)
-            for dataset in crate_manifest.datasets.values()
-        ]
-    else:
-        crate_manifests = [crate_manifest]
+    crate_manifests = split_manifests(split_datasets, crate_manifest)
+    write_and_archive_manifests(
+        crate_manifests= crate_manifests,
+        crate_builder=PrintLabROBuilder,
+        source_path=source_path,
+        output=output,
+        archive_type=archive_type,
+        gpg_binary=gpg_binary,
+        exclude=exclude,
+        dry_run=dry_run,
+        duplicate_directory=duplicate_directory,
+        bag_crate=bag_crate,
+        bulk_encrypt=bulk_encrypt,
+        separate_manifests=separate_manifests,
+        pubkey_fingerprints=pubkey_fingerprints
+    )
+
+def write_and_archive_manifests(
+    crate_manifests: List[CrateManifest],
+    crate_builder : Type[ROBuilder],
+    source_path: Path,
+    output:Path,
+    exclude: List[str],
+    pubkey_fingerprints:list[str],
+    archive_type: str|None = None,
+    gpg_binary:Path|None=None,
+    dry_run:bool | None = False,
+    duplicate_directory:bool | None = False,
+    bag_crate:bool | None = True,
+    bulk_encrypt:bool | None = False,
+    separate_manifests:bool | None = True,
+    ) -> None:
+    """Write and archive RO-crates using appropriate locations for archiving
+    and bulk encryption.
+
+    Args:
+        crate_manifests (List[CrateManifest]): all manifests in the crate
+        crate_builder (Type[ROBuilder]): the crate builder class for constructing the crate from manifests
+        source_path (Path): the origin of the RO-Crate data
+        output (Path): the final destination of the output crate
+        archive_type (str): what type of archive is the crate to be saved as
+        gpg_binary (Path): gpg binary used for encryption
+        exclude (List[str]): files to exclude from the crate
+        dry_run (bool): only produce manifests without moving files
+        duplicate_directory (bool): move all files in the child directory
+        bag_crate (bool): produce a bagit for the crate
+        bulk_encrypt (bool): bulk encrypt the archived crate (very slow)
+        separate_manifests (bool): copy manifests to a separate directory
+        pubkey_fingerprints (list[str]): pubkey fingerprints used for encryption
+    """
+    logger = logging.getLogger(__name__)
     for manifest in crate_manifests:
         logger.info("writing RO-Crate from %s", source_path)
         final_output = make_output_dir(output=output, manifest_id=manifest.identifier)
@@ -303,14 +347,14 @@ def print_lab(  # pylint: disable=too-many-positional-arguments,too-many-branche
             crate_destination.mkdir(parents=True)
         logger.info("writing crate %s", source_path)
 
-        logger.info("Initalizing crate")
+        logger.info("Initializing crate")
         crate = ROCrate(  # pylint: disable=unexpected-keyword-arg
             gpg_binary=gpg_binary, exclude=exclude
         )
         receive_keys_for_crate(crate.gpg_binary, crate_contents=manifest)
 
         crate.source = source_path if duplicate_directory else None
-        builder = PrintLabROBuilder(crate)
+        builder = crate_builder(crate)
         write_crate(
             builder=builder,
             crate_source=crate.source,
@@ -319,7 +363,7 @@ def print_lab(  # pylint: disable=too-many-positional-arguments,too-many-branche
             meta_only=dry_run,
         )
         if bag_crate:
-            bagit_crate(crate_destination, mt_user or "")
+            bagit_crate(crate_destination,"The University of Auckland")
         if bulk_encrypt:
             archive_crate(
                 archive_type,
@@ -345,6 +389,22 @@ def print_lab(  # pylint: disable=too-many-positional-arguments,too-many-branche
                 archive_type, final_output, crate_destination, True, separate_manifests
             )
 
+def split_manifests(split_datasets: bool, crate_manifest:CrateManifest) -> List[CrateManifest] :
+    """Split a crate manifest into a list of individual manifests
+
+    Args:
+        split_datasets (bool): split the manifest or not
+        crate_manifest (CrateManifest): the initial manifest
+
+    Returns:
+        List[CrateManifest]: the list of manifests to return
+    """
+    if not split_datasets:
+        return [crate_manifest]
+    return [
+        reduce_to_dataset(crate_manifest, dataset=dataset)
+        for dataset in crate_manifest.datasets.values()
+    ]
 
 def make_output_dir(output: Path, manifest_id: str) -> Path:
     """Create the path for an output RO-Crate if the directory does not exist create it
@@ -358,7 +418,7 @@ def make_output_dir(output: Path, manifest_id: str) -> Path:
     """
     final_output = output / manifest_id
     if not final_output.parent.exists():
-        final_output.parent.mkdir(parents=True)
+        final_output.parent.mkdir(parents=True,exist_ok=True)
     return final_output
 
 
