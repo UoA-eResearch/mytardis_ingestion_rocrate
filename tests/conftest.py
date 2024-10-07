@@ -808,7 +808,7 @@ def ro_participant_sensitive(
             "parents": [test_participant.id],
         },
     )
-    sensitive_data.append_to("recipients", test_user)
+    sensitive_data.append_to("encryptedTo", test_user)
     return sensitive_data
 
 

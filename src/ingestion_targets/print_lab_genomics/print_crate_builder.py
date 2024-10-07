@@ -62,7 +62,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 for user in participant.recipients
                 if user
             ]
-            sensitive_data.append_to("recipients", recipients)
+            sensitive_data.append_to("encryptedTo", recipients)
         return self.crate.add(sensitive_data)
 
     def add_medical_condition(
@@ -135,7 +135,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 self.crate.dereference(participant.user.rocid) or self.add_user(user)
                 for user in participant.recipients
             ]
-            participant_obj.append_to("recipients", recipients)
+            participant_obj.append_to("encryptedTo", recipients)
             return self.crate.add(participant_obj)
 
         participant_obj = ContextEntity(

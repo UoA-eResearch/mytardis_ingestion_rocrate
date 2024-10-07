@@ -5,7 +5,11 @@ from typing import Any, Dict
 
 import pandas as pd
 from mock import MagicMock
-from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import Person
+from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
+    Facility,
+    Instrument,
+    Person,
+)
 from pytest import fixture
 
 from src.ingestion_targets.print_lab_genomics.extractor import PrintLabExtractor
@@ -124,6 +128,11 @@ def test_faked_datafie_extraction(
     Dataset = MagicMock()
     Dataset.return_value.roc_id = "#test_mocked_dataset"
     Dataset.return_value.id = "test_mocked_dataset"
+    Dataset.return_value.instrument = Instrument(
+        name="test_instrument",
+        description="test_instrument desc",
+        location=Facility(name="test_facillity", description="test facillity desc"),
+    )
     dataset_dict = {
         faked_datafiles["Dataset Name"][i]: Dataset()
         for i in range(0, len(faked_datafiles))
