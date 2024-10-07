@@ -28,7 +28,7 @@ from rocrate.rocrate import ROCrate
 from slugify import slugify
 
 from src.cli.mytardisconfig import MyTardisEnvConfig
-from src.ingestion_targets.abi_music.crate_builder import ABICrateBuilder
+from src.ingestion_targets.abi_music.crate_extractor import ABICrateExtractor
 from src.ingestion_targets.print_lab_genomics.extractor import PrintLabExtractor
 from src.ingestion_targets.print_lab_genomics.ICD11_API_agent import ICD11ApiAgent
 from src.ingestion_targets.print_lab_genomics.print_crate_builder import (
@@ -135,10 +135,10 @@ def abi(  # pylint: disable=too-many-positional-arguments
         connection_proxies=None,
         verify_certificate=True,
     )
-    builder = ABICrateBuilder(
+    extractor = ABICrateExtractor(
         api_agent, env_config.default_schema if env_config else None
     )
-    builder.build_crates(input_metadata, bool(collect_all))
+    extractor.extract_crates(input_metadata, bool(collect_all))
 
 
 @click.command()
