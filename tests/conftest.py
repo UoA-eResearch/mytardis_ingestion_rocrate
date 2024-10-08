@@ -402,7 +402,7 @@ def print_lab_datafile_json() -> Dict[str, Any]:
         "@type": "File",
         "datafileVersion": 1,
         "dataset": [{"@id": "BAM/"}],
-        "description": "alignment data from a human genome",
+        "description": "alginment data from human genome",
         "mytardis_classification": "DataClassification.SENSITIVE",
         "name": "BAM/aligned.bam",
     }
