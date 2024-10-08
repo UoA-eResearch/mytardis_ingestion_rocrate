@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import List, Optional, Type
 
 import click
+from mytardis_rocrate_builder.rocrate_builder import ROBuilder
 from mytardis_rocrate_builder.rocrate_dataclasses.crate_manifest import (
     CrateManifest,
     reduce_to_dataset,
@@ -26,15 +27,15 @@ from mytardis_rocrate_builder.rocrate_writer import (
 )
 from rocrate.rocrate import ROCrate
 from slugify import slugify
-from mytardis_rocrate_builder.rocrate_builder import ROBuilder
+
 from src.cli.mytardisconfig import MyTardisEnvConfig
+from src.ingestion_targets.abi_music.crate_builder import ABIROBuilder
 from src.ingestion_targets.abi_music.crate_extractor import ABICrateExtractor
 from src.ingestion_targets.print_lab_genomics.extractor import PrintLabExtractor
 from src.ingestion_targets.print_lab_genomics.ICD11_API_agent import ICD11ApiAgent
 from src.ingestion_targets.print_lab_genomics.print_crate_builder import (
     PrintLabROBuilder,
 )
-from src.ingestion_targets.abi_music.crate_builder import ABIROBuilder
 
 # from src.mt_api.api_consts import CONNECTION__HOSTNAME
 from src.mt_api.apiconfigs import AuthConfig, MyTardisRestAgent
@@ -116,6 +117,7 @@ OPTION_ARCHIVE_TYPE = click.option(
     help="Archive the RO-Crate in one of the following formats: [tar, tar.gz, zip]",
 )
 
+
 @click.group()
 def cli() -> None:
     "Commands to generate an RO-Crate with MyTardis Metadata"
@@ -142,9 +144,9 @@ def abi(  # pylint: disable=too-many-positional-arguments
     mt_user: Optional[str],
     mt_api_key: Optional[str],
     collect_all: Optional[bool] = False,
-    split_datasets : bool = True,
+    split_datasets: bool = True,
     dry_run: Optional[bool] = False,
-    archive_type: Optional[str] = None
+    archive_type: Optional[str] = None,
 ) -> None:
     """
     Create RO-Crates by dataset from ABI-music filestructure.
@@ -183,7 +185,7 @@ def abi(  # pylint: disable=too-many-positional-arguments
         source_path = Path(input_metadata).parent
         exclude.append(input_metadata.name)
     write_and_archive_manifests(
-        crate_manifests= crate_manifests,
+        crate_manifests=crate_manifests,
         crate_builder=ABIROBuilder,
         source_path=source_path,
         output=output,
@@ -195,8 +197,9 @@ def abi(  # pylint: disable=too-many-positional-arguments
         bag_crate=True,
         bulk_encrypt=False,
         separate_manifests=True,
-        pubkey_fingerprints=[]
+        pubkey_fingerprints=[],
     )
+
 
 @click.command()
 @OPTION_INPUT_PATH
@@ -316,7 +319,7 @@ def print_lab(  # pylint: disable=too-many-positional-arguments,too-many-branche
         exclude.append(input_metadata.name)
     crate_manifests = split_manifests(split_datasets, crate_manifest)
     write_and_archive_manifests(
-        crate_manifests= crate_manifests,
+        crate_manifests=crate_manifests,
         crate_builder=PrintLabROBuilder,
         source_path=source_path,
         output=output,
@@ -328,30 +331,31 @@ def print_lab(  # pylint: disable=too-many-positional-arguments,too-many-branche
         bag_crate=bag_crate,
         bulk_encrypt=bulk_encrypt,
         separate_manifests=separate_manifests,
-        pubkey_fingerprints=pubkey_fingerprints
+        pubkey_fingerprints=pubkey_fingerprints,
     )
+
 
 def write_and_archive_manifests(
     crate_manifests: List[CrateManifest],
-    crate_builder : Type[ROBuilder],
+    crate_builder: Type[ROBuilder],
     source_path: Path,
-    output:Path,
+    output: Path,
     exclude: List[str],
-    pubkey_fingerprints:list[str],
-    archive_type: str|None = None,
-    gpg_binary:Path|None=None,
-    dry_run:bool | None = False,
-    duplicate_directory:bool | None = False,
-    bag_crate:bool | None = True,
-    bulk_encrypt:bool | None = False,
-    separate_manifests:bool | None = True,
-    ) -> None:
+    pubkey_fingerprints: list[str],
+    archive_type: str | None = None,
+    gpg_binary: Path | None = None,
+    dry_run: bool | None = False,
+    duplicate_directory: bool | None = False,
+    bag_crate: bool | None = True,
+    bulk_encrypt: bool | None = False,
+    separate_manifests: bool | None = True,
+) -> None:
     """Write and archive RO-crates using appropriate locations for archiving
     and bulk encryption.
 
     Args:
         crate_manifests (List[CrateManifest]): all manifests in the crate
-        crate_builder (Type[ROBuilder]): the crate builder class for constructing the crate from manifests
+        crate_builder (Type[ROBuilder]): the crate builder class
         source_path (Path): the origin of the RO-Crate data
         output (Path): the final destination of the output crate
         archive_type (str): what type of archive is the crate to be saved as
@@ -399,7 +403,7 @@ def write_and_archive_manifests(
             meta_only=dry_run,
         )
         if bag_crate:
-            bagit_crate(crate_destination,"The University of Auckland")
+            bagit_crate(crate_destination, "The University of Auckland")
         if bulk_encrypt:
             archive_crate(
                 archive_type,
@@ -425,7 +429,10 @@ def write_and_archive_manifests(
                 archive_type, final_output, crate_destination, True, separate_manifests
             )
 
-def split_manifests(split_datasets: bool, crate_manifest:CrateManifest) -> List[CrateManifest] :
+
+def split_manifests(
+    split_datasets: bool, crate_manifest: CrateManifest
+) -> List[CrateManifest]:
     """Split a crate manifest into a list of individual manifests
 
     Args:
@@ -442,6 +449,7 @@ def split_manifests(split_datasets: bool, crate_manifest:CrateManifest) -> List[
         for dataset in crate_manifest.datasets.values()
     ]
 
+
 def make_output_dir(output: Path, manifest_id: str) -> Path:
     """Create the path for an output RO-Crate if the directory does not exist create it
 
@@ -454,7 +462,7 @@ def make_output_dir(output: Path, manifest_id: str) -> Path:
     """
     final_output = output / manifest_id
     if not final_output.parent.exists():
-        final_output.parent.mkdir(parents=True,exist_ok=True)
+        final_output.parent.mkdir(parents=True, exist_ok=True)
     return final_output
 
 

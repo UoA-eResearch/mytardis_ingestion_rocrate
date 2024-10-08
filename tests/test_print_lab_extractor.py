@@ -39,7 +39,7 @@ def test_faked_participant_extraction(
         pubkey_fingerprints=None,
         icd_11_agent=ICD_11_Api_Agent(),
     )
-    participants = extractor._parse_participants(particpant_sheet=faked_participants)
+    participants = extractor._parse_participants(participant_sheet=faked_participants)
     assert len(participants) == faked_participants.shape[0]
     for participant in participants.values():
         participant_entity = test_print_lab_builder.add_participant(participant)
@@ -102,7 +102,7 @@ def test_faked_dataset_extraction(
         dataset_sheet=faked_datasets, experiments=experiment_dict
     )
     assert len(datasets) == faked_datasets.shape[0]
-    test_print_lab_builder.crate.source = Path("crate_soruce")
+    test_print_lab_builder.crate.source = Path("crate_source")
     for dataset in datasets.values():
         dataset_entity = test_print_lab_builder.add_dataset(dataset)
         assert dataset_entity

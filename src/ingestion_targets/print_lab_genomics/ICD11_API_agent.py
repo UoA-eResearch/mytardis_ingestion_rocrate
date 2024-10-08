@@ -102,7 +102,7 @@ class ICD11ApiAgent:
         """Update a medical condition object from the ICD-11
 
         Args:
-            medical_condition (MedicalCondition): a medical condition to be writting to an RO-Crate
+            medical_condition (MedicalCondition): a medical condition to be writing to an RO-Crate
 
         Returns:
             MedicalCondition: the Medical condition with any relevant ICD-11 data
@@ -113,7 +113,7 @@ class ICD11ApiAgent:
             )
             if ICD11_data is None:
                 logger.warning(
-                    """Information could not be retreived from ICD-11 API for code %s.
+                    """Information could not be retrieved from ICD-11 API for code %s.
                     Data will not be updated""",
                     medical_condition.code,
                 )

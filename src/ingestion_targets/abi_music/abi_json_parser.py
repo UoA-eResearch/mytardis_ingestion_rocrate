@@ -2,15 +2,13 @@
 them into data classes that can be used for creating an RO-crate"""
 
 import json
-import os
 import logging
+import os
 import re
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
-from mytardis_rocrate_builder.rocrate_builder import ROBuilder
-from src.mt_api.mt_consts import UOA
 from mytardis_rocrate_builder.rocrate_dataclasses.crate_manifest import CrateManifest
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
     ContextObject,
@@ -19,8 +17,6 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
     Instrument,
     Project,
 )
-from mytardis_rocrate_builder.rocrate_writer import bagit_crate, write_crate
-from rocrate.rocrate import ROCrate
 from slugify import slugify
 
 from src.ingestion_targets.abi_music.consts import (  # ZARR_DATASET_NAMESPACE,
@@ -34,7 +30,7 @@ from src.metadata_extraction.metadata_extraction import (
     create_metadata_objects,
 )
 from src.mt_api.apiconfigs import MyTardisRestAgent
-from src.mt_api.mt_consts import MtObject
+from src.mt_api.mt_consts import UOA, MtObject
 
 datetime_pattern = re.compile("^[0-9]{6}-[0-9]{6}$")
 
@@ -77,7 +73,6 @@ def combine_json_files(
 
 def process_project(
     project_dir: DirectoryNode,
-    # metadata_schema: Dict[str, Dict[str, Any]],
     api_agent: MyTardisRestAgent,
     collect_all: bool = False,
 ) -> Project:
@@ -100,12 +95,6 @@ def process_project(
         for contributor in json_dict["contributors"]
         if json_dict["contributors"]
     ]
-    # identifiers: list[str | int | float] = [
-    #     slugify(identifier) for identifier in json_dict["project_ids"]
-    # ]
-    # metadata_dict = create_metadata_objects(
-    #     json_dict, metadata_schema, collect_all, identifiers[0]
-    # )
     additional_properties = {}
     if collect_all:
         additional_properties = json_dict
@@ -124,9 +113,8 @@ def process_project(
 
 def process_experiment(
     experiment_dir: DirectoryNode,
-    # metadata_schema: Dict[str, Any],
     parent_project: Project,
-    crate_manifest : CrateManifest,
+    crate_manifest: CrateManifest,
     collect_all: bool = False,
 ) -> Experiment:
     """Extract the experiment specific information out of a JSON dictionary
@@ -164,7 +152,7 @@ def process_experiment(
     )
 
 
-def process_raw_dataset(
+def process_raw_dataset(  # pylint: disable=too-many-locals
     dataset_dir: DirectoryNode,
     metadata_schema: MetadataSchema,
     experiment: Experiment,
@@ -236,13 +224,11 @@ def process_raw_dataset(
         else:
             updated_dates.append(session_date)
         additional_properties["Sessions"].append(session_object)
-    additional_properties["Offsets"] =  json_dict["Offsets"]
-    additional_properties["Camera Settings"] = json_dict[
-        "Camera Settings"
-    ]
+    additional_properties["Offsets"] = json_dict["Offsets"]
+    additional_properties["Camera Settings"] = json_dict["Camera Settings"]
     additional_properties["data root path"] = dataset_dir.path().as_posix()
     identifiers.append(dataset_dir.path().as_posix())
-    logger.debug("dataset dir is: %s" ,dataset_dir.path())
+    logger.debug("dataset dir is: %s", dataset_dir.path())
     return Dataset(
         name=identifiers[0],
         description=json_dict["Description"],
@@ -345,7 +331,7 @@ def parse_raw_data(  # pylint: disable=too-many-locals
                 experiment_dir,
                 parent_project=project,
                 collect_all=collect_all,
-                crate_manifest=crate_manifest
+                crate_manifest=crate_manifest,
             )
             crate_manifest.add_experiments({str(experiment.id): experiment})
             dataset_dirs = [
@@ -361,7 +347,7 @@ def parse_raw_data(  # pylint: disable=too-many-locals
                     raw_dataset_metadata_schema,
                     experiment=experiment,
                     collect_all=collect_all,
-                    crate_manifest=crate_manifest
+                    crate_manifest=crate_manifest,
                 )
 
                 data_dir = next(
@@ -377,6 +363,6 @@ def parse_raw_data(  # pylint: disable=too-many-locals
                     parse_timestamp(data_dir.name()) if data_dir else None
                 )
 
-                crate_manifest.add_datasets({dataset.id:dataset})
+                crate_manifest.add_datasets({dataset.id: dataset})
 
     return crate_manifest

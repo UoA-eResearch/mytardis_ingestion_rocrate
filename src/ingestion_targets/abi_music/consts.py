@@ -1,8 +1,10 @@
 """Constants for the print lab genomics RO-Crate generator
 """
 
-from src.mt_api.mt_consts import MtObject
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import Facility
+
+from src.mt_api.mt_consts import MtObject
+
 NAMESPACES = {
     MtObject.PROJECT: "",
     MtObject.EXPERIMENT: "",

@@ -284,7 +284,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
 
     def _parse_participants(
         self,
-        particpant_sheet: pd.DataFrame,
+        participant_sheet: pd.DataFrame,
     ) -> Dict[str, Dataset]:
         def parse_participant(row: pd.Series) -> Participant:
             row.dropna()
@@ -312,7 +312,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
 
         participants_dict = {
             participant_value.name: participant_value
-            for participant_value in particpant_sheet.apply(
+            for participant_value in participant_sheet.apply(
                 parse_participant, axis=1
             ).to_list()
         }

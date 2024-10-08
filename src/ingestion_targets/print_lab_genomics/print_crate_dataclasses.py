@@ -16,7 +16,7 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
 
 @dataclass(kw_only=True)
 class MedicalCondition(BaseObject):  # type: ignore
-    """object for medical condtions that correspond to various
+    """object for medical conditions that correspond to various
     standards and codes from https://schema.org/MedicalCondition
     """
 
@@ -33,7 +33,7 @@ class MedicalCondition(BaseObject):  # type: ignore
 @dataclass(kw_only=True)
 class Participant(MyTardisContextObject):  # type: ignore
     """participants of a study
-    # to be flattend back into Experiment when read into MyTardis
+    # to be flattened back into Experiment when read into MyTardis
     # person biosample object"""
 
     gender: str
@@ -51,7 +51,7 @@ class SampleExperiment(
 ):  # pylint: disable=too-many-instance-attributes # type: ignore
     """Concrete Experiment/Data-Catalog class for RO-Crate - inherits from Experiment
     https://schema.org/DataCatalog
-    Combination type with bioschemas biosample for additional sample data feilds
+    Combination type with bioschemas biosample for additional sample data fields
     https://bioschemas.org/types/BioSample/0.1-RELEASE-2019_06_19
     Attr:
         project (str): An identifier for a project

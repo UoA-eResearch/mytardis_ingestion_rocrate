@@ -1,8 +1,12 @@
+"""ROBuilder overrides for the ABI json Data
+"""
+
 from mytardis_rocrate_builder.rocrate_builder import ROBuilder
 from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import Dataset
 from rocrate.model.contextentity import ContextEntity
 
-class ABIROBuilder(ROBuilder): # type: ignore 
+
+class ABIROBuilder(ROBuilder):  # type: ignore
     """A Builder for ABI dataclasses and crate factors
 
     Args:
@@ -10,11 +14,11 @@ class ABIROBuilder(ROBuilder): # type: ignore
     """
 
     def add_dataset(self, dataset: Dataset) -> ContextEntity:
-        """Add a dataset to the RO-Crate accounting for if unlisted children should be added"""
+        """Add a dataset to the RO-Crate adjusting it's path if needed"""
         dataset_entity = super().add_dataset(dataset)
         dataset_entity.source = (
-                self.crate.source / dataset.directory
-                if self.crate.source
-                else dataset.directory
-            )
+            self.crate.source / dataset.directory
+            if self.crate.source
+            else dataset.directory
+        )
         return dataset_entity

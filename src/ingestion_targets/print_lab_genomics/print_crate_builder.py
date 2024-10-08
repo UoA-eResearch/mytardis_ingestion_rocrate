@@ -32,13 +32,13 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         ROBuilder: extends ROBuilder
     """
 
-    def _add_participant_sensitve(
+    def _add_participant_sensitive(
         self, participant: Participant, participant_id: str
     ) -> Any:
         """Add sensitive data object to crate from a participant's info
 
         Args:
-            participant (Participant): participant holding senstive info
+            participant (Participant): participant holding sensitive info
             participant_id (str): patient's ID in the RO-Crete
 
         Returns:
@@ -71,7 +71,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         """Add a medical condition, usually associated with a sample
 
         Args:
-            medical_condition (MedicalCondition): medical condtion object read in from source
+            medical_condition (MedicalCondition): medical condition object read in from source
 
         Returns:
             ContextEntity: a context entity representing the medical condition
@@ -98,7 +98,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
     def add_participant(
         self, participant: Participant, sensitive: bool = False
     ) -> ContextEntity:
-        """Add a participant to the RO-Crate as a context entitiy
+        """Add a participant to the RO-Crate as a context entity
 
         Args:
             participant (Participant): the participant data
@@ -106,7 +106,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 Defaults to False.
 
         Returns:
-            ContextEntity: A (poteintally encryped) context entity for this participant.
+            ContextEntity: A (poteintally encrypted) context entity for this participant.
                 now stored in the RO-Crate
         """
 
@@ -148,7 +148,7 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         ):
             participant_obj.append_to(
                 "sensitive",
-                self._add_participant_sensitve(participant, str(participant.id)),
+                self._add_participant_sensitive(participant, str(participant.id)),
             )
         return self.crate.add(participant_obj)
 
@@ -213,5 +213,5 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
                 else dataset.directory
             )
         else:
-             dataset_entity.source = None
+            dataset_entity.source = None
         return dataset_entity

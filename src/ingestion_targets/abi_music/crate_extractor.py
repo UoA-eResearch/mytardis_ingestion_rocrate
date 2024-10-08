@@ -14,8 +14,6 @@ from src.metadata_extraction.metadata_extraction import (
     MetadataHandlder,
     load_optional_schemas,
 )
-
-
 from src.mt_api.apiconfigs import MyTardisRestAgent
 
 
@@ -36,7 +34,9 @@ class ABICrateExtractor:  # pylint: disable=too-few-public-methods
         self.api_agent = api_agent
         self.metadata_handler = MetadataHandlder(api_agent, profile_consts.NAMESPACES)
 
-    def extract_crates(self, input_data_source: Path, collect_all: bool = False) -> CrateManifest:
+    def extract_crates(
+        self, input_data_source: Path, collect_all: bool = False
+    ) -> CrateManifest:
         """Build crates from datasets found in an ABI directory
 
         Args:

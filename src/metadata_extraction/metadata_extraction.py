@@ -76,7 +76,7 @@ class MetadataHandlder:
         """Requests a metadata schema from the MyTardis API based on namespace
 
         Args:
-            schema_namespace (str): the namespace of hte requested schema
+            schema_namespace (str): the namespace of the requested schema
 
         Returns:
             Dict[Any, Any]: the metadata schema as a dictionary keyed on its' "full name"
@@ -92,9 +92,9 @@ class MetadataHandlder:
                 for response_obj in response.json().get("objects")
             ]
             metadata_params = [
-                metatdata_parameters
+                metadata_parameters
                 for params in metadata_response
-                for metatdata_parameters in params
+                for metadata_parameters in params
             ]
         except RequestException as e:
             logger.error(
@@ -127,10 +127,10 @@ class MetadataHandlder:
         return metadata_schemas
 
     def get_mtobj_schema(self, schema_name: MtObject) -> Dict[str, Dict[str, Any]]:
-        """Convert a metadata schema into a lookup dictonary using the full name of the metadata
+        """Convert a metadata schema into a lookup dictionary using the full name of the metadata
 
         Args:
-            schema_name (MtObject): which mytardis object schema based on the schema dictonary
+            schema_name (MtObject): which mytardis object schema based on the schema dictionary
 
         Returns:
              Dict[str, Dict[str, Any]]: a dictionary of metadata elements keyed by their full name
@@ -186,7 +186,7 @@ def create_metadata_objects(
         metadata_schema (Dict[str, Dict[str, Any]]): the schema for getting info from MyTardis
 
     Returns:
-        Dict[str, MTMetadata]: RO-Crate metadata objects for stroing MyTardis metadata
+        Dict[str, MTMetadata]: RO-Crate metadata objects for storing MyTardis metadata
     """
     metadata_dict: Dict[str, MTMetadata] = {}
     for meta_key, meta_value in input_metadata.items():
