@@ -214,32 +214,32 @@ def process_raw_dataset(
             experiments.append(found_experiment)
 
     created_date = None
-    # additional_properties = {}
+    additional_properties = {}
 
-    # if collect_all:
-    #     additional_properties = json_dict
-    # created_date = None
-    # additional_properties["Sessions"] = []
-    # for index, session in enumerate(json_dict["Sessions"]):
-    #     session_id = slugify(
-    #         f'{identifiers[0]}-"session"-{index}-{session["SessionID"]}'
-    #     )
-    #     session_object = process_nested_contextobj(
-    #         session, session_id, "MedicalImagingTechnique"
-    #     )
-    #     session_date = parse_timestamp(session["Session"])
-    #     session_object.date_created = session_date
-    #     session_object.date_modified = [session_date]
-    #     if index == 0:
-    #         created_date = session_date
-    #     else:
-    #         updated_dates.append(session_date)
-    #     additional_properties["Sessions"].append(session_object)
-    # additional_properties["Offsets"] = json_element = json_dict["Offsets"]
-    # additional_properties["Camera Settings"] = json_element = json_dict[
-    #     "Camera Settings"
-    # ]
-    # additional_properties["data root path"] = dataset_dir.path().as_posix()
+    if collect_all:
+        additional_properties = json_dict
+    created_date = None
+    additional_properties["Sessions"] = []
+    for index, session in enumerate(json_dict["Sessions"]):
+        session_id = slugify(
+            f'{identifiers[0]}-"session"-{index}-{session["SessionID"]}'
+        )
+        session_object = process_nested_contextobj(
+            session, session_id, "MedicalImagingTechnique"
+        )
+        session_date = parse_timestamp(session["Session"])
+        session_object.date_created = session_date
+        session_object.date_modified = [session_date]
+        if index == 0:
+            created_date = session_date
+        else:
+            updated_dates.append(session_date)
+        additional_properties["Sessions"].append(session_object)
+    additional_properties["Offsets"] =  json_dict["Offsets"]
+    additional_properties["Camera Settings"] = json_dict[
+        "Camera Settings"
+    ]
+    additional_properties["data root path"] = dataset_dir.path().as_posix()
     identifiers.append(dataset_dir.path().as_posix())
     logger.debug("dataset dir is: %s" ,dataset_dir.path())
     return Dataset(
@@ -256,7 +256,7 @@ def process_raw_dataset(
             date_created=None,
             date_modified=None,
             location=ABI_FACILLITY,
-            additional_properties={},
+            additional_properties=additional_properties,
             schema_type="Thing",
         ),
         additional_properties=None,
