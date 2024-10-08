@@ -402,7 +402,7 @@ def print_lab_datafile_json() -> Dict[str, Any]:
         "@type": "File",
         "datafileVersion": 1,
         "dataset": [{"@id": "BAM/"}],
-        "description": "alginment data from human genome",
+        "description": "alignment data from a human genome",
         "mytardis_classification": "DataClassification.SENSITIVE",
         "name": "BAM/aligned.bam",
     }
@@ -414,10 +414,10 @@ def print_lab_acl_json() -> Dict[str, Any]:
         "@id": "#b005c3c4-2386-57e1-a0c0-825e2dd4dce4",
         "@type": "DigitalDocumentPermission",
         "grantee": [{"@id": "#ea82c06f-2825-529d-88c0-75d65ad3876d"}],
-        "grantee_type": "Audiance",
-        "my_tardis_can_download": True,
-        "mytardis_owner": False,
-        "mytardis_see_sensitive": False,
+        "grantee_type": "Audience",
+        "my_tardis_can_download": 1,
+        "mytardis_owner": 0,
+        "mytardis_see_sensitive": 0,
         "permission_type": "ReadPermission",
         "subjectOf": [{"@id": "#ebbd7daf-16e8-5c5f-8213-cad4c9078aeb"}],
     }
@@ -850,7 +850,6 @@ def test_sample_experiment(
         mt_identifiers=["experiment"],
         date_created=datetime.min,
         date_modified=[datetime.min],
-        additional_properties={"test_extra": "test_value"},
         contributors=[
             test_person,
         ],
@@ -897,7 +896,6 @@ def test_ro_sample_experiment(
             "participant": [{"@id": test_sample_experiment.participant.roc_id}],
             "project": [{"@id": test_sample_experiment.projects[0].roc_id}],
             "sdLicense": [{"@id": test_sample_experiment.sd_license.roc_id}],
-            "test_extra": "test_value",
             "tissue_processing_method": [
                 test_sample_experiment.tissue_processing_method
             ],

@@ -11,7 +11,7 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
 )
 
 from src.metadata_extraction.metadata_extraction import (
-    MetadataHanlder,
+    MetadataHandlder,
     MetadataSchema,
     create_metadata_objects,
 )
@@ -44,7 +44,7 @@ def test_retreive_schema(
         json=test_metadata_response,
     )
     schema_namespaces = {MtObject.PROJECT: test_schema_namespace}
-    handler = MetadataHanlder(
+    handler = MetadataHandlder(
         api_agent=mt_rest_agent, schema_namespaces=schema_namespaces
     )
     schemas = handler.request_metadata_dicts(schema_namespaces=schema_namespaces)
@@ -109,7 +109,7 @@ def test_create_metadata_from_schema(  # pylint: disable:too-many-positional-arg
         json=test_metadata_response,
     )
     schema_namespaces = {MtObject.PROJECT: test_schema_namespace}
-    handler = MetadataHanlder(
+    handler = MetadataHandlder(
         api_agent=mt_rest_agent, schema_namespaces=schema_namespaces
     )
     metadata = handler.create_metadata_from_schema(

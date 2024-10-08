@@ -2,6 +2,7 @@
 them into data classes that can be used for creating an RO-crate"""
 
 import json
+import os
 import logging
 import re
 from datetime import datetime
@@ -28,7 +29,7 @@ from src.ingestion_targets.abi_music.consts import (  # ZARR_DATASET_NAMESPACE,
 )
 from src.ingestion_targets.abi_music.filesystem_nodes import DirectoryNode, FileNode
 from src.metadata_extraction.metadata_extraction import (
-    MetadataHanlder,
+    MetadataHandlder,
     MetadataSchema,
     create_metadata_objects,
 )
@@ -246,7 +247,7 @@ def process_raw_dataset(
         name=identifiers[0],
         description=json_dict["Description"],
         experiments=experiments,
-        directory=dataset_dir.path(),
+        directory=dataset_dir.path().relative_to(os.getcwd()),
         date_created=created_date,
         date_modified=updated_dates or None,
         contributors=None,
@@ -296,7 +297,7 @@ def process_nested_contextobj(
 
 
 def read_json(file: FileNode) -> dict[str, Any]:
-    """Extract the JSON data hierachy from `file`"""
+    """Extract the JSON data hierarchy from `file`"""
     file_data = file.path().read_text(encoding="utf-8")
     json_data: dict[str, Any] = json.loads(file_data)
     return json_data
@@ -305,10 +306,9 @@ def read_json(file: FileNode) -> dict[str, Any]:
 def parse_raw_data(  # pylint: disable=too-many-locals
     raw_dir: DirectoryNode,
     # file_filter: filters.PathFilterSet,
-    metadata_handler: MetadataHanlder,
+    metadata_handler: MetadataHandlder,
     api_agent: MyTardisRestAgent,
     collect_all: bool = False,
-    write_datasets: bool = True,
 ) -> CrateManifest:
     """
     Parse the directory containing the raw data

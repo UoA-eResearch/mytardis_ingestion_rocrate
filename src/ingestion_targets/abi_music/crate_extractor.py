@@ -11,9 +11,11 @@ from src.cli.mytardisconfig import SchemaConfig
 from src.ingestion_targets.abi_music.abi_json_parser import parse_raw_data
 from src.ingestion_targets.abi_music.filesystem_nodes import DirectoryNode
 from src.metadata_extraction.metadata_extraction import (
-    MetadataHanlder,
+    MetadataHandlder,
     load_optional_schemas,
 )
+
+
 from src.mt_api.apiconfigs import MyTardisRestAgent
 
 
@@ -24,7 +26,7 @@ class ABICrateExtractor:  # pylint: disable=too-few-public-methods
         _type_: _description_
     """
 
-    metadata_handler: MetadataHanlder
+    metadata_handler: MetadataHandlder
 
     def __init__(
         self, api_agent: MyTardisRestAgent, schemas: Optional[SchemaConfig]
@@ -32,7 +34,7 @@ class ABICrateExtractor:  # pylint: disable=too-few-public-methods
         namespaces = profile_consts.NAMESPACES
         namespaces = load_optional_schemas(namespaces=namespaces, schemas=schemas)
         self.api_agent = api_agent
-        self.metadata_handler = MetadataHanlder(api_agent, profile_consts.NAMESPACES)
+        self.metadata_handler = MetadataHandlder(api_agent, profile_consts.NAMESPACES)
 
     def extract_crates(self, input_data_source: Path, collect_all: bool = False) -> CrateManifest:
         """Build crates from datasets found in an ABI directory
@@ -54,4 +56,3 @@ class ABICrateExtractor:  # pylint: disable=too-few-public-methods
             collect_all=collect_all,
             api_agent=self.api_agent,
         )
-

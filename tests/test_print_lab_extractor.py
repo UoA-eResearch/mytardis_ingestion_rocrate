@@ -220,7 +220,7 @@ def test_faked_samples_extraction(  # pylint: disable=too-many-locals
     experiments = extractor._parse_experiments(
         experiments_sheet=faked_samples,
         acls=acls,
-        particpants_dict=parcicipants_dict,
+        participants_dict=parcicipants_dict,
         projects=projects_dict,
     )
     assert len(experiments) == faked_samples.shape[0]

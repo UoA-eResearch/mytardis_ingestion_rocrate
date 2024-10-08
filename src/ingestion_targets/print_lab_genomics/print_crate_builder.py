@@ -200,16 +200,18 @@ class PrintLabROBuilder(ROBuilder):  # type: ignore
         return self.crate.add(experiment_obj)
 
     def add_dataset(self, dataset: Dataset) -> ContextEntity:
-        """Add a dataset to the RO-Crate accounting for if unlisted cildren should be added"""
-        datset_entity = super().add_dataset(dataset)
+        """Add a dataset to the RO-Crate accounting for if unlisted children should be added"""
+        dataset_entity = super().add_dataset(dataset)
         if not isinstance(dataset, ExtractionDataset):
-            return datset_entity
+            return dataset_entity
         if (
             dataset.copy_unlisted
         ):  # update source so dataset directory and all children are added
-            datset_entity.source = (
+            dataset_entity.source = (
                 self.crate.source / dataset.directory
                 if self.crate.source
                 else dataset.directory
             )
-        return datset_entity
+        else:
+             dataset_entity.source = None
+        return dataset_entity

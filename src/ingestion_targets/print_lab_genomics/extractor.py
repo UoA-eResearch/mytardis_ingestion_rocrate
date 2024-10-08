@@ -35,7 +35,7 @@ from src.ingestion_targets.print_lab_genomics.print_crate_dataclasses import (
     SampleExperiment,
 )
 from src.metadata_extraction.metadata_extraction import (
-    MetadataHanlder,
+    MetadataHandlder,
     load_optional_schemas,
 )
 from src.mt_api.apiconfigs import MyTardisRestAgent
@@ -72,7 +72,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
         namespaces = load_optional_schemas(
             namespaces=profile_consts.NAMESPACES, schemas=schemas
         )
-        self.metadata_handler = MetadataHanlder(self.api_agent, namespaces)
+        self.metadata_handler = MetadataHandlder(self.api_agent, namespaces)
         self.collect_all = collect_all
         self.icd_11_agent: ICD11ApiAgent = (
             icd_11_agent  # pylint: disable = invalid-name
@@ -134,7 +134,7 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
             new_acl = ACL(
                 name=identifier,
                 grantee=Group(name=row["Name"]),
-                grantee_type="Audiance",
+                grantee_type="Audience",
                 mytardis_see_sensitive=row["see_sensitive"],
                 mytardis_can_download=row["can_download"],
                 mytardis_owner=row["is_owner"],
@@ -189,29 +189,29 @@ class PrintLabExtractor:  # pylint: disable = too-many-instance-attributes
     ) -> None | MedicalCondition:
         if not pd.notna(row[code_title]):
             return None
-        condtion = MedicalCondition(
+        condition = MedicalCondition(
             code=row[code_title],
             code_type=code_title,
             code_source=code_source,
             code_text="",
         )
-        condtion = self.icd_11_agent.update_medial_entity_from_ICD11(condtion)
-        if condtion.code_text is not None:
-            row[text_title] = condtion.code_text
+        condition = self.icd_11_agent.update_medial_entity_from_ICD11(condition)
+        if condition.code_text is not None:
+            row[text_title] = condition.code_text
         else:
-            condtion.code_text = row[text_title] if pd.notna(row[text_title]) else None
-        return condtion
+            condition.code_text = row[text_title] if pd.notna(row[text_title]) else None
+        return condition
 
     def _parse_experiments(
         self,
         experiments_sheet: pd.DataFrame,
-        particpants_dict: Dict[str, Participant],
+        participants_dict: Dict[str, Participant],
         acls: Dict[str, Dict[str, Any]],
         projects: Dict[str, Project],
     ) -> Dict[str, Experiment]:
         def parse_experiment(row: pd.Series) -> Experiment:
             row.dropna()
-            participant = particpants_dict[row["Participant"]]
+            participant = participants_dict[row["Participant"]]
             disease = []
             project_entity = projects.get(slugify(f'{row["Project"]}'))
             if project_entity is None:

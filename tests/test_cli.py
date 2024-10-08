@@ -25,11 +25,11 @@ runner = CliRunner()
     "src.ingestion_targets.print_lab_genomics.ICD11_API_agent.ICD11ApiAgent._request_token"
 )
 @patch(
-    "src.metadata_extraction.metadata_extraction.MetadataHanlder.request_metadata_schema",
+    "src.metadata_extraction.metadata_extraction.MetadataHandlder.request_metadata_schema",
     MagicMock(return_value={}),
 )
 @patch(
-    "src.metadata_extraction.metadata_extraction.MetadataHanlder.create_metadata_from_schema",
+    "src.metadata_extraction.metadata_extraction.MetadataHandlder.create_metadata_from_schema",
     MagicMock(return_value={}),
 )
 @patch(

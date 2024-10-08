@@ -26,7 +26,7 @@ from mytardis_rocrate_builder.rocrate_writer import (
 )
 from rocrate.rocrate import ROCrate
 from slugify import slugify
-
+from mytardis_rocrate_builder.rocrate_builder import ROBuilder
 from src.cli.mytardisconfig import MyTardisEnvConfig
 from src.ingestion_targets.abi_music.crate_extractor import ABICrateExtractor
 from src.ingestion_targets.print_lab_genomics.extractor import PrintLabExtractor
@@ -34,7 +34,7 @@ from src.ingestion_targets.print_lab_genomics.ICD11_API_agent import ICD11ApiAge
 from src.ingestion_targets.print_lab_genomics.print_crate_builder import (
     PrintLabROBuilder,
 )
-from mytardis_rocrate_builder.rocrate_builder import ROBuilder
+from src.ingestion_targets.abi_music.crate_builder import ABIROBuilder
 
 # from src.mt_api.api_consts import CONNECTION__HOSTNAME
 from src.mt_api.apiconfigs import AuthConfig, MyTardisRestAgent
@@ -150,6 +150,8 @@ def abi(  # pylint: disable=too-many-positional-arguments
     Create RO-Crates by dataset from ABI-music filestructure.
     Input Metadata is the same root directory used for MyTardis ingest
     """
+    input_metadata = input_metadata.absolute()
+    output = output.absolute()
     init_logging(file_name=str(log_file), level=logging.DEBUG)
     logger = logging.getLogger(__name__)
     env_config = None
@@ -172,6 +174,7 @@ def abi(  # pylint: disable=too-many-positional-arguments
     extractor = ABICrateExtractor(
         api_agent, env_config.default_schema if env_config else None
     )
+    os.chdir(input_metadata)
     crate_manifest = extractor.extract_crates(input_metadata, bool(collect_all))
     crate_manifests = split_manifests(split_datasets, crate_manifest)
     exclude: list[str] = []
@@ -181,7 +184,7 @@ def abi(  # pylint: disable=too-many-positional-arguments
         exclude.append(input_metadata.name)
     write_and_archive_manifests(
         crate_manifests= crate_manifests,
-        crate_builder=ROBuilder,
+        crate_builder=ABIROBuilder,
         source_path=source_path,
         output=output,
         archive_type=archive_type,
@@ -204,7 +207,7 @@ def abi(  # pylint: disable=too-many-positional-arguments
     type=str,
     multiple=True,
     default=[],
-    help="pgp public key fingerprints for encryption of metadata, accpets multiple",
+    help="pgp public key fingerprints for encryption of metadata, accepts multiple",
 )
 @OPTION_LOG
 @OPTION_ENV_PREFIX
@@ -434,7 +437,6 @@ def split_manifests(split_datasets: bool, crate_manifest:CrateManifest) -> List[
     """
     if not split_datasets:
         return [crate_manifest]
-    print("splitting datasets into %s datasets", crate_manifest.datasets.values())
     return [
         reduce_to_dataset(crate_manifest, dataset=dataset)
         for dataset in crate_manifest.datasets.values()

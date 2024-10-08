@@ -52,7 +52,7 @@ def get_metadata_type(type_enum: int) -> str:
     return MT_METADATA_TYPE["default"]
 
 
-class MetadataHanlder:
+class MetadataHandlder:
     """Class for loading metadata schemas and creating metadata RO-Crate objects
 
     api_agenent MyTardisRestAgent: the api_agnet for making requests for the schemas
