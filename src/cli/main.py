@@ -151,6 +151,18 @@ def cli() -> None:
     Requires crate to contain only one dataset or --split-datasets. 
     Warning! will move files to create BagIT Manifest""",
 )
+@click.option(
+    "--experiment_dir",
+    type=click.Path(exists=True, file_okay=True, dir_okay=True, path_type=Path),
+    default=None,
+    help="Specify an individual experiment to be packaged"
+)
+@click.option(
+    "--dataset_dir",
+    type=click.Path(exists=True, file_okay=True, dir_okay=True, path_type=Path),
+    default=None,
+    help="Specify an individual dataset to be packaged"
+)
 def abi(  # pylint: disable=too-many-positional-arguments
     input_metadata: Path,
     output: Path,
@@ -165,6 +177,8 @@ def abi(  # pylint: disable=too-many-positional-arguments
     archive_type: Optional[str] = None,
     tmp_dir: Optional[Path] = None,
     in_place: Optional[bool] = False,
+    experiment_dir: Optional[Path] = None,
+    dataset_dir: Optional[Path] = None,
 ) -> None:
     """
     Create RO-Crates by dataset from ABI-music filestructure.
@@ -196,7 +210,7 @@ def abi(  # pylint: disable=too-many-positional-arguments
         api_agent, env_config.default_schema if env_config else None
     )
     os.chdir(input_metadata)
-    crate_manifest = extractor.extract_crates(input_metadata, bool(collect_all))
+    crate_manifest = extractor.extract_crates(input_metadata, bool(collect_all), experiment_dir, dataset_dir)
     crate_manifests = split_manifests(split_datasets, crate_manifest)
     exclude: list[str] = []
     source_path = input_metadata

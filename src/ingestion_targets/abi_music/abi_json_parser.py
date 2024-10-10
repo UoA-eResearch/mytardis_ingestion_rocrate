@@ -137,7 +137,6 @@ def process_experiment(
         if project_found := crate_manifest.projects.get(project_id):
             if parent_project.id != project_found.id:
                 projects.append(project_found)
-
     additional_properties = {}
     if collect_all:
         additional_properties = json_dict
@@ -308,11 +307,12 @@ def read_json(file: FileNode) -> dict[str, Any]:
 
 
 def parse_raw_data(  # pylint: disable=too-many-locals
-    raw_dir: DirectoryNode,
-    # file_filter: filters.PathFilterSet,
+    project_dir: DirectoryNode,
     metadata_handler: MetadataHandlder,
     api_agent: MyTardisRestAgent,
     collect_all: bool = False,
+    experiment_dir: DirectoryNode| None = None,
+    dataset_dir: DirectoryNode | None = None,
 ) -> CrateManifest:
     """
     Parse the directory containing the raw data
@@ -325,7 +325,7 @@ def parse_raw_data(  # pylint: disable=too-many-locals
         url=metadata_handler.schema_namespaces.get(MtObject.DATASET) or "",
     )
     project_dirs = [
-        d for d in raw_dir.iter_dirs(recursive=True) if d.has_file("project.json")
+        d for d in project_dir.iter_dirs(recursive=True) if d.has_file("project.json")
     ]
     experiment_dirs : List[tuple[DirectoryNode, Project]] = []
     dataset_dirs : List[tuple[DirectoryNode, Experiment]] = []
@@ -337,12 +337,14 @@ def parse_raw_data(  # pylint: disable=too-many-locals
             api_agent=api_agent,
         )
         crate_manifest.add_projects(projects={str(project.id): project})
-
-        experiment_dirs.extend([
-            (d, project)
-            for d in project_dir.iter_dirs(recursive=True)
-            if d.has_file("experiment.json")
-        ])
+        if experiment_dir:
+            experiment_dirs = [(experiment_dir, project)]
+        else:
+            experiment_dirs.extend([
+                (d, project)
+                for d in project_dir.iter_dirs(recursive=True)
+                if d.has_file("experiment.json")
+            ])
 
     for experiment_dir, project in experiment_dirs:
         logging.info("Experiment directory: %s", experiment_dir.name())
@@ -354,11 +356,14 @@ def parse_raw_data(  # pylint: disable=too-many-locals
             crate_manifest=crate_manifest,
         )
         crate_manifest.add_experiments({str(experiment.id): experiment})
-        dataset_dirs.extend([
-            (d, experiment)
-            for d in experiment_dir.iter_dirs(recursive=True)
-            if d.has_file(d.name() + ".json")
-        ])
+        if dataset_dir:
+            dataset_dirs = [(dataset_dir, experiment)]
+        else:
+            dataset_dirs.extend([
+                (d, experiment)
+                for d in experiment_dir.iter_dirs(recursive=True)
+                if d.has_file(d.name() + ".json")
+            ])
     for dataset_dir, experiment in dataset_dirs:
         logging.info("Dataset directory: %s", dataset_dir.name())
 
