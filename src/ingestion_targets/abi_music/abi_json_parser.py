@@ -16,6 +16,7 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
     Experiment,
     Instrument,
     Project,
+    MTMetadata
 )
 from slugify import slugify
 
@@ -151,13 +152,44 @@ def process_experiment(
         additional_properties=additional_properties,
     )
 
+def collect_dataset_metadata(
+    dataset_dir: DirectoryNode,
+    parent_dataset: Dataset,
+    metadata_schema: MetadataSchema,
+    collect_all: bool = False
+) -> Dict[str,MTMetadata]:
+    """Collect metadata from an abi dataset json
+
+    Args:
+        dataset_dir (DirectoryNode): the directory containing the dataset information
+        dataset_parent (Dataset): the parent dataset object
+        metadata_schema (MetadataSchema): the schema the dataset metadata uses
+        collect_all (bool, optional): collect all information from this dataset,
+            defaults to False.
+
+    Returns:
+        Dict[str,MTMetadata]: the metadata as collected.
+    """
+    json_dict = read_json(dataset_dir.file(dataset_dir.name() + ".json"))
+    metadata_dict = create_metadata_objects(
+        json_dict, metadata_schema, collect_all, parent_dataset
+    )
+    metadata_dict = metadata_dict | create_metadata_objects(
+        {
+            "full-description": json_dict["Description"],
+            "sequence-id": json_dict["SequenceID"],
+            "sqrt-offset": json_dict["Offsets"]["SQRT Offset"],
+        },
+        metadata_schema,
+        False,
+        parent_dataset,
+    )
+    return metadata_dict
 
 def process_raw_dataset(  # pylint: disable=too-many-locals
     dataset_dir: DirectoryNode,
-    metadata_schema: MetadataSchema,
     experiment: Experiment,
     crate_manifest: CrateManifest,
-    collect_all: bool = False,
 ) -> Dataset:
     """Extract the dataset specific information out of a JSON dictionary
 
@@ -179,19 +211,7 @@ def process_raw_dataset(  # pylint: disable=too-many-locals
         ),
         json_dict["SequenceID"],
     ]
-    metadata_dict = create_metadata_objects(
-        json_dict, metadata_schema, collect_all, identifiers[0]
-    )
-    metadata_dict = metadata_dict | create_metadata_objects(
-        {
-            "full-description": json_dict["Description"],
-            "sequence-id": json_dict["SequenceID"],
-            "sqrt-offset": json_dict["Offsets"]["SQRT Offset"],
-        },
-        metadata_schema,
-        False,
-        identifiers[0],
-    )
+
     updated_dates: List[datetime] = []
 
     experiments = [experiment]
@@ -203,10 +223,8 @@ def process_raw_dataset(  # pylint: disable=too-many-locals
             experiments.append(found_experiment)
 
     created_date = None
-    additional_properties = {}
+    additional_properties: Dict[str, Any] = {}
 
-    if collect_all:
-        additional_properties = json_dict
     created_date = None
     additional_properties["Sessions"] = []
     for index, session in enumerate(json_dict["Sessions"]):
@@ -344,12 +362,14 @@ def parse_raw_data(  # pylint: disable=too-many-locals
 
                 dataset = process_raw_dataset(
                     dataset_dir,
-                    raw_dataset_metadata_schema,
                     experiment=experiment,
-                    collect_all=collect_all,
                     crate_manifest=crate_manifest,
                 )
-
+                dataset_metadata = collect_dataset_metadata(
+                    dataset_dir=dataset_dir,
+                    parent_dataset = dataset,
+                    metadata_schema=raw_dataset_metadata_schema
+                )
                 data_dir = next(
                     (
                         d
@@ -364,5 +384,6 @@ def parse_raw_data(  # pylint: disable=too-many-locals
                 )
 
                 crate_manifest.add_datasets({dataset.id: dataset})
+                crate_manifest.add_metadata(dataset_metadata.values())
 
     return crate_manifest

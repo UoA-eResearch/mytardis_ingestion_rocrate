@@ -158,7 +158,7 @@ def mocked_project_class() -> MagicMock:
     """Mock a project so that RO-Crate dereference works
 
     Returns:
-        MagicMock : A mock that functions sufficently well as a projcet
+        MagicMock : A mock that functions sufficiently well as a project
     """
     Project = MagicMock()
     Project.return_value.id = "mocked project"

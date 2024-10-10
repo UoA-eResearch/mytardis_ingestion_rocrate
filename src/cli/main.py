@@ -116,6 +116,12 @@ OPTION_ARCHIVE_TYPE = click.option(
     default=None,
     help="Archive the RO-Crate in one of the following formats: [tar, tar.gz, zip]",
 )
+OPTION_TMP_DIR = click.option(
+    "--tmp_dir",
+    type=Path,
+    help="replace default temporary file location",
+)
+
 
 
 @click.group()
@@ -135,6 +141,16 @@ def cli() -> None:
 @OPTION_SPLIT_DATASETS
 @OPTION_DRY_RUN
 @OPTION_ARCHIVE_TYPE
+@OPTION_TMP_DIR
+@click.option(
+    "--in_place",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="""Write RO-Crates and BagIT manifests in-place at the directory level. 
+    Requires crate to contain only one dataset or --split-datasets. 
+    Warning! will move files to create BagIT Manifest""",
+)
 def abi(  # pylint: disable=too-many-positional-arguments
     input_metadata: Path,
     output: Path,
@@ -147,13 +163,16 @@ def abi(  # pylint: disable=too-many-positional-arguments
     split_datasets: bool = True,
     dry_run: Optional[bool] = False,
     archive_type: Optional[str] = None,
+    tmp_dir: Optional[Path] = None,
+    in_place: Optional[bool] = False,
 ) -> None:
     """
     Create RO-Crates by dataset from ABI-music filestructure.
     Input Metadata is the same root directory used for MyTardis ingest
     """
+    if tmp_dir:
+        tempfile.tempdir = str(tmp_dir)
     input_metadata = input_metadata.absolute()
-    output = output.absolute()
     init_logging(file_name=str(log_file), level=logging.DEBUG)
     logger = logging.getLogger(__name__)
     env_config = None
@@ -184,21 +203,25 @@ def abi(  # pylint: disable=too-many-positional-arguments
     if Path(input_metadata).is_file():
         source_path = Path(input_metadata).parent
         exclude.append(input_metadata.name)
-    write_and_archive_manifests(
-        crate_manifests=crate_manifests,
-        crate_builder=ABIROBuilder,
-        source_path=source_path,
-        output=output,
-        archive_type=archive_type,
-        gpg_binary=None,
-        exclude=exclude,
-        dry_run=dry_run,
-        duplicate_directory=False,
-        bag_crate=True,
-        bulk_encrypt=False,
-        separate_manifests=True,
-        pubkey_fingerprints=[],
-    )
+    for manifest in crate_manifests:
+        if in_place:
+            write_inplace(manifest, exclude=exclude, gpg_binary=None, crate_builder=ABIROBuilder, bag_crate=True)
+        else:
+            write_and_archive_manifest(
+                manifest=manifest,
+                crate_builder=ABIROBuilder,
+                source_path=source_path,
+                output=output,
+                archive_type=archive_type,
+                gpg_binary=None,
+                exclude=exclude,
+                dry_run=dry_run,
+                duplicate_directory=False,
+                bag_crate=True,
+                bulk_encrypt=False,
+                separate_manifests=True,
+                pubkey_fingerprints=[],
+            )
 
 
 @click.command()
@@ -239,11 +262,7 @@ def abi(  # pylint: disable=too-many-positional-arguments
 )
 @OPTION_SPLIT_DATASETS
 @OPTION_DRY_RUN
-@click.option(
-    "--tmp_dir",
-    type=Path,
-    help="replace default temporary file location",
-)
+@OPTION_TMP_DIR
 @click.option(
     "--separate_manifests",
     type=bool,
@@ -318,25 +337,26 @@ def print_lab(  # pylint: disable=too-many-positional-arguments,too-many-branche
         source_path = Path(input_metadata).parent
         exclude.append(input_metadata.name)
     crate_manifests = split_manifests(split_datasets, crate_manifest)
-    write_and_archive_manifests(
-        crate_manifests=crate_manifests,
-        crate_builder=PrintLabROBuilder,
-        source_path=source_path,
-        output=output,
-        archive_type=archive_type,
-        gpg_binary=gpg_binary,
-        exclude=exclude,
-        dry_run=dry_run,
-        duplicate_directory=duplicate_directory,
-        bag_crate=bag_crate,
-        bulk_encrypt=bulk_encrypt,
-        separate_manifests=separate_manifests,
-        pubkey_fingerprints=pubkey_fingerprints,
-    )
+    for manifest in crate_manifests:
+        write_and_archive_manifest(
+            manifest=manifest,
+            crate_builder=PrintLabROBuilder,
+            source_path=source_path,
+            output=output,
+            archive_type=archive_type,
+            gpg_binary=gpg_binary,
+            exclude=exclude,
+            dry_run=dry_run,
+            duplicate_directory=duplicate_directory,
+            bag_crate=bag_crate,
+            bulk_encrypt=bulk_encrypt,
+            separate_manifests=separate_manifests,
+            pubkey_fingerprints=pubkey_fingerprints,
+        )
 
 
-def write_and_archive_manifests(
-    crate_manifests: List[CrateManifest],
+def write_and_archive_manifest(
+    manifest: CrateManifest,
     crate_builder: Type[ROBuilder],
     source_path: Path,
     output: Path,
@@ -354,7 +374,7 @@ def write_and_archive_manifests(
     and bulk encryption.
 
     Args:
-        crate_manifests (List[CrateManifest]): all manifests in the crate
+        crate_manifest (CrateManifest): the manifest of an RO-Crate
         crate_builder (Type[ROBuilder]): the crate builder class
         source_path (Path): the origin of the RO-Crate data
         output (Path): the final destination of the output crate
@@ -369,65 +389,65 @@ def write_and_archive_manifests(
         pubkey_fingerprints (list[str]): pubkey fingerprints used for encryption
     """
     logger = logging.getLogger(__name__)
-    for manifest in crate_manifests:
-        final_output = make_output_dir(output=output, manifest_id=manifest.identifier)
-        logger.info("writing RO-Crate from %s to %s", source_path, final_output)
-        crate_destination = final_output
-        if archive_type:
-            tmp_crate_location = (  # pylint: disable=consider-using-with
-                tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
-            )
-            crate_destination = Path(
-                Path(tmp_crate_location.name) / source_path.name / manifest.identifier
-            )
-            logger.info(
-                "Archiving crate writing, temp crate to tmpdir: %s",
-                crate_destination.as_posix(),
-            )
-            crate_destination.mkdir(parents=True)
-        logger.info("writing crate %s", source_path)
-
-        logger.info("Initializing crate")
-        crate = ROCrate(  # pylint: disable=unexpected-keyword-arg
-            gpg_binary=gpg_binary, exclude=exclude
+    output = output.absolute()
+    final_output = make_output_dir(output=output, manifest_id=manifest.identifier)
+    logger.info("writing RO-Crate from %s to %s", source_path, final_output)
+    crate_destination = final_output
+    if archive_type:
+        tmp_crate_location = (  # pylint: disable=consider-using-with
+            tempfile.TemporaryDirectory()  # pylint: disable=consider-using-with
         )
-        receive_keys_for_crate(crate.gpg_binary, crate_contents=manifest)
-
-        crate.source = source_path if duplicate_directory else None
-        builder = crate_builder(crate)
-        write_crate(
-            builder=builder,
-            crate_source=crate.source,
-            crate_destination=crate_destination,
-            crate_contents=manifest,
-            meta_only=dry_run,
+        crate_destination = Path(
+            Path(tmp_crate_location.name) / source_path.name / manifest.identifier
         )
-        if bag_crate:
-            bagit_crate(crate_destination, "The University of Auckland")
-        if bulk_encrypt:
-            archive_crate(
-                archive_type,
-                crate_destination,
-                crate_destination,
-                True,
-                separate_manifests,
-            )
-            logger.info("Bulk Encrypting RO-Crate")
-            target = (
-                crate_destination.with_suffix("." + archive_type)
-                if archive_type
-                else crate_destination
-            )
-            bulk_encrypt_file(
-                gpg_binary=crate.gpg_binary,
-                pubkey_fingerprints=pubkey_fingerprints,
-                data_to_encrypt=target,
-                output_path=final_output,
-            )
-        else:
-            archive_crate(
-                archive_type, final_output, crate_destination, True, separate_manifests
-            )
+        logger.info(
+            "Archiving crate writing, temp crate to tmpdir: %s",
+            crate_destination.as_posix(),
+        )
+        crate_destination.mkdir(parents=True)
+    logger.info("writing crate %s", source_path)
+
+    logger.info("Initializing crate")
+    crate = ROCrate(  # pylint: disable=unexpected-keyword-arg
+        gpg_binary=gpg_binary, exclude=exclude
+    )
+    receive_keys_for_crate(crate.gpg_binary, crate_contents=manifest)
+
+    crate.source = source_path if duplicate_directory else None
+    builder = crate_builder(crate)
+    write_crate(
+        builder=builder,
+        crate_source=crate.source,
+        crate_destination=crate_destination,
+        crate_contents=manifest,
+        meta_only=dry_run,
+    )
+    if bag_crate:
+        bagit_crate(crate_destination, "The University of Auckland")
+    if bulk_encrypt:
+        archive_crate(
+            archive_type,
+            crate_destination,
+            crate_destination,
+            True,
+            separate_manifests,
+        )
+        logger.info("Bulk Encrypting RO-Crate")
+        target = (
+            crate_destination.with_suffix("." + archive_type)
+            if archive_type
+            else crate_destination
+        )
+        bulk_encrypt_file(
+            gpg_binary=crate.gpg_binary,
+            pubkey_fingerprints=pubkey_fingerprints,
+            data_to_encrypt=target,
+            output_path=final_output,
+        )
+    else:
+        archive_crate(
+            archive_type, final_output, crate_destination, True, separate_manifests
+        )
 
 
 def split_manifests(
@@ -448,6 +468,46 @@ def split_manifests(
         reduce_to_dataset(crate_manifest, dataset=dataset)
         for dataset in crate_manifest.datasets.values()
     ]
+
+def write_inplace(
+    crate_manifest: CrateManifest,
+    exclude:List[str],
+    crate_builder: Type[ROBuilder],
+    bag_crate: bool | None = True, 
+    gpg_binary: Path | None = None
+) -> None:
+    """Write single directory crate in-place at the directory level
+
+    Args:
+        crate_manifest (CrateManifest): a manifest containing a single dataset
+        exclude (List[str]): files to be excluded from RO-Crate construction
+        crate_builder (Type[ROBuilder]): the crate builder for writing the crate in-place
+        bag_crate (bool | None, optional): create a bagit. Defaults to True.
+        gpg_binary (Path | None, optional): the binary for crate encryption. Defaults to None.
+
+    Raises:
+        ValueError: If the manifest contains too many datasets then writing in-place is not possible
+    """
+    if len(crate_manifest.datasets) != 1:
+        raise ValueError(f"{crate_manifest.identifier} Contains too many datasets {len(crate_manifest.datasets)}, please split datasets if writing in-place")
+    dataset = next(iter(crate_manifest.datasets.values()))
+    current_dir = Path(os.getcwd()) / dataset.directory
+    # os.chdir(current_dir)
+    dataset.directory = Path("./")
+    crate = ROCrate(  # pylint: disable=unexpected-keyword-arg
+            gpg_binary=gpg_binary, exclude=exclude
+        )
+    receive_keys_for_crate(crate.gpg_binary, crate_contents=crate_manifest)
+    builder = crate_builder(crate)
+    write_crate(
+        builder=builder,
+        crate_source=Path(current_dir),
+        crate_destination=Path(current_dir),
+        crate_contents=crate_manifest,
+        meta_only=True,
+    )
+    if bag_crate:
+        bagit_crate(current_dir, "The University of Auckland")
 
 
 def make_output_dir(output: Path, manifest_id: str) -> Path:
