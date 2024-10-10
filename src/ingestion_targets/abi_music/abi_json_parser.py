@@ -327,6 +327,8 @@ def parse_raw_data(  # pylint: disable=too-many-locals
     project_dirs = [
         d for d in raw_dir.iter_dirs(recursive=True) if d.has_file("project.json")
     ]
+    experiment_dirs : List[tuple[DirectoryNode, Project]] = []
+    dataset_dirs : List[tuple[DirectoryNode, Experiment]] = []
     for project_dir in project_dirs:
         logging.info("Project directory: %s", project_dir.name())
         project = process_project(
@@ -336,54 +338,54 @@ def parse_raw_data(  # pylint: disable=too-many-locals
         )
         crate_manifest.add_projects(projects={str(project.id): project})
 
-        experiment_dirs = [
-            d
+        experiment_dirs.extend([
+            (d, project)
             for d in project_dir.iter_dirs(recursive=True)
             if d.has_file("experiment.json")
-        ]
+        ])
 
-        for experiment_dir in experiment_dirs:
-            logging.info("Experiment directory: %s", experiment_dir.name())
+    for experiment_dir, project in experiment_dirs:
+        logging.info("Experiment directory: %s", experiment_dir.name())
 
-            experiment = process_experiment(
-                experiment_dir,
-                parent_project=project,
-                collect_all=collect_all,
-                crate_manifest=crate_manifest,
-            )
-            crate_manifest.add_experiments({str(experiment.id): experiment})
-            dataset_dirs = [
+        experiment = process_experiment(
+            experiment_dir,
+            parent_project=project,
+            collect_all=collect_all,
+            crate_manifest=crate_manifest,
+        )
+        crate_manifest.add_experiments({str(experiment.id): experiment})
+        dataset_dirs.extend([
+            (d, experiment)
+            for d in experiment_dir.iter_dirs(recursive=True)
+            if d.has_file(d.name() + ".json")
+        ])
+    for dataset_dir, experiment in dataset_dirs:
+        logging.info("Dataset directory: %s", dataset_dir.name())
+
+        dataset = process_raw_dataset(
+            dataset_dir,
+            experiment=experiment,
+            crate_manifest=crate_manifest,
+        )
+        dataset_metadata = collect_dataset_metadata(
+            dataset_dir=dataset_dir,
+            parent_dataset = dataset,
+            metadata_schema=raw_dataset_metadata_schema
+        )
+        data_dir = next(
+            (
                 d
-                for d in experiment_dir.iter_dirs(recursive=True)
-                if d.has_file(d.name() + ".json")
-            ]
-            for dataset_dir in dataset_dirs:
-                logging.info("Dataset directory: %s", dataset_dir.name())
+                for d in dataset_dir.iter_dirs()
+                if datetime_pattern.match(d.path().stem)
+            ),
+            None,
+        )
 
-                dataset = process_raw_dataset(
-                    dataset_dir,
-                    experiment=experiment,
-                    crate_manifest=crate_manifest,
-                )
-                dataset_metadata = collect_dataset_metadata(
-                    dataset_dir=dataset_dir,
-                    parent_dataset = dataset,
-                    metadata_schema=raw_dataset_metadata_schema
-                )
-                data_dir = next(
-                    (
-                        d
-                        for d in dataset_dir.iter_dirs()
-                        if datetime_pattern.match(d.path().stem)
-                    ),
-                    None,
-                )
+        dataset.date_created = (
+            parse_timestamp(data_dir.name()) if data_dir else None
+        )
 
-                dataset.date_created = (
-                    parse_timestamp(data_dir.name()) if data_dir else None
-                )
-
-                crate_manifest.add_datasets({dataset.id: dataset})
-                crate_manifest.add_metadata(dataset_metadata.values())
+        crate_manifest.add_datasets({dataset.id: dataset})
+        crate_manifest.add_metadata(dataset_metadata.values())
 
     return crate_manifest
