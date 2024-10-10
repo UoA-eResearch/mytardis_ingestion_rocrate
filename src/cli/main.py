@@ -123,7 +123,6 @@ OPTION_TMP_DIR = click.option(
 )
 
 
-
 @click.group()
 def cli() -> None:
     "Commands to generate an RO-Crate with MyTardis Metadata"
@@ -147,7 +146,7 @@ def cli() -> None:
     type=bool,
     is_flag=True,
     default=False,
-    help="""Write RO-Crates and BagIT manifests in-place at the directory level. 
+    help="""Write RO-Crates and BagIT manifests in-place at the directory level.
     Requires crate to contain only one dataset or --split-datasets. 
     Warning! will move files to create BagIT Manifest""",
 )
@@ -155,13 +154,13 @@ def cli() -> None:
     "--experiment_dir",
     type=click.Path(exists=True, file_okay=True, dir_okay=True, path_type=Path),
     default=None,
-    help="Specify an individual experiment to be packaged"
+    help="Specify an individual experiment to be packaged",
 )
 @click.option(
     "--dataset_dir",
     type=click.Path(exists=True, file_okay=True, dir_okay=True, path_type=Path),
     default=None,
-    help="Specify an individual dataset to be packaged"
+    help="Specify an individual dataset to be packaged",
 )
 def abi(  # pylint: disable=too-many-positional-arguments
     input_metadata: Path,
@@ -210,7 +209,9 @@ def abi(  # pylint: disable=too-many-positional-arguments
         api_agent, env_config.default_schema if env_config else None
     )
     os.chdir(input_metadata)
-    crate_manifest = extractor.extract_crates(input_metadata, bool(collect_all), experiment_dir, dataset_dir)
+    crate_manifest = extractor.extract_crates(
+        input_metadata, bool(collect_all), experiment_dir, dataset_dir
+    )
     crate_manifests = split_manifests(split_datasets, crate_manifest)
     exclude: list[str] = []
     source_path = input_metadata
@@ -219,7 +220,13 @@ def abi(  # pylint: disable=too-many-positional-arguments
         exclude.append(input_metadata.name)
     for manifest in crate_manifests:
         if in_place:
-            write_inplace(manifest, exclude=exclude, gpg_binary=None, crate_builder=ABIROBuilder, bag_crate=True)
+            write_inplace(
+                manifest,
+                exclude=exclude,
+                gpg_binary=None,
+                crate_builder=ABIROBuilder,
+                bag_crate=True,
+            )
         else:
             write_and_archive_manifest(
                 manifest=manifest,
@@ -483,12 +490,13 @@ def split_manifests(
         for dataset in crate_manifest.datasets.values()
     ]
 
+
 def write_inplace(
     crate_manifest: CrateManifest,
-    exclude:List[str],
+    exclude: List[str],
     crate_builder: Type[ROBuilder],
-    bag_crate: bool | None = True, 
-    gpg_binary: Path | None = None
+    bag_crate: bool | None = True,
+    gpg_binary: Path | None = None,
 ) -> None:
     """Write single directory crate in-place at the directory level
 
@@ -503,14 +511,17 @@ def write_inplace(
         ValueError: If the manifest contains too many datasets then writing in-place is not possible
     """
     if len(crate_manifest.datasets) != 1:
-        raise ValueError(f"{crate_manifest.identifier} Contains too many datasets {len(crate_manifest.datasets)}, please split datasets if writing in-place")
+        raise ValueError(
+            f"""{crate_manifest.identifier} Contains too many datasets
+         {len(crate_manifest.datasets)}, please split datasets if writing in-place"""
+        )
     dataset = next(iter(crate_manifest.datasets.values()))
     current_dir = Path(os.getcwd()) / dataset.directory
     # os.chdir(current_dir)
     dataset.directory = Path("./")
     crate = ROCrate(  # pylint: disable=unexpected-keyword-arg
-            gpg_binary=gpg_binary, exclude=exclude
-        )
+        gpg_binary=gpg_binary, exclude=exclude
+    )
     receive_keys_for_crate(crate.gpg_binary, crate_contents=crate_manifest)
     builder = crate_builder(crate)
     write_crate(

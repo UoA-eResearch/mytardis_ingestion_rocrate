@@ -15,8 +15,8 @@ from mytardis_rocrate_builder.rocrate_dataclasses.rocrate_dataclasses import (
     Dataset,
     Experiment,
     Instrument,
+    MTMetadata,
     Project,
-    MTMetadata
 )
 from slugify import slugify
 
@@ -151,12 +151,13 @@ def process_experiment(
         additional_properties=additional_properties,
     )
 
+
 def collect_dataset_metadata(
     dataset_dir: DirectoryNode,
     parent_dataset: Dataset,
     metadata_schema: MetadataSchema,
-    collect_all: bool = False
-) -> Dict[str,MTMetadata]:
+    collect_all: bool = False,
+) -> Dict[str, MTMetadata]:
     """Collect metadata from an abi dataset json
 
     Args:
@@ -184,6 +185,7 @@ def collect_dataset_metadata(
         parent_dataset,
     )
     return metadata_dict
+
 
 def process_raw_dataset(  # pylint: disable=too-many-locals
     dataset_dir: DirectoryNode,
@@ -306,13 +308,13 @@ def read_json(file: FileNode) -> dict[str, Any]:
     return json_data
 
 
-def parse_raw_data(  # pylint: disable=too-many-locals
-    project_dir: DirectoryNode,
+def parse_raw_data(  # pylint: disable=too-many-locals,too-many-arguments
+    project_source: DirectoryNode,
     metadata_handler: MetadataHandlder,
     api_agent: MyTardisRestAgent,
     collect_all: bool = False,
-    experiment_dir: DirectoryNode| None = None,
-    dataset_dir: DirectoryNode | None = None,
+    experiment_source: DirectoryNode | None = None,
+    dataset_source: DirectoryNode | None = None,
 ) -> CrateManifest:
     """
     Parse the directory containing the raw data
@@ -325,10 +327,12 @@ def parse_raw_data(  # pylint: disable=too-many-locals
         url=metadata_handler.schema_namespaces.get(MtObject.DATASET) or "",
     )
     project_dirs = [
-        d for d in project_dir.iter_dirs(recursive=True) if d.has_file("project.json")
+        d
+        for d in project_source.iter_dirs(recursive=True)
+        if d.has_file("project.json")
     ]
-    experiment_dirs : List[tuple[DirectoryNode, Project]] = []
-    dataset_dirs : List[tuple[DirectoryNode, Experiment]] = []
+    experiment_dirs: List[tuple[DirectoryNode, Project]] = []
+    dataset_dirs: List[tuple[DirectoryNode, Experiment]] = []
     for project_dir in project_dirs:
         logging.info("Project directory: %s", project_dir.name())
         project = process_project(
@@ -337,14 +341,16 @@ def parse_raw_data(  # pylint: disable=too-many-locals
             api_agent=api_agent,
         )
         crate_manifest.add_projects(projects={str(project.id): project})
-        if experiment_dir:
-            experiment_dirs = [(experiment_dir, project)]
+        if experiment_source:
+            experiment_dirs = [(experiment_source, project)]
         else:
-            experiment_dirs.extend([
-                (d, project)
-                for d in project_dir.iter_dirs(recursive=True)
-                if d.has_file("experiment.json")
-            ])
+            experiment_dirs.extend(
+                [
+                    (d, project)
+                    for d in project_dir.iter_dirs(recursive=True)
+                    if d.has_file("experiment.json")
+                ]
+            )
 
     for experiment_dir, project in experiment_dirs:
         logging.info("Experiment directory: %s", experiment_dir.name())
@@ -356,14 +362,16 @@ def parse_raw_data(  # pylint: disable=too-many-locals
             crate_manifest=crate_manifest,
         )
         crate_manifest.add_experiments({str(experiment.id): experiment})
-        if dataset_dir:
-            dataset_dirs = [(dataset_dir, experiment)]
+        if dataset_source:
+            dataset_dirs = [(dataset_source, experiment)]
         else:
-            dataset_dirs.extend([
-                (d, experiment)
-                for d in experiment_dir.iter_dirs(recursive=True)
-                if d.has_file(d.name() + ".json")
-            ])
+            dataset_dirs.extend(
+                [
+                    (d, experiment)
+                    for d in experiment_dir.iter_dirs(recursive=True)
+                    if d.has_file(d.name() + ".json")
+                ]
+            )
     for dataset_dir, experiment in dataset_dirs:
         logging.info("Dataset directory: %s", dataset_dir.name())
 
@@ -374,8 +382,8 @@ def parse_raw_data(  # pylint: disable=too-many-locals
         )
         dataset_metadata = collect_dataset_metadata(
             dataset_dir=dataset_dir,
-            parent_dataset = dataset,
-            metadata_schema=raw_dataset_metadata_schema
+            parent_dataset=dataset,
+            metadata_schema=raw_dataset_metadata_schema,
         )
         data_dir = next(
             (
@@ -386,9 +394,7 @@ def parse_raw_data(  # pylint: disable=too-many-locals
             None,
         )
 
-        dataset.date_created = (
-            parse_timestamp(data_dir.name()) if data_dir else None
-        )
+        dataset.date_created = parse_timestamp(data_dir.name()) if data_dir else None
 
         crate_manifest.add_datasets({dataset.id: dataset})
         crate_manifest.add_metadata(dataset_metadata.values())

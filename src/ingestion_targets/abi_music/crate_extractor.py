@@ -35,11 +35,11 @@ class ABICrateExtractor:  # pylint: disable=too-few-public-methods
         self.metadata_handler = MetadataHandlder(api_agent, profile_consts.NAMESPACES)
 
     def extract_crates(
-        self, 
+        self,
         input_data_source: Path,
         collect_all: bool = False,
         experiment_source: Path | None = None,
-        dataset_source: Path | None  =None,
+        dataset_source: Path | None = None,
     ) -> CrateManifest:
         """Build crates from datasets found in an ABI directory
 
@@ -55,10 +55,12 @@ class ABICrateExtractor:  # pylint: disable=too-few-public-methods
         else:
             root_dir = DirectoryNode(input_data_source)
         return parse_raw_data(
-            project_dir=root_dir,
+            project_source=root_dir,
             metadata_handler=self.metadata_handler,
             collect_all=collect_all,
             api_agent=self.api_agent,
-            experiment_dir= DirectoryNode(experiment_source) if experiment_source else None,
-            dataset_dir=DirectoryNode(dataset_source) if dataset_source else None
+            experiment_source=(
+                DirectoryNode(experiment_source) if experiment_source else None
+            ),
+            dataset_source=DirectoryNode(dataset_source) if dataset_source else None,
         )
