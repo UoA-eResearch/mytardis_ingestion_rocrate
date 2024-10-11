@@ -121,7 +121,20 @@ OPTION_TMP_DIR = click.option(
     type=Path,
     help="replace default temporary file location",
 )
-
+OPTION_SEPARATE_MANIFESTS  = click.option(
+    "--separate_manifests",
+    type=bool,
+    is_flag=True,
+    default=False,
+    help="generate a separate copy of any file manifest before output",
+)
+OPTION_BAG_CRATE = click.option(
+    "-b",
+    "--bag_crate",
+    type=bool,
+    default=True,
+    help="Create a bagit manifest for the RO-Crate",
+)
 
 @click.group()
 def cli() -> None:
@@ -162,6 +175,8 @@ def cli() -> None:
     default=None,
     help="Specify an individual dataset to be packaged",
 )
+@OPTION_SEPARATE_MANIFESTS
+@OPTION_BAG_CRATE
 def abi(  # pylint: disable=too-many-positional-arguments
     input_metadata: Path,
     output: Path,
@@ -178,6 +193,8 @@ def abi(  # pylint: disable=too-many-positional-arguments
     in_place: Optional[bool] = False,
     experiment_dir: Optional[Path] = None,
     dataset_dir: Optional[Path] = None,
+    separate_manifests: Optional[bool] = True,
+    bag_crate: Optional[bool] = True,
 ) -> None:
     """
     Create RO-Crates by dataset from ABI-music filestructure.
@@ -238,9 +255,9 @@ def abi(  # pylint: disable=too-many-positional-arguments
                 exclude=exclude,
                 dry_run=dry_run,
                 duplicate_directory=False,
-                bag_crate=True,
+                bag_crate=bag_crate,
                 bulk_encrypt=False,
-                separate_manifests=True,
+                separate_manifests=separate_manifests,
                 pubkey_fingerprints=[],
             )
 
@@ -261,13 +278,7 @@ def abi(  # pylint: disable=too-many-positional-arguments
 @OPTION_HOSTNAME
 @OPTION_MT_USER
 @OPTION_MT_APIKEY
-@click.option(
-    "-b",
-    "--bag_crate",
-    type=bool,
-    default=True,
-    help="Create a bagit manifest for the RO-Crate",
-)
+@OPTION_BAG_CRATE
 @OPTION_ARCHIVE_TYPE
 @click.option(
     "--gpg_binary", type=Path, default=None, help="binary for running gpg encryption"
@@ -284,13 +295,7 @@ def abi(  # pylint: disable=too-many-positional-arguments
 @OPTION_SPLIT_DATASETS
 @OPTION_DRY_RUN
 @OPTION_TMP_DIR
-@click.option(
-    "--separate_manifests",
-    type=bool,
-    is_flag=True,
-    default=False,
-    help="generate a separate copy of any file manifest before output",
-)
+@OPTION_SEPARATE_MANIFESTS
 def print_lab(  # pylint: disable=too-many-positional-arguments,too-many-branches,too-many-statements
     input_metadata: Path,
     output: Path,

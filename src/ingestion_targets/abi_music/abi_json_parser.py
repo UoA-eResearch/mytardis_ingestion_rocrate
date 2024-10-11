@@ -331,6 +331,8 @@ def parse_raw_data(  # pylint: disable=too-many-locals,too-many-arguments
         for d in project_source.iter_dirs(recursive=True)
         if d.has_file("project.json")
     ]
+    if project_source.has_file("project.json"):
+        project_dirs.append(project_source) 
     experiment_dirs: List[tuple[DirectoryNode, Project]] = []
     dataset_dirs: List[tuple[DirectoryNode, Experiment]] = []
     for project_dir in project_dirs:
