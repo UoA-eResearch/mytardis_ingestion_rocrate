@@ -448,7 +448,9 @@ def write_and_archive_manifest(
         crate_contents=manifest,
         meta_only=dry_run,
     )
+
     if bag_crate:
+        logger.info("Writing BagIt Manifests For Crate")
         bagit_crate(crate_destination, "The University of Auckland")
     if bulk_encrypt:
         archive_crate(
