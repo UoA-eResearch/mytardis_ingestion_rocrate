@@ -326,13 +326,19 @@ def parse_raw_data(  # pylint: disable=too-many-locals,too-many-arguments
         schema=metadata_handler.get_mtobj_schema(MtObject.DATASET),
         url=metadata_handler.schema_namespaces.get(MtObject.DATASET) or "",
     )
-    project_dirs = [
-        d
-        for d in project_source.iter_dirs(recursive=True)
-        if d.has_file("project.json")
-    ]
+    project_dirs: List[DirectoryNode]
     if project_source.has_file("project.json"):
-        project_dirs.append(project_source) 
+        project_dirs = [project_source]
+    else:
+        logging.info(
+            "Project json not found in  %s searching for project.json files",
+            project_source.path(),
+        )
+        project_dirs = [
+            d
+            for d in project_source.iter_dirs(recursive=True)
+            if d.has_file("project.json")
+        ]
     experiment_dirs: List[tuple[DirectoryNode, Project]] = []
     dataset_dirs: List[tuple[DirectoryNode, Experiment]] = []
     for project_dir in project_dirs:

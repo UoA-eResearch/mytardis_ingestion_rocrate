@@ -121,7 +121,7 @@ OPTION_TMP_DIR = click.option(
     type=Path,
     help="replace default temporary file location",
 )
-OPTION_SEPARATE_MANIFESTS  = click.option(
+OPTION_SEPARATE_MANIFESTS = click.option(
     "--separate_manifests",
     type=bool,
     is_flag=True,
@@ -135,6 +135,7 @@ OPTION_BAG_CRATE = click.option(
     default=True,
     help="Create a bagit manifest for the RO-Crate",
 )
+
 
 @click.group()
 def cli() -> None:
